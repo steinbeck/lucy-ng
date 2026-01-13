@@ -4,6 +4,7 @@ import click
 
 from lucy_ng import __version__
 from lucy_ng.cli.analyze import analyze
+from lucy_ng.cli.database import database
 from lucy_ng.cli.dereplicate import dereplicate
 from lucy_ng.cli.fetch import fetch
 from lucy_ng.cli.lsd import lsd
@@ -30,6 +31,7 @@ def cli() -> None:
       predict     Predict NMR chemical shifts
       lsd         LSD structure elucidation
       fetch       Fetch data from external sources
+      database    Database management (build, info)
     """
     pass
 
@@ -42,3 +44,4 @@ cli.add_command(dereplicate)
 cli.add_command(predict)
 cli.add_command(lsd)
 cli.add_command(fetch)
+cli.add_command(database)
