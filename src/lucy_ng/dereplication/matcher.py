@@ -196,11 +196,20 @@ class SpectrumMatcher:
             references: List of reference entries to match against
 
         Returns:
-            List of MatchResult sorted by score (highest first)
+            List of MatchResult sorted by score (highest first), then by
+            average deviation (lowest first) as tiebreaker
         """
         results = [self.match(observed, ref) for ref in references]
-        results.sort(key=lambda r: r.score, reverse=True)
+        # Sort by score descending, then by average deviation ascending as tiebreaker
+        results.sort(key=lambda r: (-r.score, self._avg_deviation(r)))
         return results
+
+    @staticmethod
+    def _avg_deviation(result: MatchResult) -> float:
+        """Calculate average deviation for a match result."""
+        if result.peak_matches:
+            return sum(pm.deviation for pm in result.peak_matches) / len(result.peak_matches)
+        return float("inf")
 
     def _find_best_match(
         self,
