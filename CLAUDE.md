@@ -40,13 +40,15 @@ Create `.claude/settings.json` in the working directory:
 }
 ```
 
-### 5. Learn the Workflow
-Read the AI Guide for structure elucidation workflow:
-https://raw.githubusercontent.com/steinbeck/lucy-ng/master/docs/AI_GUIDE.md
+---
 
-## Performing Structure Elucidation
+## Structure Elucidation Workflow
 
-Once setup is complete, follow this workflow. The best possible outcome is between one and ten solutions. In case of another outcome, the workflow needs to be repeated and adjusted automatically until a satifactory outcome is reached. In case of no solution structure, constraints and assumptions need to be checked and adjusted. In case of too many solutions, constraints like more HMBC signals or hetero-attachments for specific carbons in the correct shift range need to be added. 
+Once setup is complete, follow this workflow. The best possible outcome is between one and ten solutions. In case of another outcome, the workflow needs to be repeated and adjusted automatically until a satisfactory outcome is reached. In case of no solution structure, constraints and assumptions need to be checked and adjusted. In case of too many solutions, constraints like more HMBC signals or hetero-attachments for specific carbons in the correct shift range need to be added.
+
+**Key Principle: Be Conservative** - Always prefer known compounds over de novo structure determination. Dereplication (database matching) is faster, more reliable, and avoids the combinatorial explosion of possible structures. Only proceed to full structure elucidation if dereplication fails.
+
+### Workflow Steps
 
 0. **Documentation** - Create an `analysis/` folder to document all steps and results. Document immediately after each step below, so that the user can follow while you work.
 1. **Dereplication** - `lucy dereplicate c13 <spectrum> <formula>` - check known compounds first
@@ -61,70 +63,133 @@ Once setup is complete, follow this workflow. The best possible outcome is betwe
 
 ---
 
-## Developer Reference
+## NMR Quick Reference
 
-## Quick Reference
+### Experiment Types
 
-```bash
-# Run tests
-pytest
+| Experiment | Information Provided | Key Insight |
+|------------|---------------------|-------------|
+| **1H** | Proton chemical shifts | Hydrogen environment |
+| **13C** | Carbon chemical shifts | All carbons including quaternary |
+| **DEPT-135** | Protonated carbons only | CH/CH3 positive, CH2 negative |
+| **DEPT-90** | CH only | Distinguishes CH from CH3 |
+| **HSQC** | Direct C-H connections | Which H is attached to which C |
+| **HMBC** | 2-3 bond C-H correlations | Connectivity through bonds |
+| **COSY** | H-H correlations | Adjacent protons |
 
-# Run tests with coverage
-pytest --cov=lucy_ng
+### 13C Chemical Shift Regions
 
-# Type checking
-mypy src/lucy_ng
+| Region (ppm) | Typical Assignment |
+|--------------|-------------------|
+| 0-50 | Aliphatic carbons (CH3, CH2, CH) |
+| 50-90 | Carbons attached to oxygen (C-O) |
+| 90-120 | Anomeric carbons, alkenes |
+| 120-160 | Aromatic carbons, alkenes |
+| 160-180 | Carboxylic acids, esters, amides |
+| 180-220 | Aldehydes, ketones |
 
-# Linting
-ruff check src tests
+### Lucy-ng Tool Output Reference
 
-# Build package
-hatch build
-```
+| Tool | Key Output Fields |
+|------|------------------|
+| `read_spectrum_1d` | nucleus, frequency, ppm_range, data_points |
+| `pick_peaks_1d` | peaks (ppm, intensity), count |
+| `pick_hsqc_peaks` | peaks (carbon_ppm, proton_ppm), multiplicities |
+| `pick_hmbc_peaks` | peaks (carbon_ppm, proton_ppm), validated_count |
+| `analyze_symmetry` | expected_carbons, observed_carbons, symmetry_detected |
+| `dereplicate_c13` | is_match, top_matches (name, smiles, score) |
+| `predict_c13_shifts` | predictions (atom_index, shift, confidence), success |
+| `rank_lsd_solutions` | ranked_solutions (smiles, mae, matched_count), total_ranked |
 
-## Project Structure
+---
 
-```
-src/lucy_ng/
-├── models/          # Pydantic v2 data models (Spectrum1D, Spectrum2D, Peak1D, etc.)
-├── readers/         # NMR file readers (BrukerReader)
-├── processing/      # Peak picking, signal processing
-├── dereplication/   # Database matching (NMRShiftDBLoader, SpectrumMatcher)
-├── solvers/         # LSD/pyLSD integration (future)
-└── __init__.py      # Public API exports
+## Common Pitfalls and Solutions
 
-tests/               # pytest tests
-data/                # Test NMR datasets (Bruker format)
-.planning/           # GSD planning files (PROJECT.md, ROADMAP.md, STATE.md)
-```
+### Pitfall 1: Signal Count ≠ Atom Count (Symmetry)
 
-## Technology Stack
+**The Problem**: The molecular formula says C13H18O2 (13 carbons), but you only see 10-11 peaks in the 13C spectrum.
 
-- **Python 3.10+** - minimum version
-- **Pydantic v2** - data models with validation
-- **nmrglue** - Bruker NMR file parsing
-- **NumPy/SciPy** - numerical processing
-- **RDKit** - SD file parsing for reference databases
-- **hatch** - build system
-- **pytest** - testing
-- **ruff** - linting
-- **mypy** - type checking (strict mode)
+**Why This Happens**: Molecular symmetry causes equivalent atoms to produce identical signals that overlap.
 
-## Code Conventions
+**What To Do**:
+1. Use `lucy analyze symmetry` to detect discrepancies
+2. Look at HSQC intensities - doubled signals have ~2x intensity
+3. Consider common symmetric motifs:
+   - Para-substituted benzene (2 pairs of equivalent CH)
+   - Isopropyl groups (2 equivalent CH3)
+   - Gem-dimethyl groups (2 equivalent CH3)
+   - Symmetric ethers/esters
 
-- Type hints on all functions
-- Docstrings with Args/Returns/Raises sections
-- Static methods for readers (e.g., `BrukerReader.read_1d()`)
-- Helper functions prefixed with `_` for private use
-- Line length: 100 characters
-- Imports: standard library, third-party, local (isort order)
+**Key Insight**: If formula hydrogens > sum of (multiplicity × count) from HSQC, you have equivalent positions.
 
-## NMR Data
+### Pitfall 2: Quaternary Carbons Are Invisible in DEPT/HSQC
 
-Test data is Bruker format in `data/` directory:
-- `data/Ibuprofen/` - 1D (1H, 13C) and 2D (COSY, HSQC, HMBC)
-- `data/4-Hydroxy-3-Iodo-biphenyl/` - includes NOESY
-- Processed data read from `pdata/1/` subdirectory
+**The Problem**: Some carbons appear in the 13C spectrum but have no HSQC correlation.
+
+**Why This Happens**: Quaternary carbons (C with no attached H) don't appear in DEPT or HSQC experiments.
+
+**What To Do**:
+1. Compare 13C peak count with DEPT-135 peak count
+2. The difference = quaternary carbons
+3. Quaternary carbons are only connected to the structure through HMBC correlations
+4. Common quaternary carbons:
+   - Carbonyl carbons (C=O) at 160-220 ppm
+   - Aromatic junction carbons at 120-160 ppm
+   - Bridgehead carbons
+
+### Pitfall 3: HMBC Noise Creates False Correlations
+
+**The Problem**: Raw HMBC peak picking finds hundreds of peaks, most of which are noise.
+
+**Why This Happens**: HMBC is an insensitive experiment with many artifacts (t1 noise, 1J bleeding).
+
+**What To Do**:
+1. **Always use guided HMBC picking** (`lucy pick hmbc`)
+2. The guided picker validates that:
+   - The carbon position exists in 13C/DEPT
+   - The proton position exists in HSQC
+3. This typically reduces peak count from hundreds to tens
+
+**Key Insight**: More HMBC correlations = better LSD results, but only if they're real correlations.
+
+### Pitfall 4: Too Many LSD Solutions
+
+**The Problem**: LSD generates hundreds or thousands of candidate structures.
+
+**Why This Happens**: Insufficient or incorrect constraints.
+
+**Common Causes**:
+1. Missing HMBC correlations (manually constructed vs. real data)
+2. Incorrect atom multiplicities
+3. Symmetry not accounted for
+4. Quaternary carbons with no HMBC connections
+
+**What To Do**:
+1. Verify all HMBC correlations from experimental data
+2. Check that all protonated carbons have HSQC correlations
+3. Ensure molecular formula is correct
+4. Consider if the compound has unusual features (macrocycles, etc.)
+
+**Expected Results**:
+- 1-10 solutions: Good constraint quality
+- 10-100 solutions: May need more data or review
+- 100+ solutions: Likely missing critical constraints
+
+### Pitfall 5: Heteroatom Positions
+
+**The Problem**: Oxygen and nitrogen atoms don't appear directly in standard NMR experiments.
+
+**Why This Happens**: Most heteroatoms have no attached protons (carbonyl O, ether O) or exchange rapidly (OH, NH).
+
+**What To Do**:
+1. Infer heteroatom positions from:
+   - Molecular formula (tells you how many O, N, etc.)
+   - Chemical shifts (C-O carbons appear 50-90 ppm)
+   - Carbonyl carbons (160-220 ppm)
+2. LSD uses the molecular formula to place heteroatoms
+3. Use BOND or LIST/PROP constraints to guide heteroatom attachment
+
+---
 
 ## Reference Data
 
@@ -134,7 +199,6 @@ Reference databases for dereplication are stored in `data/reference/`:
 |------|-------------|---------|------|----------|
 | `nmrshiftdb2withsignals.sd.gz` | NMRShiftDB SD file with 13C chemical shifts | ~33,000 | ~20 MB | **Yes** |
 | `coconut_predicted.sd` | COCONUT natural products (predicted shifts) | ~895,000 | ~4.8 GB | No |
-| `sherlock_13c.json` | Pre-processed 13C reference data | - | ~350 MB | No |
 
 **Usage**: The CLI `lucy dereplicate c13` command auto-discovers databases in `data/reference/`. The included NMRShiftDB database is auto-decompressed on first use.
 
@@ -143,28 +207,265 @@ Reference databases for dereplication are stored in `data/reference/`:
 2. Automatically decompress it to `nmrshiftdb2withsignals.sd` on first use
 3. Use the decompressed file for subsequent runs
 
-**Loaders**:
-- `CoconutLoader` - For COCONUT SD files (parses `<CNMR_SHIFTS>`, `<Quaternaries>`, etc.)
-- `NMRShiftDBLoader` - For nmrshiftdb SD files (parses `<Spectrum 13C 0>` field)
+**Optional**: For larger database coverage, obtain COCONUT separately from https://coconut.naturalproducts.net/
 
-**Optional**: For larger database coverage, obtain COCONUT separately:
-- COCONUT: https://coconut.naturalproducts.net/
+---
 
-## Key Patterns
+## LSD Integration
 
-### Reading NMR data
-```python
-from lucy_ng import BrukerReader, Spectrum1D
+### LSD File Structure
 
-spectrum: Spectrum1D = BrukerReader.read_1d("data/Ibuprofen/10")
+**Important:** LSD does NOT have a molecular formula command. The formula is defined implicitly by the sum of all MULT atom definitions.
+
+**File structure:**
+```
+; Comments start with semicolon
+MULT 1 C 2 0    ; Define atoms with MULT
+MULT 2 C 2 0
+...
+HSQC 4 4        ; Define correlations (HSQC FIRST!)
+HMBC 2 8        ; Then HMBC
+...
+ELIM 0          ; End with elimination rules
 ```
 
-### Models are Pydantic
-```python
-from lucy_ng.models import Peak1D
+**Note:** Do NOT use `FORM`, `FORMULA`, or similar commands - these are invalid in LSD.
 
-peak = Peak1D(ppm=45.2, intensity=1.0e6, assignment="C-1")
+### Correlation Order (CRITICAL)
+
+HSQC/HMQC commands MUST appear BEFORE any HMBC commands that reference those proton positions. LSD defines proton positions through HSQC correlations.
+
+**Correct order:**
 ```
+; 1. Atom definitions (MULT)
+MULT 1 C 2 0
+...
+
+; 2. HSQC correlations - defines proton positions
+HSQC 4 4    ; H4 is now defined
+HSQC 6 6    ; H6 is now defined
+
+; 3. HMBC correlations - can now reference H4, H6
+HMBC 2 4    ; C2 correlates to H4
+HMBC 3 6    ; C3 correlates to H6
+```
+
+**Error if wrong order:** "Cannot set an HMBC correlation between X and H-Y because H-Y is not defined by an HMQC command."
+
+### Hybridization Rules
+
+**CRITICAL:** LSD requires an EVEN number of sp2 atoms.
+
+Each double bond connects two sp2 atoms, so an odd count is invalid.
+
+**Common sp2 atoms:**
+- Carbonyl carbons (C=O): sp2
+- Carbonyl oxygens (C=O): sp2
+- Aromatic carbons: sp2
+- Aromatic nitrogens (pyridine-type): sp2
+
+**Common sp3 atoms:**
+- Saturated carbons (CH3, CH2, CH): sp3
+- Ether/hydroxyl oxygens: sp3
+- Amine nitrogens (NR3): sp3
+- N-methyl nitrogens: sp3
+
+**Validation:** Count sp2 atoms before running LSD. If odd, adjust one atom's hybridization.
+
+**Example - Caffeine (C8H10N4O2):**
+- 5 sp2 carbons (2 carbonyl + 3 aromatic)
+- 2 sp2 oxygens (2 carbonyl)
+- 1 sp2 nitrogen (imidazole ring)
+- 3 sp3 nitrogens (N-methyl positions)
+- Total: 8 sp2 atoms (even) ✓
+
+### Heteroatom Attachment Constraints
+
+There are TWO approaches to constrain heteroatom attachment:
+
+#### Approach A: Direct BOND (Simple cases)
+
+Use when you know the exact atoms that should be bonded:
+
+```
+; C1 (carbonyl at 155 ppm) bonded to O13
+BOND 1 13
+
+; N-CH3 carbon bonded to nitrogen
+BOND 6 9
+```
+
+**Pros:** Simple, explicit
+**Cons:** Less flexible, may over-constrain
+
+#### Approach B: LIST + ELEM + PROP (Flexible)
+
+Use when you want to constrain by element type without specifying exact atoms:
+
+```
+; Create list of carbonyl carbons (atoms 1 and 2)
+LIST L1 1 2
+
+; Create list of all oxygens
+ELEM L2 O
+
+; Each carbonyl must have exactly 1 oxygen neighbor
+PROP L1 1 L2
+
+; Create list of N-CH3 carbons
+LIST L3 6 7 8
+
+; Create list of all nitrogens
+ELEM L4 N
+
+; Each N-CH3 carbon must have exactly 1 nitrogen neighbor
+PROP L3 1 L4
+```
+
+**Pros:** More flexible, lets LSD find optimal assignment
+**Cons:** More verbose
+
+#### When to use each:
+
+| Scenario | Recommended |
+|----------|-------------|
+| Carbonyl C=O | BOND (usually clear which O) |
+| N-CH3 attachment | LIST/PROP (N assignment flexible) |
+| Ether oxygen | LIST/PROP (attachment flexible) |
+
+### LSD Command Format
+
+The LSD user guide for full reference is at https://nuzillard.github.io/LSD/MANUAL_ENG.html.
+
+**Atom definitions**: MULT command with hybridization and H-count
+```
+MULT 1 C 2 0    ; atom 1, carbon, sp2 hybridization, 0 hydrogens (quaternary)
+MULT 2 C 2 1    ; atom 2, carbon, sp2 hybridization, 1 hydrogen (CH)
+MULT 3 C 3 3    ; atom 3, carbon, sp3 hybridization, 3 hydrogens (CH3)
+MULT 4 N 3 0    ; atom 4, nitrogen, sp3, 0 hydrogens
+MULT 5 O 2 0    ; atom 5, oxygen, sp2, 0 hydrogens (carbonyl)
+```
+
+**HSQC correlations**: Direct C-H attachment
+```
+HSQC 2 2    ; carbon 2 has directly attached proton (defines H2)
+HSQC 3 3    ; carbon 3 has directly attached protons (defines H3)
+```
+
+**HMBC correlations**: 2-3 bond C-H correlations
+```
+HMBC 1 2    ; carbon 1 correlates to proton attached to carbon 2
+HMBC 1 3    ; carbon 1 correlates to protons attached to carbon 3
+```
+
+**ELIM command**: Controls ring size elimination
+```
+ELIM 0      ; Default: eliminate 3-membered rings only
+```
+**Note:** Always use `ELIM 0` - plain `ELIM` without parameters may fail.
+
+### Converting LSD Solutions to SMILES
+
+After running LSD, convert solutions using `outlsd`:
+
+```bash
+outlsd 5 < compound.sol > solutions.smi
+```
+
+**Format options:**
+| Code | Format |
+|------|--------|
+| 1 | Bond lists |
+| 5 | SMILES |
+| 6 | 2D coordinates (.coo) |
+| 7 | SDF 2D (.mol) |
+| 8 | SDF 3D without H (.mol) |
+| 9 | SDF 3D with H (.mol) |
+
+**Complete workflow:**
+```bash
+# Run LSD
+LSD compound.lsd
+
+# Convert to SMILES
+outlsd 5 < compound.sol > solutions.smi
+
+# Rank solutions
+lucy lsd rank solutions.smi --shifts "155.08,151.58,..."
+```
+
+### Solution Ranking and MAE Interpretation
+
+When LSD produces multiple solutions, rank them using `lucy lsd rank`:
+
+**How it works:**
+1. For each solution SMILES, predict 13C shifts using HOSE codes
+2. Match predicted shifts to experimental peaks (greedy assignment)
+3. Calculate MAE (Mean Absolute Error)
+4. Sort solutions by MAE (lower = better match)
+
+**Interpreting MAE scores:**
+
+| MAE (ppm) | Confidence | Action |
+|-----------|------------|--------|
+| < 2.0 | Excellent | High confidence in structure |
+| 2.0 - 3.5 | Good | Reasonable confidence |
+| 3.5 - 5.0 | Moderate | Review carefully |
+| > 5.0 | Poor | Likely incorrect structure |
+
+**Important caveats:**
+- **Symmetry affects ranking**: If the molecule has equivalent carbons (e.g., para-benzene), the experimental spectrum shows fewer signals than predicted. This causes unmatched predictions and inflated MAE scores.
+- **Ranking is a guide, not proof**: The correct structure should rank near the top, but may not always be #1 due to prediction errors.
+- **Review top candidates**: Always examine the top 3-5 candidates for chemical reasonableness.
+
+### LSD Runner Notes
+
+- LSD writes solution count to **stderr**, not stdout
+- Success is determined by finding solutions, not just return code
+- Solution files are written as `.sol` files in the working directory
+
+---
+
+## Manual LSD File Construction
+
+When `lucy lsd generate` fails (e.g., missing DEPT), construct the LSD file manually:
+
+### Template
+```
+; LSD input file for [FORMULA]
+; Atom definitions (MULT)
+MULT 1 C 2 0    ; sp2 quaternary carbon (e.g., carbonyl)
+MULT 2 C 2 1    ; sp2 CH (aromatic)
+MULT 3 C 3 3    ; sp3 CH3
+MULT 4 N 3 0    ; sp3 nitrogen (N-methyl)
+MULT 5 O 2 0    ; sp2 oxygen (carbonyl)
+...
+
+; HSQC correlations (define H positions FIRST)
+HSQC 2 2        ; H2 on C2
+HSQC 3 3        ; H3 on C3
+
+; HMBC correlations (AFTER HSQC)
+HMBC 1 2        ; C1 correlates to H2
+HMBC 1 3        ; C1 correlates to H3
+
+; Heteroatom constraints (BOND or LIST/PROP)
+BOND 1 5        ; C1 bonded to O5 (carbonyl)
+
+; End
+ELIM 0
+```
+
+### Checklist
+1. All carbons from 13C defined with MULT
+2. Heteroatoms from formula added (N, O, S, etc.)
+3. sp2 count is EVEN
+4. HSQC correlations defined for protonated carbons
+5. HMBC correlations reference only defined H positions
+6. Heteroatom constraints added (BOND or LIST/PROP)
+7. `ELIM 0` at end
+
+---
 
 ## Peak Picking
 
@@ -181,7 +482,7 @@ Raw 2D peak picking produces many noise peaks and artifacts. For reliable struct
 - DEPT provides ground truth for protonated carbons (CH, CH2, CH3)
 - 13C provides all carbon positions including quaternary
 - HSQC provides valid proton chemical shifts. We only use picked HSQC shifts where the C-axis matches a DEPT peak.
-- HMBC provied long-range correlations between carbons and hydrogens. Only peaks where the carbon shift matches a picked peak from the 1D carbon spectrum and the proton shift matches a proton shift from the HSQC signals are kept as being valid. 
+- HMBC provides long-range correlations between carbons and hydrogens. Only peaks where the carbon shift matches a picked peak from the 1D carbon spectrum and the proton shift matches a proton shift from the HSQC signals are kept as being valid.
 
 ### Molecular Symmetry
 
@@ -238,7 +539,7 @@ For HMBC peak picking, **use `HMBCGuidedPicker`** to filter noise.
 - Filtering by these criteria removes noise peaks that would create false constraints for LSD
 
 **Filtering criteria:**
-1. Carbon (F1) must match a known carbon from 13C or DEPT spectrum (±1.5 ppm). Also look for HMBC signals for the quarternary carbons. 
+1. Carbon (F1) must match a known carbon from 13C or DEPT spectrum (±1.5 ppm). Also look for HMBC signals for the quaternary carbons.
 2. Proton (F2) must match a known proton from HSQC (±0.1 ppm)
 
 ```python
@@ -271,51 +572,233 @@ cosy = BrukerReader.read_2d("data/Ibuprofen/5")
 peaks = PeakPicker2D.pick_peaks(cosy, threshold=0.05)
 ```
 
-## LSD Integration
+---
 
-### LSD Input Quality
+## Decision Trees
 
-**Critical insight**: The number of LSD solutions depends heavily on the quality and completeness of input constraints.
+### When to Proceed with Full Elucidation
 
-**Problem observed**: Manually constructed test correlations (16 HMBC) produced 900+ solutions for Ibuprofen. Real experimental data (28-30 HMBC correlations) provides much stronger constraints.
-
-**Best practices for LSD input:**
-1. Use real experimental HMBC data, not manually constructed correlations
-2. Include ALL HMBC correlations from guided peak picking but adjust as needed in case of no or too many solutions. 
-3. Quaternary carbons (visible in 13C but not DEPT) need HMBC correlations to be connected
-4. Heteroatoms (O, N, etc.) without direct NMR visibility are constrained only by molecular formula. Use LSD's list feature to indicate that a carbon with a shift indicative of a hetero attachment shoud be directly bonded there. 
-
-### LSD Command Format
-The LSD user guide for full reference is at https://nuzillard.github.io/LSD/MANUAL_ENG.html.
-
-**HMBC correlations**: Use 2 parameters (LSD defaults to 2-3 bond distance)
 ```
-HMBC 1 2    ; carbon 1 correlates to proton attached to carbon 2
-```
-
-**HSQC correlations**: Direct C-H attachment
-```
-HSQC 1 1    ; carbon 1 has directly attached proton(s)
-```
-
-**Atom definitions**: MULT command with hybridization and H-count
-```
-MULT 1 C 2 1    ; atom 1, carbon, sp2 hybridization, 1 hydrogen
-MULT 2 C 3 3    ; atom 2, carbon, sp3 hybridization, 3 hydrogens (CH3)
+Start
+  │
+  ├─ Dereplication found match?
+  │    ├─ YES → Report match, confidence level, DONE
+  │    └─ NO → Continue
+  │
+  ├─ All necessary spectra available?
+  │    ├─ YES → Continue
+  │    └─ NO → Request missing data:
+  │           - Need at minimum: 13C, HSQC, HMBC
+  │           - DEPT highly recommended
+  │
+  ├─ Molecular formula provided?
+  │    ├─ YES → Continue
+  │    └─ NO → Request from user (essential!)
+  │
+  └─ Proceed with peak picking and LSD
 ```
 
-### LSD Runner Notes
+### Handling Symmetry
 
-- LSD writes solution count to **stderr**, not stdout
-- Success is determined by finding solutions, not just return code
-- Solution files are written as `.sol` files in the working directory
+```
+Symmetry Analysis Result
+  │
+  ├─ observed_carbons == expected_carbons?
+  │    └─ No symmetry → Proceed normally
+  │
+  ├─ observed_carbons < expected_carbons?
+  │    │
+  │    ├─ Difference = 2?
+  │    │    └─ Likely: one pair of equivalent carbons
+  │    │       (e.g., para-benzene CH, isopropyl CH3)
+  │    │
+  │    ├─ Difference = 4?
+  │    │    └─ Likely: two pairs of equivalent carbons
+  │    │       (e.g., para-benzene ring)
+  │    │
+  │    └─ Larger difference?
+  │         └─ Highly symmetric molecule
+  │            (e.g., C2 or higher symmetry)
+  │
+  └─ Check HSQC intensities for confirmation
+       - Doubled signals have ~2x intensity
+```
 
-## Planning
+### LSD Result Interpretation
 
-This project uses GSD (Get Shit Done) workflow. Planning files in `.planning/`:
-- `STATE.md` - current position and session context
-- `ROADMAP.md` - milestone and phase overview
-- `PROJECT.md` - vision, requirements, constraints
-- `phases/` - detailed phase plans and summaries
+```
+LSD Solution Count
+  │
+  ├─ 0 solutions
+  │    └─ Check:
+  │       - Contradictory constraints?
+  │       - Wrong molecular formula?
+  │       - Missing heteroatoms in formula?
+  │       - Odd sp2 count?
+  │
+  ├─ 1 solution
+  │    └─ High confidence
+  │       - Verify solution makes chemical sense
+  │       - Check for unusual features
+  │       - Optionally verify with predict_c13_shifts
+  │
+  ├─ 2-10 solutions
+  │    └─ Good result → USE RANKING
+  │       - lucy lsd rank to identify best match
+  │       - Examine differences between top candidates
+  │       - Often differ in stereochemistry or regiochemistry
+  │
+  ├─ 10-100 solutions
+  │    └─ Needs review → USE RANKING
+  │       - lucy lsd rank to narrow candidates
+  │       - Review top 10 for reasonableness
+  │       - Missing HMBC correlations?
+  │
+  └─ >100 solutions
+       └─ Under-constrained
+          - Request additional NMR data
+          - Review peak picking parameters
+          - Add heteroatom constraints (BOND or LIST/PROP)
+          - Ranking may still help identify best candidates
+```
 
-Use `/gsd:resume-work` to restore context at session start.
+---
+
+## Result Reporting Templates
+
+### Dereplication Results
+
+**High confidence match** (score > 0.85):
+```
+"The compound matches [NAME] in the database with a score of [X].
+This is a known compound: [SMILES/structure description].
+The match is based on [N] carbon shifts with an average deviation of [Y] ppm."
+```
+
+**Possible match** (score 0.65-0.85):
+```
+"There is a potential match to [NAME] with a score of [X].
+This should be verified by comparing predicted vs. observed shifts.
+Key differences are at positions: [list any outliers]."
+```
+
+**No match** (score < 0.65 or no candidates):
+```
+"No database match found. This may be:
+1. A novel compound not in the database
+2. A known compound with different stereochemistry
+3. A compound not yet added to the reference database
+
+Proceeding with de novo structure elucidation..."
+```
+
+### LSD Results
+
+**Report solutions like this**:
+```
+"LSD found [N] candidate structure(s).
+
+Solution 1: [Description]
+- Core scaffold: [aromatic/aliphatic/mixed]
+- Key features: [functional groups, ring systems]
+- Consistent with: [which spectroscopic features]
+
+[If multiple solutions, describe key differences]
+
+The solutions differ in:
+- Position of [functional group]
+- Ring fusion pattern
+- Stereochemistry at [position]
+"
+```
+
+### Reporting Uncertainty
+
+**Always be transparent about**:
+- Missing data that would improve confidence
+- Assumptions made during analysis
+- Alternative interpretations
+- Recommended additional experiments
+
+---
+
+## Quick Reference Card
+
+### Essential Workflow
+1. **Dereplication FIRST** - Always check databases before full analysis
+2. **Check symmetry** - Explains "missing" signals
+3. **Use guided peak picking** - Reduces noise dramatically
+4. **Validate data** - Cross-check between experiments
+5. **Run LSD** - Generate candidate structures
+6. **Rank solutions** - Use `lucy lsd rank` if multiple candidates
+7. **Interpret results conservatively** - Report uncertainty
+
+### Red Flags to Watch For
+- Fewer signals than expected atoms → Symmetry
+- More signals than expected → Impurity or wrong formula
+- Zero LSD solutions → Over-constrained or error (check sp2 count!)
+- Thousands of LSD solutions → Under-constrained
+
+### Key Tolerances
+- 13C chemical shift matching: ±1.5 ppm (carbonyl), ±0.8 ppm (aliphatic)
+- HSQC validation: ±1.0 ppm (13C dimension)
+- HMBC validation: ±1.5 ppm (13C), ±0.1 ppm (1H)
+- Dereplication match: score > 0.85 = high confidence
+- Solution ranking: MAE < 2.0 ppm = excellent, 2-3.5 ppm = good, > 5 ppm = poor
+
+### When to Ask for Help
+- Conflicting data between experiments
+- Unusual chemical shifts outside normal ranges
+- Molecular formula doesn't match observed data
+- User requests interpretation beyond available data
+
+---
+
+## Developer Reference
+
+### Quick Reference
+
+```bash
+# Run tests
+pytest
+
+# Run tests with coverage
+pytest --cov=lucy_ng
+
+# Type checking
+mypy src/lucy_ng
+
+# Linting
+ruff check src tests
+
+# Build package
+hatch build
+```
+
+### Project Structure
+
+```
+src/lucy_ng/
+├── models/          # Pydantic v2 data models (Spectrum1D, Spectrum2D, Peak1D, etc.)
+├── readers/         # NMR file readers (BrukerReader)
+├── processing/      # Peak picking, signal processing
+├── dereplication/   # Database matching (NMRShiftDBLoader, SpectrumMatcher)
+├── solvers/         # LSD/pyLSD integration (future)
+└── __init__.py      # Public API exports
+
+tests/               # pytest tests
+data/                # Test NMR datasets (Bruker format)
+.planning/           # GSD planning files (PROJECT.md, ROADMAP.md, STATE.md)
+```
+
+### Technology Stack
+
+- **Python 3.10+** - minimum version
+- **Pydantic v2** - data models with validation
+- **nmrglue** - Bruker NMR file parsing
+- **NumPy/SciPy** - numerical processing
+- **RDKit** - SD file parsing for reference databases
+- **hatch** - build system
+- **pytest** - testing
+- **ruff** - linting
+- **mypy** - type checking (strict mode)
