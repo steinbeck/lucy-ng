@@ -44,3 +44,8 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Reference databases
+# Keep compressed .sd.gz files, ignore decompressed .sd files (auto-generated)
+data/reference/*.sd
+!data/reference/*.sd.gz

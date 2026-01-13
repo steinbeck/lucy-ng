@@ -1,12 +1,36 @@
 """CLI commands for dereplication against reference databases."""
 
+import gzip
 import json
+import shutil
 from pathlib import Path
 
 import click
 
 from lucy_ng.dereplication import CoconutLoader, DereplicationService, NMRShiftDBLoader
 from lucy_ng.readers import BrukerReader
+
+
+def _decompress_gz_if_needed(gz_path: Path) -> Path:
+    """Decompress a .gz file if the uncompressed version doesn't exist.
+
+    Args:
+        gz_path: Path to the .gz file
+
+    Returns:
+        Path to the uncompressed file
+    """
+    # Target path is the same without .gz extension
+    uncompressed_path = gz_path.with_suffix("")
+
+    if not uncompressed_path.exists():
+        click.echo(f"Decompressing {gz_path.name}...", err=True)
+        with gzip.open(gz_path, "rb") as f_in:
+            with open(uncompressed_path, "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        click.echo(f"Created {uncompressed_path.name}", err=True)
+
+    return uncompressed_path
 
 
 @click.group()
@@ -66,15 +90,23 @@ def dereplicate_c13(
     is_coconut = False
     if database is None:
         # Try default locations (COCONUT first - larger database)
+        # Also check for .gz compressed versions
         default_paths = [
             (Path("data/reference/coconut_predicted.sd"), True),
+            (Path("data/reference/coconut_predicted.sd.gz"), True),
             (Path("data/reference/nmrshiftdb2withsignals.sd"), False),
+            (Path("data/reference/nmrshiftdb2withsignals.sd.gz"), False),
             (Path("data/nmrshiftdb.sd"), False),
             (Path.home() / ".lucy" / "coconut_predicted.sd", True),
+            (Path.home() / ".lucy" / "coconut_predicted.sd.gz", True),
             (Path.home() / ".lucy" / "nmrshiftdb.sd", False),
+            (Path.home() / ".lucy" / "nmrshiftdb.sd.gz", False),
         ]
         for p, coconut in default_paths:
             if p.exists():
+                # If it's a .gz file, decompress it first
+                if p.suffix == ".gz":
+                    p = _decompress_gz_if_needed(p)
                 database = str(p)
                 is_coconut = coconut
                 break
@@ -82,13 +114,17 @@ def dereplicate_c13(
         if database is None:
             click.echo(
                 "Error: No reference database found. "
-                "Specify path with --database or place coconut_predicted.sd in data/reference/",
+                "Specify path with --database or place nmrshiftdb2withsignals.sd.gz in data/reference/",
                 err=True,
             )
             raise SystemExit(1)
     else:
         # Auto-detect format from filename
         is_coconut = "coconut" in Path(database).name.lower()
+        # Handle .gz files
+        db_path = Path(database)
+        if db_path.suffix == ".gz":
+            database = str(_decompress_gz_if_needed(db_path))
 
     # Create loader (streaming - no upfront load needed)
     try:
