@@ -17,20 +17,24 @@ class ShiftRecord(BaseModel):
     hydrogen_count: int | None = None  # 0=C, 1=CH, 2=CH2, 3=CH3, None=unknown
 
     @classmethod
-    def from_carbon_signal(cls, signal: CarbonSignal, compound_id: int | None = None) -> ShiftRecord:
+    def from_carbon_signal(
+        cls, signal: CarbonSignal, compound_id: int | None = None
+    ) -> ShiftRecord:
         """Create ShiftRecord from CarbonSignal."""
+        h_count = int(signal.hydrogen_count) if signal.hydrogen_count is not None else None
         return cls(
             compound_id=compound_id,
             atom_index=signal.atom_index,
             shift_ppm=signal.shift,
-            hydrogen_count=int(signal.hydrogen_count) if signal.hydrogen_count is not None else None,
+            hydrogen_count=h_count,
         )
 
     def to_carbon_signal(self) -> CarbonSignal:
         """Convert to CarbonSignal for compatibility with existing code."""
+        h_count = HydrogenCount(self.hydrogen_count) if self.hydrogen_count is not None else None
         return CarbonSignal(
             shift=self.shift_ppm,
-            hydrogen_count=HydrogenCount(self.hydrogen_count) if self.hydrogen_count is not None else None,
+            hydrogen_count=h_count,
             atom_index=self.atom_index,
         )
 
@@ -74,7 +78,9 @@ class CompoundRecord(BaseModel):
         return formula
 
     @classmethod
-    def from_nmrshiftdb_entry(cls, entry: NMRShiftDBEntry, source: str = "nmrshiftdb") -> CompoundRecord:
+    def from_nmrshiftdb_entry(
+        cls, entry: NMRShiftDBEntry, source: str = "nmrshiftdb"
+    ) -> CompoundRecord:
         """Create CompoundRecord from NMRShiftDBEntry."""
         record = cls(
             id=entry.nmrshiftdb_id,

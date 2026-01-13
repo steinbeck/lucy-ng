@@ -123,16 +123,21 @@ class DatabaseManager:
         cursor = conn.cursor()
 
         # Insert compound
+        formula_norm = compound.formula_normalized or CompoundRecord._normalize_formula(
+            compound.formula
+        )
         cursor.execute(
             """
-            INSERT INTO compounds (name, smiles, formula, formula_normalized, inchi, inchi_key, carbon_count, source)
+            INSERT INTO compounds
+                (name, smiles, formula, formula_normalized, inchi, inchi_key,
+                 carbon_count, source)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 compound.name,
                 compound.smiles,
                 compound.formula,
-                compound.formula_normalized or CompoundRecord._normalize_formula(compound.formula),
+                formula_norm,
                 compound.inchi,
                 compound.inchi_key,
                 compound.carbon_count,
@@ -175,16 +180,21 @@ class DatabaseManager:
 
         for i, (compound, shifts) in enumerate(compounds):
             # Insert compound
+            formula_norm = compound.formula_normalized or CompoundRecord._normalize_formula(
+                compound.formula
+            )
             cursor.execute(
                 """
-                INSERT INTO compounds (name, smiles, formula, formula_normalized, inchi, inchi_key, carbon_count, source)
+                INSERT INTO compounds
+                    (name, smiles, formula, formula_normalized, inchi, inchi_key,
+                     carbon_count, source)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     compound.name,
                     compound.smiles,
                     compound.formula,
-                    compound.formula_normalized or CompoundRecord._normalize_formula(compound.formula),
+                    formula_norm,
                     compound.inchi,
                     compound.inchi_key,
                     compound.carbon_count,
@@ -229,7 +239,8 @@ class DatabaseManager:
         # Get compounds
         cursor.execute(
             """
-            SELECT id, name, smiles, formula, formula_normalized, inchi, inchi_key, carbon_count, source
+            SELECT id, name, smiles, formula, formula_normalized, inchi, inchi_key,
+                   carbon_count, source
             FROM compounds
             WHERE formula_normalized = ?
             """,
@@ -299,7 +310,9 @@ class DatabaseManager:
         """
         conn = self.connection
         cursor = conn.cursor()
-        cursor.execute("SELECT DISTINCT formula_normalized FROM compounds ORDER BY formula_normalized")
+        cursor.execute(
+            "SELECT DISTINCT formula_normalized FROM compounds ORDER BY formula_normalized"
+        )
         for row in cursor:
             yield row[0]
 
