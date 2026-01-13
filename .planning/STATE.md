@@ -4,11 +4,11 @@
 
 **Milestone**: v1.1 — Database-Backed Dereplication
 **Phase**: 11 of 15 (Database Schema)
-**Plan**: Not started
-**Status**: Ready to plan
-**Last activity**: 2026-01-13 - Milestone v1.1 created
+**Plan**: 11-01 Complete
+**Status**: Ready for Phase 12 (Database Import)
+**Last activity**: 2026-01-13 - Phase 11-01 complete
 
-Progress: ░░░░░░░░░░ 0%
+Progress: ██░░░░░░░░ 20%
 
 ## Milestone 1.0 Complete
 
@@ -66,12 +66,12 @@ All phases of the Core CASE Pipeline have been implemented:
 ## Session Continuity
 
 **Last session**: 2026-01-13
-**Stopped at**: Milestone v1.1 initialization
+**Stopped at**: Phase 11-01 complete
 **Resume file**: None
 
 **Next steps**:
-- Plan Phase 11 (Database Schema)
-- Implement SQLite-backed dereplication for COCONUT (895K) + NMRShiftDB (33K)
+- Plan Phase 12 (Database Import)
+- Import NMRShiftDB (~33K compounds) and COCONUT (~895K compounds)
 
 ---
 *Last updated: 2026-01-13*
