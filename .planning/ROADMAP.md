@@ -1,6 +1,14 @@
 # lucy-ng Roadmap
 
-## Milestone 1.0 — Core CASE Pipeline
+## Milestones
+
+- ✅ **v1.0 Core CASE Pipeline** - Phases 1-10 (complete 2026-01-12)
+- 🚧 **v1.1 Database-Backed Dereplication** - Phases 11-15 (in progress)
+
+---
+
+<details>
+<summary>✅ v1.0 Core CASE Pipeline (Phases 1-10) - COMPLETE 2026-01-12</summary>
 
 ### Phase 1: Foundation
 **Goal**: Project structure, dependencies, and NMR library evaluation
@@ -186,44 +194,119 @@
 
 **Depends on:** Phase 6 (CLI Interface)
 
+</details>
+
+---
+
+## 🚧 v1.1 Database-Backed Dereplication (In Progress)
+
+**Milestone Goal:** Enable efficient dereplication against large databases (COCONUT 895K compounds + NMRShiftDB 33K) using SQLite indexing by molecular formula.
+
+### Phase 11: Database Schema
+**Goal**: Design and implement SQLite schema for compounds and 13C shifts, indexed by molecular formula
+
+- SQLite database schema for compounds (id, name, smiles, formula, source)
+- Schema for 13C shifts (compound_id, atom_index, shift_ppm)
+- Index on molecular formula for fast lookup
+- Pydantic models for database entities
+
+**Depends on**: Milestone 1.0 complete
+**Research**: Unlikely (SQLite patterns established)
+
+Plans:
+- [ ] 11-01: TBD (run /gsd:plan-phase 11 to break down)
+
+---
+
+### Phase 12: Database Import
+**Goal**: Build import scripts for NMRShiftDB and COCONUT SDF files
+
+- SDF parser for NMRShiftDB format (existing `nmrshiftdb2withsignals.sd`)
+- SDF parser for COCONUT format (`predicted_coconut.sdf` with CNMR_SHIFTS field)
+- Batch import with progress reporting
+- Deduplication handling
+- CLI command for database building
+
+**Depends on**: Phase 11
+**Research**: Unlikely (RDKit SDF parsing exists)
+
+Plans:
+- [ ] 12-01: TBD
+
+---
+
+### Phase 13: Database Query API
+**Goal**: Implement query interface for formula-based compound lookup
+
+- Query by exact molecular formula
+- Return compounds with their 13C shifts
+- Efficient batch queries
+- Python API for programmatic access
+
+**Depends on**: Phase 12
+**Research**: Unlikely (internal patterns)
+
+Plans:
+- [ ] 13-01: TBD
+
+---
+
+### Phase 14: CLI Integration
+**Goal**: Update `lucy dereplicate c13` to use database backend
+
+- Database path configuration (default location, env var, CLI flag)
+- Fallback behavior if database not built
+- Performance comparison vs. current SDF scanning
+- Documentation updates
+
+**Depends on**: Phase 13
+**Research**: Unlikely (existing CLI patterns)
+
+Plans:
+- [ ] 14-01: TBD
+
+---
+
+### Phase 15: MCP Integration
+**Goal**: Update MCP tool for database-backed dereplication
+
+- Update `dereplicate_c13` MCP tool to use database
+- Add database status/info tool
+- Error handling for missing database
+- Documentation updates
+
+**Depends on**: Phase 14
+**Research**: Unlikely (existing MCP patterns)
+
+Plans:
+- [ ] 15-01: TBD
+
 ---
 
 ## Progress
 
-| Phase | Status | Plans |
-|-------|--------|-------|
-| 1. Foundation | Complete | 01-01-PLAN.md, 01-01-SUMMARY.md |
-| 2. 1D NMR Reading | Complete | 01-02-PLAN.md, 01-02-SUMMARY.md |
-| 2.1 1D Carbon Dereplication | Complete | 01-02.1-PLAN.md, 01-02.1-SUMMARY.md |
-| 3. 2D NMR Reading | Complete | 01-03-PLAN.md, 01-03-SUMMARY.md |
-| 4. Peak Picking | Complete | 01-04-PLAN.md, 01-04-SUMMARY.md |
-| 4.1 2D Peak Validation | Complete | 01-04.1-PLAN.md, 01-04.1-SUMMARY.md |
-| 4.2 DEPT-Guided Adaptive HSQC | Complete | 01-04.2-PLAN.md, 01-04.2-SUMMARY.md |
-| 5. LSD Integration | Complete | 01-05-PLAN.md, 01-05-SUMMARY.md |
-| 5.1 HMBC-Guided Peak Picking | Complete | — |
-| 5.2 Symmetry Detection | Complete | — |
-| 6. CLI Interface | Complete | 01-06-PLAN.md, 01-06-SUMMARY.md |
-| 7. MCP Server | Complete | 01-07-PLAN.md |
-| 8. HOSE-Based 13C Predictor | Complete | 01-08-PLAN.md, 01-08-SUMMARY.md |
-| 9. LSD Solution Ranking | Complete | 01-09-PLAN.md, 01-09-SUMMARY.md |
-| 10. NMRXiv Dataset Fetching | Complete | 01-10-PLAN.md, 01-10-SUMMARY.md |
+| Phase | Milestone | Plans | Status | Completed |
+|-------|-----------|-------|--------|-----------|
+| 1. Foundation | v1.0 | 1/1 | Complete | 2026-01-08 |
+| 2. 1D NMR Reading | v1.0 | 1/1 | Complete | 2026-01-08 |
+| 2.1 1D Carbon Dereplication | v1.0 | 1/1 | Complete | 2026-01-09 |
+| 3. 2D NMR Reading | v1.0 | 1/1 | Complete | 2026-01-09 |
+| 4. Peak Picking | v1.0 | 1/1 | Complete | 2026-01-09 |
+| 4.1 2D Peak Validation | v1.0 | 1/1 | Complete | 2026-01-10 |
+| 4.2 DEPT-Guided HSQC | v1.0 | 1/1 | Complete | 2026-01-10 |
+| 5. LSD Integration | v1.0 | 1/1 | Complete | 2026-01-10 |
+| 5.1 HMBC-Guided Picking | v1.0 | — | Complete | 2026-01-10 |
+| 5.2 Symmetry Detection | v1.0 | — | Complete | 2026-01-10 |
+| 6. CLI Interface | v1.0 | 1/1 | Complete | 2026-01-11 |
+| 7. MCP Server | v1.0 | 1/1 | Complete | 2026-01-11 |
+| 8. HOSE Predictor | v1.0 | 1/1 | Complete | 2026-01-11 |
+| 9. LSD Solution Ranking | v1.0 | 1/1 | Complete | 2026-01-12 |
+| 10. NMRXiv Fetching | v1.0 | 1/1 | Complete | 2026-01-12 |
+| 11. Database Schema | v1.1 | 0/? | Not started | - |
+| 12. Database Import | v1.1 | 0/? | Not started | - |
+| 13. Database Query API | v1.1 | 0/? | Not started | - |
+| 14. CLI Integration | v1.1 | 0/? | Not started | - |
+| 15. MCP Integration | v1.1 | 0/? | Not started | - |
 
 ---
-
-## Milestone 1.0 Status — COMPLETE
-
-Core CASE Pipeline fully implemented:
-
-- **13 MCP Tools**: Spectrum reading, peak picking, analysis, dereplication, LSD integration, shift prediction, solution ranking, data fetching
-- **Full CLI**: 7 command groups with JSON output support
-- **Python API**: Direct library access for all functionality
-- **414+ Tests**: Comprehensive test coverage
-- **Documentation**: README, User Guide, Architecture, MCP Integration, AI Guide
-- **13C Prediction**: HOSE-code based predictor
-- **Solution Ranking**: LSD solutions ranked by 13C spectrum similarity
-- **Data Fetching**: Download NMR data from NMRXiv by DOI
-
-**12/12 phases complete** — Milestone 1.0 achieved!
-
----
-*Last updated: 2026-01-12*
+*Last updated: 2026-01-13*
