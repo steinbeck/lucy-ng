@@ -3,12 +3,12 @@
 ## Current Position
 
 **Milestone**: v1.1 — Database-Backed Dereplication
-**Phase**: 11 of 15 (Database Schema)
-**Plan**: 11-01 Complete
-**Status**: Ready for Phase 12 (Database Import)
-**Last activity**: 2026-01-13 - Phase 11-01 complete
+**Phase**: 13 of 15 (Database Query API)
+**Plan**: 13-01 Complete
+**Status**: Ready for Phase 14 (CLI Integration)
+**Last activity**: 2026-01-13 - Phase 13-01 complete
 
-Progress: ██░░░░░░░░ 20%
+Progress: ██████░░░░ 60%
 
 ## Milestone 1.0 Complete
 
@@ -66,12 +66,12 @@ All phases of the Core CASE Pipeline have been implemented:
 ## Session Continuity
 
 **Last session**: 2026-01-13
-**Stopped at**: Phase 11-01 complete
+**Stopped at**: Phase 13-01 complete
 **Resume file**: None
 
 **Next steps**:
-- Plan Phase 12 (Database Import)
-- Import NMRShiftDB (~33K compounds) and COCONUT (~895K compounds)
+- Plan Phase 14 (CLI Integration)
+- Update `lucy dereplicate c13` to use database backend
 
 ---
 *Last updated: 2026-01-13*

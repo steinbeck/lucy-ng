@@ -302,9 +302,9 @@ Plans:
 | 8. HOSE Predictor | v1.0 | 1/1 | Complete | 2026-01-11 |
 | 9. LSD Solution Ranking | v1.0 | 1/1 | Complete | 2026-01-12 |
 | 10. NMRXiv Fetching | v1.0 | 1/1 | Complete | 2026-01-12 |
-| 11. Database Schema | v1.1 | 0/? | Not started | - |
-| 12. Database Import | v1.1 | 0/? | Not started | - |
-| 13. Database Query API | v1.1 | 0/? | Not started | - |
+| 11. Database Schema | v1.1 | 1/1 | Complete | 2026-01-13 |
+| 12. Database Import | v1.1 | 1/1 | Complete | 2026-01-13 |
+| 13. Database Query API | v1.1 | 1/1 | Complete | 2026-01-13 |
 | 14. CLI Integration | v1.1 | 0/? | Not started | - |
 | 15. MCP Integration | v1.1 | 0/? | Not started | - |
 
