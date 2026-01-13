@@ -46,8 +46,9 @@ https://raw.githubusercontent.com/steinbeck/lucy-ng/master/docs/AI_GUIDE.md
 
 ## Performing Structure Elucidation
 
-Once setup is complete, follow this workflow:
+Once setup is complete, follow this workflow. The best possible outcome is between one and ten solutions. In case of another outcome, the workflow needs to be repeated and adjusted automatically until a satifactory outcome is reached. In case of no solution structure, constraints and assumptions need to be checked and adjusted. In case of too many solutions, constraints like more HMBC signals or hetero-attachments for specific carbons in the correct shift range need to be added. 
 
+0. **Documentation** - Create an `analysis/` folder to document all steps and results. Document immediately after each step below, so that the user can follow while you work.
 1. **Dereplication** - `lucy dereplicate c13 <spectrum> <formula>` - check known compounds first
 2. **Symmetry** - `lucy analyze symmetry <data_dir> <formula>` - detect equivalent atoms
 3. **Peak Picking**:
@@ -57,8 +58,6 @@ Once setup is complete, follow this workflow:
 4. **LSD Generation** - `lucy lsd generate <data_dir> <formula> -o output.lsd`
 5. **Solve** - `lucy lsd run output.lsd`
 6. **Rank** - `lucy lsd rank <smiles_file> --spectrum <c13>` or `--shifts "..."`
-
-Create an `analysis/` folder to document all steps and results.
 
 ---
 
@@ -177,7 +176,8 @@ Raw 2D peak picking produces many noise peaks and artifacts. For reliable struct
 **The Solution**: Use 1D spectra as ground truth to filter 2D peaks:
 - DEPT provides ground truth for protonated carbons (CH, CH2, CH3)
 - 13C provides all carbon positions including quaternary
-- HSQC provides valid proton chemical shifts
+- HSQC provides valid proton chemical shifts. We only use picked HSQC shifts where the C-axis matches a DEPT peak.
+- HMBC provied long-range correlations between carbons and hydrogens. Only peaks where the carbon shift matches a picked peak from the 1D carbon spectrum and the proton shift matches a proton shift from the HSQC signals are kept as being valid. 
 
 ### Molecular Symmetry
 
@@ -234,7 +234,7 @@ For HMBC peak picking, **use `HMBCGuidedPicker`** to filter noise.
 - Filtering by these criteria removes noise peaks that would create false constraints for LSD
 
 **Filtering criteria:**
-1. Carbon (F1) must match a known carbon from 13C or DEPT spectrum (±1.5 ppm)
+1. Carbon (F1) must match a known carbon from 13C or DEPT spectrum (±1.5 ppm). Also look for HMBC signals for the quarternary carbons. 
 2. Proton (F2) must match a known proton from HSQC (±0.1 ppm)
 
 ```python
@@ -277,11 +277,12 @@ peaks = PeakPicker2D.pick_peaks(cosy, threshold=0.05)
 
 **Best practices for LSD input:**
 1. Use real experimental HMBC data, not manually constructed correlations
-2. Include ALL HMBC correlations from guided peak picking
+2. Include ALL HMBC correlations from guided peak picking but adjust as needed in case of no or too many solutions. 
 3. Quaternary carbons (visible in 13C but not DEPT) need HMBC correlations to be connected
-4. Heteroatoms (O, N, etc.) without direct NMR visibility are constrained only by molecular formula
+4. Heteroatoms (O, N, etc.) without direct NMR visibility are constrained only by molecular formula. Use LSD's list feature to indicate that a carbon with a shift indicative of a hetero attachment shoud be directly bonded there. 
 
 ### LSD Command Format
+The LSD user guide for full reference is at https://nuzillard.github.io/LSD/MANUAL_ENG.html.
 
 **HMBC correlations**: Use 2 parameters (LSD defaults to 2-3 bond distance)
 ```
