@@ -1,0 +1,11 @@
+"""Database module for dereplication compound storage."""
+
+from lucy_ng.database.models import CompoundRecord, ShiftRecord
+from lucy_ng.database.schema import SCHEMA_STATEMENTS, SCHEMA_VERSION
+
+__all__ = [
+    "CompoundRecord",
+    "ShiftRecord",
+    "SCHEMA_STATEMENTS",
+    "SCHEMA_VERSION",
+]
