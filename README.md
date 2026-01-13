@@ -328,9 +328,8 @@ Set up this machine for NMR structure elucidation with lucy-ng:
 
 1. Check/install lucy-ng: `lucy --version || pip install lucy-ng`
 2. Check LSD solver: `lucy lsd check` - if missing, install from http://eos.univ-reims.fr/LSD/
-3. Fetch and read the workflow guide: https://raw.githubusercontent.com/steinbeck/lucy-ng/master/docs/AI_GUIDE.md
-4. Download CLAUDE.md to .claude/CLAUDE.md: https://raw.githubusercontent.com/steinbeck/lucy-ng/master/CLAUDE.md
-5. Create .claude/settings.json with: {"permissions":{"allow":["Bash(lucy:*)","Bash(python3:*)"]}}
+3. Download CLAUDE.md to .claude/CLAUDE.md: https://raw.githubusercontent.com/steinbeck/lucy-ng/master/CLAUDE.md
+4. Create .claude/settings.json with: {"permissions":{"allow":["Bash(lucy:*)","Bash(python3:*)"]}}
 
 Once ready, place Bruker NMR data in a folder and I'll perform complete structure elucidation.
 ```
@@ -381,7 +380,7 @@ Then ask Claude: *"Use lucy-ng to analyze the NMR data in data/Ibuprofen and ide
 
 See [docs/MCP_INTEGRATION.md](docs/MCP_INTEGRATION.md) for detailed setup instructions.
 
-**AI Agent Guide**: For comprehensive guidance on structure elucidation workflow, pitfalls, and best practices, see [docs/AI_GUIDE.md](docs/AI_GUIDE.md).
+**AI Agent Guide**: For comprehensive guidance on structure elucidation workflow, pitfalls, and best practices, see [CLAUDE.md](CLAUDE.md).
 
 ## Architecture
 

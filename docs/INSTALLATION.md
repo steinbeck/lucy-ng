@@ -409,6 +409,6 @@ After installation:
 
 1. **Read the User Guide**: See [USER_GUIDE.md](USER_GUIDE.md) for detailed usage
 2. **Set up MCP**: See [MCP_INTEGRATION.md](MCP_INTEGRATION.md) for Claude Desktop integration
-3. **AI Agent Guide**: See [AI_GUIDE.md](AI_GUIDE.md) for comprehensive structure elucidation workflow and pitfalls
+3. **AI Agent Guide**: See [../CLAUDE.md](../CLAUDE.md) for comprehensive structure elucidation workflow and pitfalls
 4. **Explore the CLI**: Run `lucy --help` to see all commands
 5. **Try the examples**: See the Quick Start section in the main README

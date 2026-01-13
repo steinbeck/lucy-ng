@@ -481,7 +481,7 @@ For AI agents using lucy-ng, we provide a comprehensive guide covering:
 - **Decision Trees**: When to proceed, how to handle symmetry, interpreting LSD results
 - **Example Reasoning**: Worked examples showing proper analytical approach
 
-See **[AI_GUIDE.md](AI_GUIDE.md)** for the complete guide.
+See **[../CLAUDE.md](../CLAUDE.md)** for the complete guide.
 
 This guide can be used as:
 1. A reference document for AI agents during analysis
