@@ -1,3 +1,4 @@
+
 # lucy-ng
 
 AI-agent powered Computer-Assisted Structure Elucidation for organic natural products.
@@ -226,7 +227,7 @@ MULT 2 C 2 0
 HSQC 4 4        ; Define correlations (HSQC FIRST!)
 HMBC 2 8        ; Then HMBC
 ...
-ELIM 0          ; End with elimination rules
+; NO ELIM command on first run - only add if needed
 ```
 
 **Note:** Do NOT use `FORM`, `FORMULA`, or similar commands - these are invalid in LSD.
@@ -358,11 +359,13 @@ HMBC 1 2    ; carbon 1 correlates to proton attached to carbon 2
 HMBC 1 3    ; carbon 1 correlates to protons attached to carbon 3
 ```
 
-**ELIM command**: Controls ring size elimination
+**ELIM command**: Allows elimination of invalid HMBC/COSY correlations (USE ONLY AS LAST RESORT)
 ```
-ELIM 0      ; Default: eliminate 3-membered rings only
+ELIM P1 P2
+; P1 = maximum number of correlations that can be eliminated
+; P2 = maximum bond distance limit for eliminated correlations (0 = no limit)
 ```
-**Note:** Always use `ELIM 0` - plain `ELIM` without parameters may fail.
+**IMPORTANT:** Do NOT include ELIM in the first LSD run. Only add ELIM if LSD returns 0 solutions and you have verified all other constraints are correct. ELIM allows LSD to ignore correlations that may be artifacts or errors, but using it prematurely can lead to thousands of incorrect solutions instead of a unique correct one.
 
 ### Converting LSD Solutions to SMILES
 
@@ -474,8 +477,7 @@ HMBC 1 3        ; C1 correlates to H3
 ; Heteroatom constraints (BOND or LIST/PROP)
 BOND 1 5        ; C1 bonded to O5 (carbonyl)
 
-; End
-ELIM 0
+; NO ELIM on first run!
 ```
 
 ### Checklist
@@ -485,7 +487,7 @@ ELIM 0
 4. HSQC correlations defined for protonated carbons
 5. HMBC correlations reference only defined H positions
 6. Heteroatom constraints added (BOND or LIST/PROP)
-7. `ELIM 0` at end
+7. **NO ELIM command** on first run (add only if 0 solutions found)
 
 ### LSD Troubleshooting
 
@@ -495,17 +497,22 @@ ELIM 0
 |-------|-------|----------|
 | "Odd total sum of valences" | Hydrogen count wrong | Verify: sum of (multiplicity × count) = formula H |
 | "Cannot set HMBC correlation" | HSQC not defined first | Move all HSQC commands before HMBC |
-| "No solution found" | Over-constrained | Remove questionable HMBC correlations |
-| Too many solutions (>100) | Under-constrained | Add more HMBC correlations, use ELIM 4 0 |
+| "No solution found" | Over-constrained | 1) Check sp2 count is even, 2) verify HMBC correlations, 3) only then try `ELIM 1 0` |
+| Too many solutions (>100) | Under-constrained | Add more HMBC correlations, verify existing ones are correct |
 
 **Before running LSD, verify:**
 
 - [ ] **Hydrogen count**: Sum of (CH3 × 3 + CH2 × 2 + CH × 1) = formula H count
 - [ ] **sp2 count is EVEN**: Count all sp2 atoms (carbonyl C+O, aromatic, C=C)
-- [ ] **ELIM parameter**: Use `ELIM 0` (default) or `ELIM 4 0` (no 3-4 membered rings)
-  - `ELIM 1`, `ELIM 2`, `ELIM 3` are INVALID and will error
-- [ ] **Ring size for natural products**: Most don't have 3-4 membered rings; use `ELIM 4 0`
+- [ ] **NO ELIM on first run**: Only add ELIM if you get 0 solutions after verifying constraints
 - [ ] **Correlation order**: All HSQC commands must come before any HMBC commands
+
+**If 0 solutions found**, troubleshoot in this order:
+1. Verify sp2 count is even
+2. Check hydrogen count matches formula
+3. Review HMBC correlations for errors or artifacts
+4. Only then try `ELIM 1 0` to allow eliminating 1 correlation
+5. If still no solution, try `ELIM 2 0`, etc. incrementally
 
 ---
 
@@ -689,17 +696,18 @@ Symmetry Analysis Result
 LSD Solution Count
   │
   ├─ 0 solutions
-  │    └─ Check:
-  │       - Contradictory constraints?
-  │       - Wrong molecular formula?
-  │       - Missing heteroatoms in formula?
-  │       - Odd sp2 count?
+  │    └─ Over-constrained. Check IN ORDER:
+  │       1. sp2 count is even?
+  │       2. Hydrogen count matches formula?
+  │       3. HMBC correlations correct?
+  │       4. Wrong molecular formula?
+  │       5. Only after all above: try ELIM 1 0
   │
   ├─ 1 solution
-  │    └─ High confidence
+  │    └─ IDEAL RESULT - High confidence
   │       - Verify solution makes chemical sense
   │       - Check for unusual features
-  │       - Optionally verify with predict_c13_shifts
+  │       - Verify with lucy lsd rank (MAE score)
   │
   ├─ 2-10 solutions
   │    └─ Good result → USE RANKING
@@ -708,17 +716,17 @@ LSD Solution Count
   │       - Often differ in stereochemistry or regiochemistry
   │
   ├─ 10-100 solutions
-  │    └─ Needs review → USE RANKING
-  │       - lucy lsd rank to narrow candidates
-  │       - Review top 10 for reasonableness
-  │       - Missing HMBC correlations?
+  │    └─ Under-constrained → ADD MORE CONSTRAINTS
+  │       - Add missing HMBC correlations
+  │       - Check if ELIM was used (remove it!)
+  │       - Use ranking to narrow candidates
   │
   └─ >100 solutions
-       └─ Under-constrained
+       └─ Severely under-constrained
+          - Was ELIM used? Remove it first!
           - Request additional NMR data
-          - Review peak picking parameters
+          - Add more HMBC correlations
           - Add heteroatom constraints (BOND or LIST/PROP)
-          - Ranking may still help identify best candidates
 ```
 
 ---
@@ -807,8 +815,8 @@ The solutions differ in:
 ### Red Flags to Watch For
 - Fewer signals than expected atoms → Symmetry
 - More signals than expected → Impurity or wrong formula
-- Zero LSD solutions → Over-constrained or error (check sp2 count!)
-- Thousands of LSD solutions → Under-constrained
+- Zero LSD solutions → Over-constrained (check sp2 count, HMBC correlations)
+- Thousands of LSD solutions → Under-constrained OR using ELIM when not needed
 
 ### Key Tolerances
 - 13C chemical shift matching: ±1.5 ppm (carbonyl), ±0.8 ppm (aliphatic)
