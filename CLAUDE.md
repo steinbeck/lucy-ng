@@ -1,4 +1,3 @@
-
 # lucy-ng
 
 AI-agent powered Computer-Assisted Structure Elucidation for organic natural products.
@@ -52,7 +51,7 @@ Once setup is complete, follow this workflow. The best possible outcome is betwe
 ### Workflow Steps
 
 0. **Documentation** - Create an `analysis/` folder to document all steps and results. Document immediately after each step below, so that the user can follow while you work.
-1. **Dereplication** - `lucy dereplicate c13 <spectrum> <formula>` - check known compounds first
+1. **Dereplication** - Check known compounds first (see Dereplication section below for details)
 2. **Symmetry** - `lucy analyze symmetry <data_dir> <formula>` - detect equivalent atoms
 3. **Peak Picking**:
    - `lucy pick 1d <c13>` - carbon peaks
@@ -209,6 +208,64 @@ Reference databases for dereplication are stored in `data/reference/`:
 3. Use the decompressed file for subsequent runs
 
 **Optional**: For larger database coverage, obtain COCONUT separately from https://coconut.naturalproducts.net/
+
+---
+
+## Dereplication
+
+Dereplication matches observed 13C shifts against reference databases to identify known compounds before attempting de novo structure elucidation.
+
+### Two Approaches
+
+**Approach A: From Bruker Spectrum (preferred when binary data exists)**
+```bash
+lucy dereplicate c13 <bruker_experiment_path> <formula>
+```
+Example:
+```bash
+lucy dereplicate c13 data/compound/2 C14H16 -n 10
+```
+This requires the binary spectrum files (1r in pdata/1/).
+
+**Approach B: From Shift List (when binary data is missing)**
+
+When Bruker binary spectrum files are missing but peak lists are available (e.g., from peaklist.xml or manual extraction), use the Python API directly:
+
+```python
+from lucy_ng.dereplication import NMRShiftDBLoader, DereplicationService
+
+# Extract shifts from peaklist.xml or other source
+shifts = [139.94, 138.51, 137.16, 136.53, 133.17, ...]
+
+# Load database (from lucy-ng directory)
+loader = NMRShiftDBLoader("data/reference/nmrshiftdb2withsignals.sd")
+loader.load()
+
+# Run dereplication
+service = DereplicationService(loader)
+result = service.dereplicate_from_shifts(shifts, "C14H16", top_n=10)
+
+# Check results
+for match in result.top_matches:
+    print(f"{match.entry.name}: score={match.score:.3f}")
+```
+
+### When to Use Each Approach
+
+| Situation | Approach |
+|-----------|----------|
+| Full Bruker data with binary files | Use CLI: `lucy dereplicate c13` |
+| Only peaklist.xml available | Use Python API: `dereplicate_from_shifts()` |
+| Peaks extracted from TopSpin | Use Python API: `dereplicate_from_shifts()` |
+| Manual peak list from literature | Use Python API: `dereplicate_from_shifts()` |
+
+### Interpreting Results
+
+Results are ranked by:
+1. **Score** (higher is better): fraction of peaks matched
+2. **Average deviation** (lower is better): used as tiebreaker when scores are equal
+
+The compound with the highest score AND lowest average deviation ranks #1.
 
 ---
 
