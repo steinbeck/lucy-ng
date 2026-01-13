@@ -99,7 +99,7 @@ Once setup is complete, follow this workflow. The best possible outcome is betwe
 | `analyze_symmetry` | expected_carbons, observed_carbons, symmetry_detected |
 | `dereplicate_c13` | is_match, top_matches (name, smiles, score) |
 | `predict_c13_shifts` | predictions (atom_index, shift, confidence), success |
-| `rank_lsd_solutions` | ranked_solutions (smiles, mae, matched_count), total_ranked |
+| `rank_lsd_solutions` | ranked_solutions (smiles, mae, quality, deviations, within_3ppm, within_5ppm) |
 
 ---
 
@@ -400,23 +400,45 @@ When LSD produces multiple solutions, rank them using `lucy lsd rank`:
 
 **How it works:**
 1. For each solution SMILES, predict 13C shifts using HOSE codes
-2. Match predicted shifts to experimental peaks (greedy assignment)
-3. Calculate MAE (Mean Absolute Error)
+2. For each prediction, find the closest experimental peak
+3. Calculate MAE (Mean Absolute Error) using **all** shifts
 4. Sort solutions by MAE (lower = better match)
+
+**New output format (v0.1.1+):**
+```
+  1. Solution 188: MAE=3.26 ppm (Good)
+     CC1CC(C)=C(C1)CC(=O)C
+     ≤3ppm: 6/10 | ≤5ppm: 9/10
+```
+
+The output shows:
+- **MAE with quality label**: "Excellent", "Good", "Moderate", or "Poor"
+- **Multi-level tolerance**: How many shifts fall within 3 ppm and 5 ppm
 
 **Interpreting MAE scores:**
 
-| MAE (ppm) | Confidence | Action |
-|-----------|------------|--------|
+| MAE (ppm) | Quality Label | Interpretation |
+|-----------|---------------|----------------|
 | < 2.0 | Excellent | High confidence in structure |
 | 2.0 - 3.5 | Good | Reasonable confidence |
-| 3.5 - 5.0 | Moderate | Review carefully |
-| > 5.0 | Poor | Likely incorrect structure |
+| 3.5 - 5.0 | Moderate | Review carefully, check alternatives |
+| > 5.0 | Poor | Likely incorrect or unusual structure |
 
-**Important caveats:**
-- **Symmetry affects ranking**: If the molecule has equivalent carbons (e.g., para-benzene), the experimental spectrum shows fewer signals than predicted. This causes unmatched predictions and inflated MAE scores.
-- **Ranking is a guide, not proof**: The correct structure should rank near the top, but may not always be #1 due to prediction errors.
-- **Review top candidates**: Always examine the top 3-5 candidates for chemical reasonableness.
+**Understanding the tolerance summary:**
+- `≤3ppm: 6/10` means 6 of 10 predicted shifts are within 3 ppm of an experimental peak
+- `≤5ppm: 9/10` means 9 of 10 are within 5 ppm
+- This multi-level view is more informative than a single hard cutoff
+
+**Why correct structures may not rank #1:**
+1. **HOSE prediction errors**: Carbonyl carbons can vary ±5-10 ppm; conjugated systems are harder to predict
+2. **Symmetry effects**: Equivalent carbons produce one signal but multiple predictions
+3. **Unusual environments**: Strained rings, unusual substituents reduce prediction accuracy
+
+**Best practices:**
+- Always examine the **top 10-20 candidates** for chemical reasonableness
+- A structure with MAE=3.5 (Good) and sensible chemistry may be correct over one with MAE=3.2 but unusual features
+- Use the tolerance summary to understand where predictions differ
+- Cross-reference with dereplication hits if available
 
 ### LSD Runner Notes
 
@@ -465,6 +487,26 @@ ELIM 0
 6. Heteroatom constraints added (BOND or LIST/PROP)
 7. `ELIM 0` at end
 
+### LSD Troubleshooting
+
+**Common errors and solutions:**
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| "Odd total sum of valences" | Hydrogen count wrong | Verify: sum of (multiplicity × count) = formula H |
+| "Cannot set HMBC correlation" | HSQC not defined first | Move all HSQC commands before HMBC |
+| "No solution found" | Over-constrained | Remove questionable HMBC correlations |
+| Too many solutions (>100) | Under-constrained | Add more HMBC correlations, use ELIM 4 0 |
+
+**Before running LSD, verify:**
+
+- [ ] **Hydrogen count**: Sum of (CH3 × 3 + CH2 × 2 + CH × 1) = formula H count
+- [ ] **sp2 count is EVEN**: Count all sp2 atoms (carbonyl C+O, aromatic, C=C)
+- [ ] **ELIM parameter**: Use `ELIM 0` (default) or `ELIM 4 0` (no 3-4 membered rings)
+  - `ELIM 1`, `ELIM 2`, `ELIM 3` are INVALID and will error
+- [ ] **Ring size for natural products**: Most don't have 3-4 membered rings; use `ELIM 4 0`
+- [ ] **Correlation order**: All HSQC commands must come before any HMBC commands
+
 ---
 
 ## Peak Picking
@@ -496,9 +538,26 @@ Example - Ibuprofen (para-disubstituted benzene):
 
 The AI agent must detect this discrepancy between molecular formula and observed signals to properly constrain structure elucidation. Symmetry affects both carbon and proton counts.
 
+### Working with APT Instead of DEPT-135
+
+APT (Attached Proton Test) provides similar multiplicity information to DEPT:
+- **Positive peaks**: CH and CH3 (odd number of attached protons)
+- **Negative peaks**: CH2 and quaternary C (even number of attached protons)
+
+When DEPT-135 is unavailable but APT is present:
+1. Use `lucy pick 1d` on APT spectrum for carbon positions
+2. Pick HSQC peaks manually with `PeakPicker2D` at threshold 0.05
+3. Cross-reference APT phase with HSQC intensities for multiplicity:
+   - High-intensity HSQC peak + positive APT = likely CH3
+   - Medium-intensity HSQC + positive APT = likely CH
+   - HSQC present + negative APT = CH2
+   - No HSQC + negative APT = quaternary C
+
+**Note**: APT cannot distinguish CH from CH3 without additional information (HSQC intensity, chemical shift patterns).
+
 ### HSQC: Use DEPT-Guided Picker (Preferred)
 
-For HSQC peak picking, **always use `DEPTGuidedPicker`** instead of raw `PeakPicker2D`.
+For HSQC peak picking, **always use `DEPTGuidedPicker`** instead of raw `PeakPicker2D` when DEPT-135 is available.
 
 **Why DEPT-guided?**
 - DEPT-135 shows ALL protonated carbons (ground truth)
@@ -668,21 +727,33 @@ LSD Solution Count
 
 ### Dereplication Results
 
-**High confidence match** (score > 0.85):
+**Interpreting dereplication scores:**
+
+| Score | Interpretation | Recommended Action |
+|-------|---------------|-------------------|
+| > 0.85 | Strong match | Likely identified; verify with literature |
+| 0.65 - 0.85 | Possible match | Top candidate often correct; verify carefully |
+| 0.50 - 0.65 | Weak match | Use as starting hypothesis; full elucidation recommended |
+| < 0.50 | No match | Likely novel compound; proceed with full elucidation |
+
+**Note**: A score of 0.65-0.85 often indicates the correct compound, especially when the molecular formula matches exactly. The score reflects peak overlap, which can be affected by reference data quality and experimental conditions.
+
+**Strong match** (score > 0.85):
 ```
 "The compound matches [NAME] in the database with a score of [X].
 This is a known compound: [SMILES/structure description].
 The match is based on [N] carbon shifts with an average deviation of [Y] ppm."
 ```
 
-**Possible match** (score 0.65-0.85):
+**Possible match** (score 0.50-0.85):
 ```
 "There is a potential match to [NAME] with a score of [X].
 This should be verified by comparing predicted vs. observed shifts.
+Consider proceeding with structure elucidation to confirm.
 Key differences are at positions: [list any outliers]."
 ```
 
-**No match** (score < 0.65 or no candidates):
+**No match** (score < 0.50 or no candidates):
 ```
 "No database match found. This may be:
 1. A novel compound not in the database
@@ -743,8 +814,20 @@ The solutions differ in:
 - 13C chemical shift matching: ±1.5 ppm (carbonyl), ±0.8 ppm (aliphatic)
 - HSQC validation: ±1.0 ppm (13C dimension)
 - HMBC validation: ±1.5 ppm (13C), ±0.1 ppm (1H)
-- Dereplication match: score > 0.85 = high confidence
-- Solution ranking: MAE < 2.0 ppm = excellent, 2-3.5 ppm = good, > 5 ppm = poor
+- Dereplication: score > 0.85 strong, 0.65-0.85 possible, < 0.50 no match
+- Solution ranking: MAE < 2.0 = Excellent, 2-3.5 = Good, 3.5-5 = Moderate, > 5 = Poor
+
+### Ranking Output Interpretation
+The ranking now shows quality labels and multi-level tolerance:
+```
+  1. Solution 188: MAE=3.26 ppm (Good)
+     CC1CC(C)=C(C1)CC(=O)C
+     ≤3ppm: 6/10 | ≤5ppm: 9/10
+```
+- **MAE** is the primary quality metric (lower is better)
+- **Quality label** provides quick assessment
+- **Tolerance summary** shows how many predictions are close vs. outliers
+- Always review top 10-20 candidates, not just #1
 
 ### When to Ask for Help
 - Conflicting data between experiments

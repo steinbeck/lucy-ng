@@ -117,68 +117,64 @@ class SolutionRanker:
     ) -> tuple[list[ShiftAssignment], float]:
         """Match predicted shifts to experimental peaks allowing N:1 matching.
 
-        Each predicted shift independently finds its closest experimental peak
-        within tolerance. Multiple predictions CAN match the same experimental
-        peak - this handles molecular symmetry where equivalent carbons produce
-        one signal.
+        Each predicted shift independently finds its closest experimental peak.
+        Multiple predictions CAN match the same experimental peak - this handles
+        molecular symmetry where equivalent carbons produce one signal.
 
         For example, para-disubstituted benzene has 2 equivalent ortho carbons
         that both predict ~129 ppm and should both match the single experimental
         peak at that position.
+
+        **MAE Calculation**: Uses ALL shifts, not just those within tolerance.
+        This provides a more accurate measure of fit quality. The tolerance is
+        only used to determine "matched" status for reporting purposes.
 
         Args:
             predictions: List of predicted shifts from C13Predictor
             experimental: List of experimental 13C peaks in ppm
 
         Returns:
-            Tuple of (list of ShiftAssignments, MAE for matched pairs)
+            Tuple of (list of ShiftAssignments, MAE across all predictions)
         """
         assignments: list[ShiftAssignment] = []
-        matched_errors: list[float] = []
-        unmatched_count = 0
+        all_errors: list[float] = []
 
         for pred in predictions:
-            best_match_shift: float | None = None
-            best_error: float | None = None
+            # Find closest experimental peak (regardless of tolerance)
+            closest_shift: float | None = None
+            closest_error: float | None = None
 
-            # Find closest experimental peak within tolerance (no exclusivity)
             for exp_shift in experimental:
                 error = abs(pred.shift - exp_shift)
-                if error <= self.tolerance:
-                    if best_error is None or error < best_error:
-                        best_match_shift = exp_shift
-                        best_error = error
+                if closest_error is None or error < closest_error:
+                    closest_shift = exp_shift
+                    closest_error = error
 
-            # Record assignment
-            if best_match_shift is not None:
-                matched_errors.append(best_error)  # type: ignore
-                assignment = ShiftAssignment(
-                    atom_index=pred.atom_index,
-                    predicted_shift=pred.shift,
-                    experimental_shift=best_match_shift,
-                    error=best_error,
-                )
-            else:
-                # Unmatched - record but don't heavily penalize
-                # (might be due to symmetry or prediction outside experimental range)
-                unmatched_count += 1
-                assignment = ShiftAssignment(
-                    atom_index=pred.atom_index,
-                    predicted_shift=pred.shift,
-                    experimental_shift=None,
-                    error=None,
-                )
+            # Determine if it's "matched" (within tolerance) for reporting
+            is_within_tolerance = (
+                closest_error is not None and closest_error <= self.tolerance
+            )
+
+            # Record assignment - always store error for MAE calculation
+            if closest_error is not None:
+                all_errors.append(closest_error)
+
+            assignment = ShiftAssignment(
+                atom_index=pred.atom_index,
+                predicted_shift=pred.shift,
+                # experimental_shift is set only if within tolerance (for backward compat)
+                experimental_shift=closest_shift if is_within_tolerance else None,
+                # error is always set (for MAE and deviation analysis)
+                error=closest_error,
+                closest_experimental=closest_shift,
+            )
 
             assignments.append(assignment)
 
-        # Calculate MAE from matched pairs only
-        # Unmatched predictions add a smaller penalty (half tolerance)
-        # to slightly favor structures where more predictions match
-        if matched_errors:
-            matched_mae = sum(matched_errors) / len(matched_errors)
-            # Add small penalty for unmatched (0.5 * tolerance per unmatched)
-            unmatched_penalty = (unmatched_count * self.tolerance * 0.5) / len(predictions)
-            mae = matched_mae + unmatched_penalty
+        # Calculate MAE using ALL shifts (no cutoff)
+        # This provides a true measure of prediction quality
+        if all_errors:
+            mae = sum(all_errors) / len(all_errors)
         else:
             mae = float("inf")
 

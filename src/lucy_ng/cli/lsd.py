@@ -409,9 +409,15 @@ def lsd_rank(
                     "solution_index": sol.solution_index,
                     "smiles": sol.smiles,
                     "mae": round(sol.mae, 3),
-                    "matched_count": sol.matched_count,
+                    "quality": sol.quality_label,
+                    "deviations": [round(d, 2) for d in sol.all_deviations],
+                    "within_3ppm": sol.within_tolerance(3.0),
+                    "within_5ppm": sol.within_tolerance(5.0),
                     "total_carbons": sol.total_carbons,
+                    "max_deviation": round(sol.max_deviation, 2),
                     "prediction_rate": round(sol.prediction_rate, 3),
+                    # Keep matched_count for backward compatibility
+                    "matched_count": sol.matched_count,
                 }
                 for i, sol in enumerate(result.solutions)
             ],
@@ -422,18 +428,20 @@ def lsd_rank(
         click.echo(f"  Successfully ranked: {result.ranked_count}")
         click.echo(f"  Skipped (no SMILES): {result.skipped_count}")
         click.echo(f"  Experimental peaks: {len(experimental_shifts)}")
-        click.echo(f"  Tolerance: {tolerance} ppm")
         click.echo()
 
         if result.solutions:
             click.echo(f"Top {len(result.solutions)} solutions:")
             click.echo("-" * 70)
             for i, sol in enumerate(result.solutions):
+                # Primary line: rank, solution index, MAE with quality label
                 click.echo(
                     f"{i+1:3}. Solution {sol.solution_index}: "
-                    f"MAE={sol.mae:.2f} ppm, "
-                    f"matched={sol.matched_count}/{sol.total_carbons}"
+                    f"MAE={sol.mae:.2f} ppm ({sol.quality_label})"
                 )
+                # SMILES on second line
                 click.echo(f"     {sol.smiles}")
+                # Tolerance summary on third line
+                click.echo(f"     {sol.tolerance_summary()}")
         else:
             click.echo("No solutions could be ranked.")
