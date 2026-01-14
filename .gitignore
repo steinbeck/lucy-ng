@@ -49,3 +49,7 @@ Thumbs.db
 # Keep compressed .sd.gz files, ignore decompressed .sd files (auto-generated)
 data/reference/*.sd
 !data/reference/*.sd.gz
+# Ignore large SDF files (COCONUT ~4.5GB)
+data/reference/*.sdf
+# Ignore SQLite databases (generated via `lucy database build`)
+data/reference/*.db

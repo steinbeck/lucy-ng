@@ -53,6 +53,7 @@ class DatabaseImporter:
         sd_file: str | Path,
         batch_size: int = 1000,
         progress_callback: Callable[[int, int], None] | None = None,
+        limit: int | None = None,
     ) -> ImportResult:
         """Import NMRShiftDB SD file into database.
 
@@ -60,6 +61,7 @@ class DatabaseImporter:
             sd_file: Path to NMRShiftDB SD file
             batch_size: Number of compounds per batch insert
             progress_callback: Optional callback(current, total) for progress
+            limit: Optional maximum number of compounds to import (for testing)
 
         Returns:
             ImportResult with counts and any errors
@@ -81,6 +83,10 @@ class DatabaseImporter:
             result.errors.append(f"Failed to load file: {e}")
             result.elapsed_seconds = time.time() - start_time
             return result
+
+        # Apply limit if specified
+        if limit:
+            entries = entries[:limit]
 
         total = len(entries)
         batch: list[tuple[CompoundRecord, list[ShiftRecord]]] = []
@@ -115,6 +121,7 @@ class DatabaseImporter:
         sd_file: str | Path,
         batch_size: int = 1000,
         progress_callback: Callable[[int, int], None] | None = None,
+        limit: int | None = None,
     ) -> ImportResult:
         """Import COCONUT SD file into database using streaming.
 
@@ -122,6 +129,7 @@ class DatabaseImporter:
             sd_file: Path to COCONUT SD file
             batch_size: Number of compounds per batch insert
             progress_callback: Optional callback(current, total) for progress
+            limit: Optional maximum number of compounds to import (for testing)
 
         Returns:
             ImportResult with counts and any errors
@@ -140,7 +148,7 @@ class DatabaseImporter:
 
         # First pass: count total entries for progress (optional, can be slow)
         # For now, we'll report progress without total
-        total_estimate = 895000  # Approximate COCONUT size
+        total_estimate = limit if limit else 895000  # Approximate COCONUT size
 
         try:
             supplier = Chem.SDMolSupplier(str(sd_file))
@@ -158,6 +166,10 @@ class DatabaseImporter:
 
                     batch.append(record_tuple)
                     entry_id += 1
+
+                    # Check if we've reached the limit
+                    if limit and entry_id >= limit:
+                        break
 
                     if len(batch) >= batch_size:
                         self.db_manager.insert_compounds_batch(
@@ -233,22 +245,16 @@ class DatabaseImporter:
         # Get molecule name
         name = mol.GetProp("_Name") if mol.HasProp("_Name") else ""
 
-        # Generate SMILES
+        # Generate SMILES (skip InChI - too slow for large imports)
         try:
             smiles = Chem.MolToSmiles(mol)
         except Exception:
             smiles = ""
 
-        # Generate InChI
-        try:
-            inchi = Chem.MolToInchi(mol)  # type: ignore[no-untyped-call]
-        except Exception:
-            inchi = ""
-
-        try:
-            inchi_key = Chem.MolToInchiKey(mol) if inchi else ""  # type: ignore[no-untyped-call]
-        except Exception:
-            inchi_key = ""
+        # Skip InChI generation for performance
+        # Can be regenerated from SMILES if needed
+        inchi = ""
+        inchi_key = ""
 
         # Count carbons from formula
         carbon_count = self._count_carbons(formula)

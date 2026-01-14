@@ -38,11 +38,19 @@ def database() -> None:
     type=int,
     help="Batch size for inserts (default: 1000)",
 )
+@click.option(
+    "--limit",
+    "-n",
+    type=int,
+    default=None,
+    help="Limit number of compounds to import (for testing)",
+)
 def build(
     nmrshiftdb: Path | None,
     coconut: Path | None,
     output: Path,
     batch_size: int,
+    limit: int | None,
 ) -> None:
     """Build compound database from SDF files.
 
@@ -61,6 +69,8 @@ def build(
         raise click.UsageError("At least one of --nmrshiftdb or --coconut is required")
 
     click.echo(f"Creating database: {output}")
+    if limit:
+        click.echo(f"  Limit: {limit:,} compounds per source")
 
     with DatabaseManager(output) as db:
         db.create_tables()
@@ -79,6 +89,7 @@ def build(
                 nmrshiftdb,
                 batch_size=batch_size,
                 progress_callback=nmrshiftdb_progress,
+                limit=limit,
             )
             click.echo(f"  {result}")
 
@@ -102,6 +113,7 @@ def build(
                 coconut,
                 batch_size=batch_size,
                 progress_callback=coconut_progress,
+                limit=limit,
             )
             click.echo(f"  {result}")
 
