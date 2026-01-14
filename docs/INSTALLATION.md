@@ -11,6 +11,7 @@ This guide covers all installation options for lucy-ng.
 - [Reference Databases](#reference-databases)
 - [Verification](#verification)
 - [Troubleshooting](#troubleshooting)
+- [Claude Code Skill Installation](#claude-code-skill-installation)
 
 ## Requirements
 
@@ -402,6 +403,58 @@ pip install git+https://github.com/Ratsemaat/HOSE_code_generator.git --no-deps
 **Problem**: `hosegen package not installed` error when using prediction
 
 **Solution**: Install hosegen as shown above. The prediction features require this package for HOSE code generation.
+
+## Claude Code Skill Installation
+
+Lucy-ng includes a Claude Code skill for AI-assisted structure elucidation. This provides slash commands like `/lucy-ng`, `/lucy-ng:CASE`, `/lucy-ng:dereplicate`, and `/lucy-ng:sanitize`.
+
+### Install the Skill
+
+Copy the skill files to your Claude Code skills directory:
+
+```bash
+# Clone or download the repository
+git clone https://github.com/steinbeck/lucy-ng.git
+cd lucy-ng
+
+# Create the skill directory if it doesn't exist
+mkdir -p ~/.claude/skills/lucy-ng
+
+# Copy skill files
+cp -r skill/* ~/.claude/skills/lucy-ng/
+```
+
+### Verify Installation
+
+After restarting Claude Code, verify the skill is available:
+
+```
+/lucy-ng
+```
+
+### Available Subskills
+
+| Command | Purpose |
+|---------|---------|
+| `/lucy-ng` | Full workflow: dereplication then CASE if needed |
+| `/lucy-ng:CASE` | Skip dereplication, perform full structure elucidation |
+| `/lucy-ng:dereplicate` | Database matching only |
+| `/lucy-ng:sanitize` | Remove compound identity from datasets for blind CASE |
+
+### Skill Structure
+
+```
+~/.claude/skills/lucy-ng/
+├── SKILL.md              # Main skill definition
+├── CASE/
+│   └── SKILL.md          # Full CASE subskill
+├── dereplicate/
+│   └── SKILL.md          # Dereplication subskill
+└── sanitize/
+    ├── SKILL.md          # Sanitization subskill
+    ├── lucy_bulk_sanitize.py
+    └── lucy_text_extractor.py
+```
 
 ## Next Steps
 
