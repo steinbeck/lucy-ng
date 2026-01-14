@@ -1,5 +1,5 @@
 ---
-name: CASE
+name: lucy-ng:CASE
 description: Full de novo structure elucidation - skip dereplication and solve the structure from NMR correlations. Use when dereplication returned no matches, the compound is known to be novel, or you want to solve the structure from first principles.
 ---
 

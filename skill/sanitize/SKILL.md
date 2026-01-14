@@ -1,5 +1,5 @@
 ---
-name: sanitize
+name: lucy-ng:sanitize
 description: AI-assisted sanitization of Bruker NMR datasets for blind CASE studies. Removes compound identity from metadata while preserving spectroscopic data for valid CASE evaluation.
 ---
 

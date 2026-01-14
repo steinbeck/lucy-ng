@@ -1,5 +1,5 @@
 ---
-name: dereplicate
+name: lucy-ng:dereplicate
 description: Dereplication only - match observed 13C shifts against reference databases to identify known compounds. Use for quick checks if a compound is already known before deciding whether full CASE is needed.
 ---
 
