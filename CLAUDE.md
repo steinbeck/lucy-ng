@@ -42,6 +42,67 @@ Create `.claude/settings.json` in the working directory:
 
 ---
 
+## Blind CASE Protocol (For Research Evaluation)
+
+**CRITICAL**: When evaluating AI-based CASE on datasets from public sources (nmrXiv, metabolomics repositories), compound identity may be present in metadata files.
+
+### If You Discover Compound Identity in Metadata
+
+If you find compound names in title files, peaklist.xml, audit logs, or any other files:
+
+1. **STOP** - Do not use this information for structure determination
+2. **Do not** look up the compound structure or properties
+3. **Do not** infer molecular formula from the name
+4. **Treat** the compound as completely unknown
+5. **Ask** the user to provide the molecular formula (simulating HRMS)
+
+### Data Sanitization
+
+For valid CASE evaluation, use the `/lucy-ng:sanitize` subskill to remove compound identity before analysis. This requires:
+
+1. Run `/lucy-ng:sanitize` on the dataset
+2. Start a **fresh AI session** (to clear memory of compound identity)
+3. Perform CASE in the new session with user-provided molecular formula
+
+### Why This Matters
+
+For AI-based CASE research, the AI must demonstrate it can:
+- Determine structure from NMR correlations alone
+- Handle symmetry and equivalence without prior knowledge
+- Generate and rank candidate structures objectively
+
+Using compound identity from metadata invalidates the evaluation.
+
+---
+
+## Available Subskills
+
+| Subskill | Purpose | When to Use |
+|----------|---------|-------------|
+| `/lucy-ng:sanitize` | Remove compound identity from dataset | Before blind CASE evaluation on public data |
+| `/lucy-ng:dereplicate` | Database matching only | Quick check if compound is known |
+| `/lucy-ng:CASE` | Full structure elucidation (skip dereplication) | Novel compounds, research evaluation |
+
+### Workflow Selection
+
+```
+Is this for blind CASE evaluation on public data?
+    ├─ YES → /lucy-ng:sanitize (then fresh session)
+    └─ NO → Continue
+
+Do you want to check databases first?
+    ├─ YES → /lucy-ng:dereplicate
+    │         └─ Match found? → Done
+    │         └─ No match? → /lucy-ng:CASE
+    └─ NO (skip to full CASE) → /lucy-ng:CASE
+```
+
+### Default Behavior
+
+The base `/lucy-ng` skill follows the full workflow: dereplication first, then CASE if needed. Use subskills for specific tasks.
+
+---
+
 ## Structure Elucidation Workflow
 
 Once setup is complete, follow this workflow. The best possible outcome is between one and ten solutions. In case of another outcome, the workflow needs to be repeated and adjusted automatically until a satisfactory outcome is reached. In case of no solution structure, constraints and assumptions need to be checked and adjusted. In case of too many solutions, constraints like more HMBC signals or hetero-attachments for specific carbons in the correct shift range need to be added.
