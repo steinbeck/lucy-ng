@@ -406,55 +406,65 @@ pip install git+https://github.com/Ratsemaat/HOSE_code_generator.git --no-deps
 
 ## Claude Code Skill Installation
 
-Lucy-ng includes a Claude Code skill for AI-assisted structure elucidation. This provides slash commands like `/lucy-ng`, `/lucy-ng:CASE`, `/lucy-ng:dereplicate`, and `/lucy-ng:sanitize`.
+Lucy-ng includes Claude Code integration for AI-assisted structure elucidation. This provides:
+- A **skill** (`/lucy-ng`) that auto-triggers when you mention NMR structure elucidation
+- **Commands** (`/lucy-ng:CASE`, `/lucy-ng:dereplicate`, `/lucy-ng:sanitize`) for specific workflows
 
-### Install the Skill
+### Install the Skill and Commands
 
-Copy the skill files to your Claude Code skills directory:
+Copy the files to your Claude Code directories:
 
 ```bash
 # Clone or download the repository
 git clone https://github.com/steinbeck/lucy-ng.git
 cd lucy-ng
 
-# Create the skill directory if it doesn't exist
+# Install the main skill (auto-triggers on NMR/CASE questions)
 mkdir -p ~/.claude/skills/lucy-ng
+cp skill/SKILL.md ~/.claude/skills/lucy-ng/
 
-# Copy skill files
-cp -r skill/* ~/.claude/skills/lucy-ng/
+# Install the commands (explicit /lucy-ng:CASE, etc.)
+mkdir -p ~/.claude/commands/lucy-ng
+cp commands/lucy-ng/*.md ~/.claude/commands/lucy-ng/
 ```
 
 ### Verify Installation
 
-After restarting Claude Code, verify the skill is available:
+After restarting Claude Code, verify the commands are available:
 
 ```
-/lucy-ng
+/lucy-ng:CASE
+/lucy-ng:dereplicate
+/lucy-ng:sanitize
 ```
 
-### Available Subskills
+### Available Commands
 
 | Command | Purpose |
 |---------|---------|
-| `/lucy-ng` | Full workflow: dereplication then CASE if needed |
-| `/lucy-ng:CASE` | Skip dereplication, perform full structure elucidation |
+| `/lucy-ng` | Main skill - auto-triggers, performs dereplication then CASE if needed |
+| `/lucy-ng:CASE` | Skip dereplication, perform full de novo structure elucidation |
 | `/lucy-ng:dereplicate` | Database matching only |
 | `/lucy-ng:sanitize` | Remove compound identity from datasets for blind CASE |
 
-### Skill Structure
+### File Structure
+
+After installation, your Claude Code directories should have:
 
 ```
 ~/.claude/skills/lucy-ng/
-├── SKILL.md              # Main skill definition
-├── CASE/
-│   └── SKILL.md          # Full CASE subskill
-├── dereplicate/
-│   └── SKILL.md          # Dereplication subskill
-└── sanitize/
-    ├── SKILL.md          # Sanitization subskill
-    ├── lucy_bulk_sanitize.py
-    └── lucy_text_extractor.py
+└── SKILL.md              # Main skill (auto-triggers)
+
+~/.claude/commands/lucy-ng/
+├── CASE.md               # /lucy-ng:CASE command
+├── dereplicate.md        # /lucy-ng:dereplicate command
+└── sanitize.md           # /lucy-ng:sanitize command
 ```
+
+### Why Both Skills and Commands?
+
+- **Skill** (`~/.claude/skills/lucy-ng/SKILL.md`): Loads automatically when Claude detects you're asking about NMR structure elucidation
+- **Commands** (`~/.claude/commands/lucy-ng/*.md`): Invoked explicitly with `/lucy-ng:CASE` etc. for specific workflows
 
 ## Next Steps
 
