@@ -19,23 +19,28 @@ The system reads Bruker NMR data, performs peak picking, generates constraints, 
 
 ### Validated
 
-(None yet - ship to validate)
+- Read 1D Bruker NMR files (1H, 13C) — v1.0
+- Read 2D Bruker NMR files (HSQC, HMBC, COSY) — v1.0
+- Automated peak picking for 1D spectra — v1.0
+- Automated peak picking for 2D spectra (DEPT-guided, HMBC-guided) — v1.0
+- Generate LSD/pyLSD input file format — v1.0
+- Execute LSD/pyLSD and parse results — v1.0
+- CLI interface for all operations (7 command groups) — v1.0
+- MCP server exposing tools for Claude (13 tools) — v1.0
+- HOSE-based 13C shift prediction for solution ranking — v1.0
+- NMRXiv dataset fetching — v1.0
+- SQLite database for 928K compounds (COCONUT + NMRShiftDB) — v1.1
+- Database-backed dereplication (~100x faster) — v1.1
 
 ### Active
 
-- [ ] Read 1D Bruker NMR files (1H, 13C)
-- [ ] Read 2D Bruker NMR files (HSQC, HMBC)
-- [ ] Automated peak picking for 1D spectra
-- [ ] Automated peak picking for 2D spectra
-- [ ] Generate LSD/pyLSD input file format
-- [ ] Execute LSD/pyLSD and parse results
-- [ ] CLI interface for all operations
-- [ ] MCP server exposing tools for Claude
+- [ ] Support for COSY correlations in LSD constraints
+- [ ] Stereochemistry handling (E/Z, R/S)
+- [ ] Interactive CASE mode with user feedback loop
 
 ### Out of Scope
 
-- NMR spectrum prediction from structures - use external tools
-- Natural products database searching - later feature
+- NMR spectrum prediction from structures - use HOSE codes instead
 - GUI or web visualization - purely programmatic interface
 - Non-Bruker vendor formats (Varian, JEOL, etc.) - Bruker only for v1
 - SENECA integration - requires Java GUI rebuild, deferred
@@ -52,11 +57,16 @@ The system reads Bruker NMR data, performs peak picking, generates constraints, 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Hybrid CLI + MCP interface | MCP provides structured tools for agent iteration; CLI enables testing and scripting | Pending |
-| Bruker-only for v1 | Focus on most common format, expand vendor support later | Pending |
-| LSD/pyLSD as primary solvers | Established CASE tools with CLI interface | Pending |
-| Research-first for NMR parsing | Evaluate nmrglue vs nmrium components vs custom | Pending |
-| Hybrid elucidation loop | Combine constraint-based generation AND prediction-based validation | Pending |
+| Hybrid CLI + MCP interface | MCP provides structured tools for agent iteration; CLI enables testing and scripting | Good |
+| Bruker-only for v1 | Focus on most common format, expand vendor support later | Good |
+| LSD/pyLSD as primary solvers | Established CASE tools with CLI interface | Good |
+| nmrglue for NMR parsing | Most mature, BSD licensed, native Bruker support | Good |
+| Pydantic v2 for models | Type safety, validation, JSON serialization | Good |
+| DEPT-guided adaptive thresholding | Lower HSQC threshold until all DEPT carbons matched | Good |
+| HMBC-guided peak picking | Filter by requiring C match in 13C/DEPT and H match in HSQC | Good |
+| N:1 shift matching for ranking | Handles molecular symmetry correctly | Good |
+| SQLite for dereplication DB | Portable, no server, formula-indexed for fast lookup | Good |
+| HOSE codes for prediction | Pure Python, no external services, reasonable accuracy | Good |
 
 ## Context
 
@@ -80,5 +90,17 @@ Minimum viable spectral data for v1:
 - 1D: 1H and 13C spectra
 - 2D: HSQC (direct C-H correlations) and HMBC (long-range correlations)
 
+## Current State
+
+**Version:** v1.1 (shipped 2026-01-15)
+**Codebase:** 11,196 lines Python, 414+ tests
+**Tech stack:** Python 3.10+, Pydantic v2, nmrglue, RDKit, SQLite, Click, FastMCP
+
+**Capabilities:**
+- 13 MCP tools for AI agent integration
+- 7 CLI command groups (read, pick, analyze, dereplicate, predict, lsd, fetch)
+- SQLite database with 928K compounds (COCONUT + NMRShiftDB)
+- Full CASE pipeline: peak picking → LSD generation → solving → ranking
+
 ---
-*Last updated: 2026-01-08 after initialization*
+*Last updated: 2026-01-15 after v1.1 milestone*

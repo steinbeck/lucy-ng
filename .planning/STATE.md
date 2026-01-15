@@ -1,12 +1,18 @@
 # lucy-ng State
 
+## Project Reference
+
+See: .planning/PROJECT.md (updated 2026-01-15)
+
+**Core value:** AI-agent powered structure elucidation from NMR data
+**Current focus:** Planning next milestone
+
 ## Current Position
 
-**Milestone**: v1.1 — Database-Backed Dereplication
-**Phase**: 15 of 15 (MCP Integration)
-**Plan**: 15-01 Complete
-**Status**: MILESTONE COMPLETE
-**Last activity**: 2026-01-15 - Phase 15-01 complete
+**Milestone**: v1.1 — Database-Backed Dereplication (SHIPPED)
+**Phase**: All phases complete
+**Status**: Ready for next milestone
+**Last activity**: 2026-01-15 - v1.1 milestone shipped
 
 Progress: ██████████ 100%
 
@@ -66,12 +72,12 @@ All phases of the Core CASE Pipeline have been implemented:
 ## Session Continuity
 
 **Last session**: 2026-01-15
-**Stopped at**: Phase 15-01 complete - Milestone v1.1 complete
+**Stopped at**: Milestone v1.1 archived and shipped
 **Resume file**: None
 
 **Next steps**:
-- Run `/gsd:complete-milestone` to archive v1.1 and plan next milestone
-- Or continue with new feature development
+- Run `/gsd:discuss-milestone` to plan v1.2 or v2.0
+- Or continue with ad-hoc feature development
 
 ---
-*Last updated: 2026-01-15*
+*Last updated: 2026-01-15 after v1.1 milestone*
