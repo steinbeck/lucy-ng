@@ -1,7 +1,7 @@
 """SQLite schema definitions for the dereplication database."""
 
 # Schema version for migrations
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # Compounds table - stores compound metadata
 CREATE_COMPOUNDS_TABLE = """
@@ -50,6 +50,24 @@ CREATE TABLE IF NOT EXISTS schema_meta (
 )
 """
 
+# HOSE statistics table - precomputed mean/std/count per HOSE code at each radius
+CREATE_HOSE_STATS_TABLE = """
+CREATE TABLE IF NOT EXISTS hose_stats (
+    hose_code TEXT NOT NULL,
+    radius INTEGER NOT NULL,
+    mean REAL NOT NULL,
+    std REAL NOT NULL,
+    count INTEGER NOT NULL,
+    PRIMARY KEY (hose_code, radius)
+)
+"""
+
+# Index on hose_code for fast lookups (primary query pattern)
+CREATE_HOSE_STATS_INDEX = """
+CREATE INDEX IF NOT EXISTS idx_hose_stats_code
+ON hose_stats(hose_code)
+"""
+
 # All schema statements in order
 SCHEMA_STATEMENTS = [
     CREATE_COMPOUNDS_TABLE,
@@ -57,4 +75,6 @@ SCHEMA_STATEMENTS = [
     CREATE_FORMULA_INDEX,
     CREATE_SHIFTS_COMPOUND_INDEX,
     CREATE_SCHEMA_META_TABLE,
+    CREATE_HOSE_STATS_TABLE,
+    CREATE_HOSE_STATS_INDEX,
 ]
