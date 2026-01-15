@@ -243,18 +243,20 @@
 
 **Milestone Goal:** Replace in-memory HOSE lookup with database-backed prediction using extended COCONUT dataset (~895K compounds) for improved accuracy and confidence scoring.
 
-### Phase 16: Database Schema
-**Goal**: Add hose_codes and hose_stats tables to compounds.db for HOSE-based shift prediction
+### Phase 16: Database Schema ✅
+**Goal**: Add hose_stats table to compounds.db for HOSE-based shift prediction
 **Depends on**: Milestone v1.1 complete
-**Research**: Unlikely (SQLite patterns established in v1.1)
+**Completed**: 2026-01-15
 
-- Schema for hose_codes table (hose_code, shift_ppm, compound_id, atom_index, radius)
-- Schema for hose_stats table (hose_code, radius, mean, std, count)
-- Indexes on hose_code for fast lookups
-- Migration strategy for existing compounds.db
+- hose_stats table with precomputed statistics (mean, std, count) per HOSE code at each radius
+- Composite primary key (hose_code, radius) for uniqueness
+- Index on hose_code for O(1) lookups
+- HOSEStatsRecord Pydantic model
+- DatabaseManager methods for CRUD operations
+- Schema version bumped to 2
 
 Plans:
-- [ ] 16-01: TBD (run /gsd:plan-phase 16 to break down)
+- [x] 16-01: Database schema for HOSE stats (3 tasks, 4 min)
 
 ---
 
@@ -328,7 +330,7 @@ Plans:
 | 13. Database Query API | v1.1 | 1/1 | Complete | 2026-01-13 |
 | 14. CLI Integration | v1.1 | 1/1 | Complete | 2026-01-15 |
 | 15. MCP Integration | v1.1 | 1/1 | Complete | 2026-01-15 |
-| 16. Database Schema | v1.2 | 0/? | Not started | - |
+| 16. Database Schema | v1.2 | 1/1 | Complete | 2026-01-15 |
 | 17. HOSE Generation | v1.2 | 0/? | Not started | - |
 | 18. Prediction API | v1.2 | 0/? | Not started | - |
 | 19. CLI/MCP Integration | v1.2 | 0/? | Not started | - |
