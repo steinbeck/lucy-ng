@@ -254,21 +254,41 @@ Once setup is complete, follow this workflow. The best possible outcome is betwe
 
 ## Reference Data
 
-Reference databases for dereplication are stored in `data/reference/`:
+### Pre-built Compound Database (Recommended)
+
+A pre-built SQLite database with 928K compounds is available for download:
+
+```bash
+lucy database download
+```
+
+| Property | Value |
+|----------|-------|
+| **DOI** | [10.6084/m9.figshare.31073554](https://doi.org/10.6084/m9.figshare.31073554) |
+| **Compounds** | 928,443 total |
+| **Sources** | COCONUT (895K) + NMRShiftDB (33K) |
+| **Formulas** | 111,493 unique |
+| **Size** | ~343 MB download, ~1 GB uncompressed |
+
+The database is indexed by molecular formula for fast O(1) lookup during dereplication.
+
+### Alternative: Raw SD Files
+
+Reference databases in SD format are stored in `data/reference/`:
 
 | File | Description | Entries | Size | Included |
 |------|-------------|---------|------|----------|
 | `nmrshiftdb2withsignals.sd.gz` | NMRShiftDB SD file with 13C chemical shifts | ~33,000 | ~20 MB | **Yes** |
-| `coconut_predicted.sd` | COCONUT natural products (predicted shifts) | ~895,000 | ~4.8 GB | No |
+| `coconut_predicted.sdf` | COCONUT natural products (predicted shifts) | ~895,000 | ~4.8 GB | No |
 
-**Usage**: The CLI `lucy dereplicate c13` command auto-discovers databases in `data/reference/`. The included NMRShiftDB database is auto-decompressed on first use.
+**Building from SD files**: If you have the raw SD files, you can build a database manually:
+```bash
+lucy database build --nmrshiftdb data/reference/nmrshiftdb2withsignals.sd \
+                    --coconut data/reference/predicted_coconut.sdf \
+                    -o data/reference/compounds.db
+```
 
-**Auto-decompression**: When running from the lucy-ng directory, the CLI will:
-1. Find `nmrshiftdb2withsignals.sd.gz` in `data/reference/`
-2. Automatically decompress it to `nmrshiftdb2withsignals.sd` on first use
-3. Use the decompressed file for subsequent runs
-
-**Optional**: For larger database coverage, obtain COCONUT separately from https://coconut.naturalproducts.net/
+**Legacy SD file usage**: The CLI `lucy dereplicate c13` command can also use SD files directly, but the database is ~100x faster for lookups
 
 ---
 

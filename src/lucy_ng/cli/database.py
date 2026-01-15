@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+import gzip
+import shutil
 from pathlib import Path
 
 import click
+import requests
 
 from lucy_ng.database import DatabaseImporter, DatabaseManager
+
+# Pre-built database from Figshare
+DATABASE_DOI = "10.6084/m9.figshare.31073554"
+DATABASE_URL = "https://figshare.com/ndownloader/files/61034746"
+DATABASE_SIZE_MB = 343  # Compressed size
+DEFAULT_DB_PATH = Path("data/reference/compounds.db")
 
 
 @click.group()
@@ -158,3 +167,96 @@ def info(db_path: Path) -> None:
             click.echo("  Sources:")
             for source, count in sources:
                 click.echo(f"    {source or 'unknown'}: {count:,}")
+
+
+@database.command()
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=DEFAULT_DB_PATH,
+    help=f"Output path (default: {DEFAULT_DB_PATH})",
+)
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Overwrite existing database",
+)
+def download(output: Path, force: bool) -> None:
+    """Download pre-built compound database from Figshare.
+
+    Downloads the lucy-ng compound database containing 928K compounds
+    (COCONUT + NMRShiftDB) with 13C NMR chemical shifts.
+
+    DOI: 10.6084/m9.figshare.31073554
+
+    Examples:
+
+        lucy database download
+
+        lucy database download -o my_compounds.db
+
+        lucy database download --force
+    """
+    gz_path = output.with_suffix(".db.gz")
+
+    # Check if already exists
+    if output.exists() and not force:
+        click.echo(f"Database already exists: {output}")
+        click.echo("Use --force to overwrite, or run 'lucy database info' to check it.")
+        return
+
+    # Create parent directory if needed
+    output.parent.mkdir(parents=True, exist_ok=True)
+
+    click.echo("Downloading compound database from Figshare...")
+    click.echo(f"  DOI: {DATABASE_DOI}")
+    click.echo(f"  Size: ~{DATABASE_SIZE_MB} MB (compressed)")
+
+    # Download with progress
+    try:
+        response = requests.get(DATABASE_URL, stream=True)
+        response.raise_for_status()
+
+        total_size = int(response.headers.get("content-length", 0))
+        downloaded = 0
+        chunk_size = 1024 * 1024  # 1 MB chunks
+
+        with open(gz_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=chunk_size):
+                f.write(chunk)
+                downloaded += len(chunk)
+                if total_size:
+                    pct = (downloaded / total_size) * 100
+                    mb_done = downloaded / 1e6
+                    mb_total = total_size / 1e6
+                    msg = f"\r  Progress: {mb_done:.0f}/{mb_total:.0f} MB ({pct:.0f}%)"
+                    click.echo(msg, nl=False)
+
+        click.echo()  # Newline after progress
+
+    except requests.RequestException as e:
+        click.echo(f"\nError downloading: {e}", err=True)
+        if gz_path.exists():
+            gz_path.unlink()
+        raise click.Abort() from e
+
+    # Decompress
+    click.echo("  Decompressing...")
+    try:
+        with gzip.open(gz_path, "rb") as f_in:
+            with open(output, "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+    except Exception as e:
+        click.echo(f"Error decompressing: {e}", err=True)
+        raise click.Abort() from e
+
+    # Clean up compressed file
+    gz_path.unlink()
+
+    # Verify
+    click.echo(f"\nDatabase downloaded: {output}")
+    with DatabaseManager(output) as db:
+        click.echo(f"  Compounds: {db.get_compound_count():,}")
+        click.echo(f"  Formulas: {db.get_formula_count():,}")

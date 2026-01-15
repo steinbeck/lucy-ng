@@ -53,3 +53,5 @@ data/reference/*.sd
 data/reference/*.sdf
 # Ignore SQLite databases (generated via `lucy database build`)
 data/reference/*.db
+# Keep compressed database for distribution
+!data/reference/*.db.gz
