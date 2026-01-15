@@ -7,6 +7,7 @@ import pytest
 from lucy_ng.database import (
     CompoundRecord,
     DatabaseManager,
+    HOSEStatsRecord,
     ShiftRecord,
     SCHEMA_VERSION,
 )
@@ -472,3 +473,217 @@ class TestDatabaseManager:
             cursor = db.connection.cursor()
             cursor.execute("SELECT COUNT(*) FROM shifts WHERE compound_id = ?", (compound_id,))
             assert cursor.fetchone()[0] == 0
+
+
+class TestHOSEStatsRecord:
+    """Tests for HOSEStatsRecord model."""
+
+    def test_basic_creation(self) -> None:
+        """Test creating a HOSEStatsRecord with required fields."""
+        stat = HOSEStatsRecord(
+            hose_code="C(CC)",
+            radius=3,
+            mean=25.5,
+            std=2.1,
+            count=150,
+        )
+        assert stat.hose_code == "C(CC)"
+        assert stat.radius == 3
+        assert stat.mean == 25.5
+        assert stat.std == 2.1
+        assert stat.count == 150
+
+
+class TestHOSEStatsDatabase:
+    """Tests for HOSE statistics database methods."""
+
+    def test_hose_stats_table_created(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test that hose_stats table is created."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            cursor = db.connection.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = {row[0] for row in cursor.fetchall()}
+
+            assert "hose_stats" in tables
+
+    def test_hose_stats_index_created(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test that hose_stats index is created."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            cursor = db.connection.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='index'")
+            indexes = {row[0] for row in cursor.fetchall()}
+
+            assert "idx_hose_stats_code" in indexes
+
+    def test_insert_hose_stats_batch(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test batch inserting HOSE statistics."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            stats = [
+                HOSEStatsRecord(hose_code="C(CC)", radius=1, mean=25.0, std=2.0, count=100),
+                HOSEStatsRecord(hose_code="C(CC)", radius=2, mean=25.5, std=1.8, count=80),
+                HOSEStatsRecord(hose_code="C(CC)", radius=3, mean=25.8, std=1.5, count=50),
+                HOSEStatsRecord(hose_code="C(C=O)", radius=1, mean=170.0, std=5.0, count=200),
+            ]
+
+            count = db.insert_hose_stats_batch(stats)
+            assert count == 4
+            assert db.get_hose_stats_count() == 4
+
+    def test_insert_hose_stats_batch_replace(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test that batch insert replaces existing entries."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            # Insert initial stats
+            stats1 = [
+                HOSEStatsRecord(hose_code="C(CC)", radius=1, mean=25.0, std=2.0, count=100),
+            ]
+            db.insert_hose_stats_batch(stats1)
+
+            # Insert again with different values - should replace
+            stats2 = [
+                HOSEStatsRecord(hose_code="C(CC)", radius=1, mean=26.0, std=1.5, count=150),
+            ]
+            db.insert_hose_stats_batch(stats2)
+
+            # Should still be 1 entry, not 2
+            assert db.get_hose_stats_count() == 1
+
+            # Should have updated values
+            result = db.get_hose_stats("C(CC)", 1)
+            assert result is not None
+            assert result.mean == 26.0
+            assert result.std == 1.5
+            assert result.count == 150
+
+    def test_get_hose_stats(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test getting HOSE stats for specific code and radius."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            stats = [
+                HOSEStatsRecord(hose_code="C(CC)", radius=3, mean=25.5, std=2.1, count=150),
+                HOSEStatsRecord(hose_code="C(CC)", radius=4, mean=25.8, std=1.8, count=80),
+            ]
+            db.insert_hose_stats_batch(stats)
+
+            # Get specific entry
+            result = db.get_hose_stats("C(CC)", 3)
+            assert result is not None
+            assert result.hose_code == "C(CC)"
+            assert result.radius == 3
+            assert result.mean == 25.5
+            assert result.std == 2.1
+            assert result.count == 150
+
+            # Get different radius
+            result = db.get_hose_stats("C(CC)", 4)
+            assert result is not None
+            assert result.radius == 4
+            assert result.mean == 25.8
+
+    def test_get_hose_stats_not_found(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test getting HOSE stats for non-existent entry."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            # Non-existent HOSE code
+            result = db.get_hose_stats("NONEXISTENT", 3)
+            assert result is None
+
+            # Add some data
+            stats = [HOSEStatsRecord(hose_code="C(CC)", radius=3, mean=25.0, std=2.0, count=100)]
+            db.insert_hose_stats_batch(stats)
+
+            # Existing code, non-existent radius
+            result = db.get_hose_stats("C(CC)", 6)
+            assert result is None
+
+    def test_get_hose_stats_all_radii(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test getting HOSE stats at all radii for a code."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            # Insert stats at multiple radii
+            stats = [
+                HOSEStatsRecord(hose_code="C(CC)", radius=1, mean=25.0, std=3.0, count=200),
+                HOSEStatsRecord(hose_code="C(CC)", radius=2, mean=25.3, std=2.5, count=150),
+                HOSEStatsRecord(hose_code="C(CC)", radius=4, mean=25.7, std=1.5, count=50),
+                # Different code - should not be returned
+                HOSEStatsRecord(hose_code="C(C=O)", radius=1, mean=170.0, std=5.0, count=100),
+            ]
+            db.insert_hose_stats_batch(stats)
+
+            results = db.get_hose_stats_all_radii("C(CC)")
+            assert len(results) == 3
+
+            # Should be ordered by radius descending
+            assert results[0].radius == 4
+            assert results[1].radius == 2
+            assert results[2].radius == 1
+
+            # Verify values
+            assert results[0].mean == 25.7
+            assert results[2].count == 200
+
+    def test_get_hose_stats_all_radii_not_found(
+        self, tmp_path: pytest.TempPathFactory
+    ) -> None:
+        """Test getting HOSE stats for non-existent code returns empty list."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            results = db.get_hose_stats_all_radii("NONEXISTENT")
+            assert results == []
+
+    def test_get_hose_stats_count(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test counting HOSE stats entries."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            assert db.get_hose_stats_count() == 0
+
+            stats = [
+                HOSEStatsRecord(hose_code="C(CC)", radius=r, mean=25.0, std=2.0, count=100)
+                for r in range(1, 7)
+            ]
+            db.insert_hose_stats_batch(stats)
+
+            assert db.get_hose_stats_count() == 6
+
+    def test_insert_hose_stats_batch_large(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test batch insert with batch_size commits."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            # Insert 250 records with batch_size=100
+            stats = [
+                HOSEStatsRecord(
+                    hose_code=f"C{i}(CC)",
+                    radius=1,
+                    mean=float(i),
+                    std=1.0,
+                    count=10,
+                )
+                for i in range(250)
+            ]
+
+            count = db.insert_hose_stats_batch(stats, batch_size=100)
+            assert count == 250
+            assert db.get_hose_stats_count() == 250

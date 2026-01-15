@@ -6,7 +6,7 @@ import sqlite3
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from lucy_ng.database.models import CompoundRecord, ShiftRecord
+from lucy_ng.database.models import CompoundRecord, HOSEStatsRecord, ShiftRecord
 from lucy_ng.database.schema import SCHEMA_STATEMENTS, SCHEMA_VERSION
 
 if TYPE_CHECKING:
@@ -321,3 +321,131 @@ class DatabaseManager:
         if self._conn is not None:
             self._conn.close()
             self._conn = None
+
+    # =========================================================================
+    # HOSE Statistics Methods
+    # =========================================================================
+
+    def insert_hose_stats_batch(
+        self,
+        stats: list[HOSEStatsRecord],
+        batch_size: int = 10000,
+    ) -> int:
+        """Batch insert HOSE statistics for performance.
+
+        Uses INSERT OR REPLACE to handle reruns gracefully - existing
+        (hose_code, radius) entries will be updated.
+
+        Args:
+            stats: List of HOSEStatsRecord to insert
+            batch_size: Number of records to insert per transaction
+
+        Returns:
+            Number of records inserted/updated
+        """
+        conn = self.connection
+        cursor = conn.cursor()
+        count = 0
+
+        for i, stat in enumerate(stats):
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO hose_stats
+                    (hose_code, radius, mean, std, count)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (stat.hose_code, stat.radius, stat.mean, stat.std, stat.count),
+            )
+            count += 1
+
+            # Commit every batch_size records
+            if (i + 1) % batch_size == 0:
+                conn.commit()
+
+        # Final commit for remaining
+        conn.commit()
+        return count
+
+    def get_hose_stats(self, hose_code: str, radius: int) -> HOSEStatsRecord | None:
+        """Get statistics for a specific HOSE code at a given radius.
+
+        This is the primary query for shift prediction - O(1) lookup.
+
+        Args:
+            hose_code: HOSE code string
+            radius: Sphere radius (1-6)
+
+        Returns:
+            HOSEStatsRecord if found, None otherwise
+        """
+        conn = self.connection
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT hose_code, radius, mean, std, count
+            FROM hose_stats
+            WHERE hose_code = ? AND radius = ?
+            """,
+            (hose_code, radius),
+        )
+
+        row = cursor.fetchone()
+        if row is None:
+            return None
+
+        return HOSEStatsRecord(
+            hose_code=row["hose_code"],
+            radius=row["radius"],
+            mean=row["mean"],
+            std=row["std"],
+            count=row["count"],
+        )
+
+    def get_hose_stats_all_radii(self, hose_code: str) -> list[HOSEStatsRecord]:
+        """Get statistics at all available radii for a HOSE code.
+
+        Useful for fallback queries where higher radii are tried first,
+        falling back to lower radii when no match is found.
+
+        Args:
+            hose_code: HOSE code string
+
+        Returns:
+            List of HOSEStatsRecord ordered by radius descending
+        """
+        conn = self.connection
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT hose_code, radius, mean, std, count
+            FROM hose_stats
+            WHERE hose_code = ?
+            ORDER BY radius DESC
+            """,
+            (hose_code,),
+        )
+
+        return [
+            HOSEStatsRecord(
+                hose_code=row["hose_code"],
+                radius=row["radius"],
+                mean=row["mean"],
+                std=row["std"],
+                count=row["count"],
+            )
+            for row in cursor.fetchall()
+        ]
+
+    def get_hose_stats_count(self) -> int:
+        """Return total number of HOSE statistics entries.
+
+        Returns:
+            Count of rows in hose_stats table
+        """
+        conn = self.connection
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM hose_stats")
+        row = cursor.fetchone()
+        return row[0] if row else 0
