@@ -2,7 +2,7 @@
 
 from lucy_ng.database.importer import DatabaseImporter, ImportResult
 from lucy_ng.database.manager import DatabaseManager
-from lucy_ng.database.models import CompoundRecord, ShiftRecord
+from lucy_ng.database.models import CompoundRecord, HOSEStatsRecord, ShiftRecord
 from lucy_ng.database.query import DatabaseQueryService
 from lucy_ng.database.schema import SCHEMA_STATEMENTS, SCHEMA_VERSION
 
@@ -11,6 +11,7 @@ __all__ = [
     "DatabaseImporter",
     "DatabaseManager",
     "DatabaseQueryService",
+    "HOSEStatsRecord",
     "ImportResult",
     "ShiftRecord",
     "SCHEMA_STATEMENTS",

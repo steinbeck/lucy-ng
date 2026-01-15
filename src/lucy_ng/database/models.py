@@ -105,3 +105,18 @@ class CompoundRecord(BaseModel):
             inchi_key=self.inchi_key,
             signals=[s.to_carbon_signal() for s in self.shifts],
         )
+
+
+class HOSEStatsRecord(BaseModel):
+    """Precomputed statistics for a HOSE code at a specific radius.
+
+    Used for database-backed 13C shift prediction. Each record stores
+    aggregated statistics (mean, std, count) for a HOSE code at a given
+    radius, enabling O(1) lookup at prediction time.
+    """
+
+    hose_code: str
+    radius: int  # 1-6 sphere radius
+    mean: float  # Mean shift in ppm
+    std: float  # Standard deviation
+    count: int  # Number of observations (for confidence scoring)
