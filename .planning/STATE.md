@@ -3,12 +3,12 @@
 ## Current Position
 
 **Milestone**: v1.1 — Database-Backed Dereplication
-**Phase**: 13 of 15 (Database Query API)
-**Plan**: 13-01 Complete
-**Status**: Ready for Phase 14 (CLI Integration)
-**Last activity**: 2026-01-13 - Phase 13-01 complete
+**Phase**: 14 of 15 (CLI Integration)
+**Plan**: 14-01 Complete
+**Status**: Ready for Phase 15 (MCP Integration)
+**Last activity**: 2026-01-15 - Phase 14-01 complete
 
-Progress: ██████░░░░ 60%
+Progress: ████████░░ 80%
 
 ## Milestone 1.0 Complete
 
@@ -65,13 +65,13 @@ All phases of the Core CASE Pipeline have been implemented:
 
 ## Session Continuity
 
-**Last session**: 2026-01-13
-**Stopped at**: Phase 13-01 complete
+**Last session**: 2026-01-15
+**Stopped at**: Phase 14-01 complete
 **Resume file**: None
 
 **Next steps**:
-- Plan Phase 14 (CLI Integration)
-- Update `lucy dereplicate c13` to use database backend
+- Plan Phase 15 (MCP Integration)
+- Update MCP `dereplicate_c13` tool to use database backend
 
 ---
-*Last updated: 2026-01-13*
+*Last updated: 2026-01-15*
