@@ -25,9 +25,23 @@ This command performs ONLY dereplication (database matching). It does NOT procee
 lucy --version || pip install lucy-ng
 ```
 
-Reference databases should be in `data/reference/` or specified by path:
-- `nmrshiftdb2withsignals.sd` - NMRShiftDB (~33,000 compounds)
-- `coconut_predicted.sd` - COCONUT natural products (optional, ~895,000 compounds)
+### Database: lucy-ng-derep.db
+
+The SQLite compound database `lucy-ng-derep.db` contains 928K compounds:
+- **COCONUT**: 895,099 natural products with predicted 13C shifts
+- **NMRShiftDB**: 33,344 compounds with experimental 13C shifts
+- **111,493 unique molecular formulas** indexed for fast lookup
+
+The CLI automatically discovers the database by searching:
+1. `LUCY_DATABASE` environment variable
+2. `data/reference/lucy-ng-derep.db` (project location)
+3. Common paths (`~/.lucy/`, `~/lucy-ng/`, `~/.local/share/lucy-ng/`)
+4. macOS Spotlight (`mdfind`) for fast discovery
+
+If not found, download with:
+```bash
+lucy database download
+```
 
 ---
 
@@ -59,34 +73,31 @@ Dereplication requires:
 "Please provide the molecular formula for this compound (typically from HRMS)."
 ```
 
-### Step 3: Extract 13C Shifts
+### Step 3: Run Dereplication
 
-**Option A: From Bruker spectrum (if binary data exists)**
+**From Bruker spectrum (preferred)**
 
 ```bash
 lucy dereplicate c13 <bruker_13c_path> <formula> -n 10
 ```
 
-**Option B: From peak list (if only peaklist.xml available)**
+The CLI automatically discovers and uses `lucy-ng-derep.db`.
 
-Extract shifts from peaklist.xml and use Python API:
+**From peak list (Python API)**
 
 ```python
-from lucy_ng.dereplication import NMRShiftDBLoader, DereplicationService
+from lucy_ng.database import DatabaseQueryService
+from lucy_ng.dereplication import DereplicationService
 
-# Extract shifts from peaklist.xml (parse the F1 values)
 shifts = [187.81, 152.55, 135.73, 123.41, 120.68, 120.09, 118.99, 113.45]
 
-# Load database
-loader = NMRShiftDBLoader("data/reference/nmrshiftdb2withsignals.sd")
-loader.load()
+# db_path auto-discovered or specify explicitly
+with DatabaseQueryService(db_path) as query:
+    service = DereplicationService(query)
+    result = service.dereplicate_from_shifts(shifts, "C16H10N2O2", top_n=10)
 
-# Run dereplication
-service = DereplicationService(loader)
-result = service.dereplicate_from_shifts(shifts, "C16H10N2O2", top_n=10)
-
-for match in result.top_matches:
-    print(f"{match.entry.name}: score={match.score:.3f}, avg_dev={match.average_deviation:.2f} ppm")
+    for match in result.top_matches:
+        print(f"{match.entry.name}: score={match.score:.3f}")
 ```
 
 ### Step 4: Interpret Results
@@ -106,7 +117,7 @@ for match in result.top_matches:
 ## Dereplication Results
 
 **Molecular Formula:** C16H10N2O2
-**Database:** NMRShiftDB
+**Database:** lucy-ng-derep.db (928K compounds)
 
 ### Top Matches
 
@@ -114,7 +125,6 @@ for match in result.top_matches:
 |------|----------|-------|---------------|
 | 1 | [Name] | 0.XX | X.X ppm |
 | 2 | [Name] | 0.XX | X.X ppm |
-| ... | ... | ... | ... |
 
 ### Assessment
 
@@ -135,7 +145,7 @@ for match in result.top_matches:
 ## Dereplication Results
 
 **Molecular Formula:** C16H10N2O2
-**Database:** NMRShiftDB
+**Database:** lucy-ng-derep.db (928K compounds)
 
 No strong matches found (best score: 0.XX)
 
@@ -156,19 +166,19 @@ Proceed to full CASE: `/lucy-ng:CASE`
 1. **This command does NOT perform full structure elucidation**
 2. **Molecular formula must come from user**, not metadata
 3. **Symmetry affects matching** - if formula has 16 carbons but only 8 signals, the compound has symmetry
-4. **Database coverage varies** - NMRShiftDB is smaller but has experimental shifts; COCONUT is larger but has predicted shifts
+4. **Database is ~100x faster** than SD file scanning due to formula-based indexing
 
 ---
 
 ## Quick Reference
 
 ```bash
-# Quick dereplication with CLI
+# Quick dereplication with CLI (auto-discovers database)
 lucy dereplicate c13 ./2 C16H10N2O2 -n 10
 
-# Check available databases
-ls data/reference/*.sd
+# Check database status
+lucy database info lucy-ng-derep.db
 
-# With COCONUT (if available)
-lucy dereplicate c13 ./2 C16H10N2O2 -n 10 --db data/reference/coconut_predicted.sd
+# Download database if missing
+lucy database download
 ```

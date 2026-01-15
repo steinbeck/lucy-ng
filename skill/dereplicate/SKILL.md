@@ -25,25 +25,23 @@ This skill performs ONLY dereplication (database matching). It does NOT proceed 
 lucy --version || pip install lucy-ng
 ```
 
-### Database Setup (Required)
+### Database: lucy-ng-derep.db
 
-Download the pre-built compound database (~100x faster than SD files):
-
-```bash
-lucy database download
-```
-
-This downloads a SQLite database with 928K compounds:
+The SQLite compound database `lucy-ng-derep.db` contains 928K compounds:
 - **COCONUT**: 895,099 natural products with predicted 13C shifts
 - **NMRShiftDB**: 33,344 compounds with experimental 13C shifts
 - **111,493 unique molecular formulas** indexed for fast lookup
 
-Verify installation:
-```bash
-lucy database info data/reference/compounds.db
-```
+The CLI automatically discovers the database by searching:
+1. `LUCY_DATABASE` environment variable
+2. `data/reference/lucy-ng-derep.db` (project location)
+3. Common paths (`~/.lucy/`, `~/lucy-ng/`, `~/.local/share/lucy-ng/`)
+4. macOS Spotlight (`mdfind`) for fast discovery
 
-**Note**: The CLI auto-detects the database at `data/reference/compounds.db`. If not found, it falls back to SD files (slower).
+If not found, download with:
+```bash
+lucy database download
+```
 
 ---
 
@@ -77,49 +75,29 @@ Dereplication requires:
 
 ### Step 3: Run Dereplication
 
-**Option A: From Bruker spectrum (preferred)**
+**From Bruker spectrum (preferred)**
 
 ```bash
 lucy dereplicate c13 <bruker_13c_path> <formula> -n 10
 ```
 
-The CLI automatically uses the SQLite database if present, falling back to SD files otherwise.
+The CLI automatically discovers and uses `lucy-ng-derep.db`.
 
-**Option B: From peak list (if only peaklist.xml available)**
-
-Extract shifts from peaklist.xml and use Python API:
+**From peak list (Python API)**
 
 ```python
 from lucy_ng.database import DatabaseQueryService
 from lucy_ng.dereplication import DereplicationService
 
-# Extract shifts from peaklist.xml (parse the F1 values)
 shifts = [187.81, 152.55, 135.73, 123.41, 120.68, 120.09, 118.99, 113.45]
 
-# Use database (fast, ~100x faster than SD files)
-with DatabaseQueryService("data/reference/compounds.db") as query:
-    from lucy_ng.dereplication import DereplicationService
+# db_path auto-discovered or specify explicitly
+with DatabaseQueryService(db_path) as query:
     service = DereplicationService(query)
     result = service.dereplicate_from_shifts(shifts, "C16H10N2O2", top_n=10)
 
     for match in result.top_matches:
-        print(f"{match.entry.name}: score={match.score:.3f}, avg_dev={match.average_deviation:.2f} ppm")
-```
-
-**Option C: From SD files (legacy, slower)**
-
-If you don't have the database, you can still use SD files directly:
-
-```python
-from lucy_ng.dereplication import NMRShiftDBLoader, DereplicationService
-
-shifts = [187.81, 152.55, 135.73, 123.41, 120.68, 120.09, 118.99, 113.45]
-
-loader = NMRShiftDBLoader("data/reference/nmrshiftdb2withsignals.sd")
-loader.load()
-
-service = DereplicationService(loader)
-result = service.dereplicate_from_shifts(shifts, "C16H10N2O2", top_n=10)
+        print(f"{match.entry.name}: score={match.score:.3f}")
 ```
 
 ### Step 4: Interpret Results
@@ -139,7 +117,7 @@ result = service.dereplicate_from_shifts(shifts, "C16H10N2O2", top_n=10)
 ## Dereplication Results
 
 **Molecular Formula:** C16H10N2O2
-**Database:** compounds.db (928K compounds)
+**Database:** lucy-ng-derep.db (928K compounds)
 
 ### Top Matches
 
@@ -147,7 +125,6 @@ result = service.dereplicate_from_shifts(shifts, "C16H10N2O2", top_n=10)
 |------|----------|-------|---------------|
 | 1 | [Name] | 0.XX | X.X ppm |
 | 2 | [Name] | 0.XX | X.X ppm |
-| ... | ... | ... | ... |
 
 ### Assessment
 
@@ -168,7 +145,7 @@ result = service.dereplicate_from_shifts(shifts, "C16H10N2O2", top_n=10)
 ## Dereplication Results
 
 **Molecular Formula:** C16H10N2O2
-**Database:** compounds.db (928K compounds)
+**Database:** lucy-ng-derep.db (928K compounds)
 
 No strong matches found (best score: 0.XX)
 
@@ -196,15 +173,12 @@ Proceed to full CASE: `/lucy-ng:CASE`
 ## Quick Reference
 
 ```bash
-# Quick dereplication with CLI (auto-detects database)
+# Quick dereplication with CLI (auto-discovers database)
 lucy dereplicate c13 ./2 C16H10N2O2 -n 10
 
 # Check database status
-lucy database info data/reference/compounds.db
+lucy database info lucy-ng-derep.db
 
 # Download database if missing
 lucy database download
-
-# Explicit SD file (slower, legacy)
-lucy dereplicate c13 ./2 C16H10N2O2 -n 10 --db data/reference/nmrshiftdb2withsignals.sd
 ```
