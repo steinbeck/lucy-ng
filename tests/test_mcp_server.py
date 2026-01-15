@@ -1,7 +1,10 @@
 """Tests for MCP server tools."""
 
-import pytest
+import os
 from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 
 # Skip all tests if mcp is not installed
@@ -168,8 +171,8 @@ class TestDereplicationTools:
         not Path("data/reference/nmrshiftdb2withsignals.sd").exists(),
         reason="nmrshiftdb database not available",
     )
-    def test_dereplicate_c13(self, ibuprofen_data_dir):
-        """Test dereplicate_c13 tool."""
+    def test_dereplicate_c13_with_sd_file(self, ibuprofen_data_dir):
+        """Test dereplicate_c13 tool with explicit SD file path."""
         from lucy_ng.mcp.server import dereplicate_c13
 
         result = dereplicate_c13(
@@ -183,6 +186,98 @@ class TestDereplicationTools:
         assert result["molecular_formula"] == "C13H18O2"
         assert "candidates_found" in result
         assert "top_matches" in result
+        assert result["database_type"] == "nmrshiftdb_sd"
+        assert "compound_count" not in result  # SD files don't have compound count
+
+    @pytest.mark.skipif(
+        not Path("data/reference/compounds.db").exists(),
+        reason="SQLite database not available",
+    )
+    def test_dereplicate_c13_with_sqlite_database(self, ibuprofen_data_dir):
+        """Test dereplicate_c13 tool with explicit SQLite database path."""
+        from lucy_ng.mcp.server import dereplicate_c13
+
+        result = dereplicate_c13(
+            c13_path=str(ibuprofen_data_dir / "2"),
+            molecular_formula="C13H18O2",
+            database_path="data/reference/compounds.db",
+            top_n=3,
+        )
+
+        assert result["success"] is True
+        assert result["molecular_formula"] == "C13H18O2"
+        assert result["database_type"] == "sqlite"
+        assert result["database"] == "compounds.db"
+        assert "compound_count" in result
+        assert result["compound_count"] > 0
+
+    @pytest.mark.skipif(
+        not Path("data/reference/compounds.db").exists(),
+        reason="SQLite database not available",
+    )
+    def test_dereplicate_c13_auto_detects_sqlite(self, ibuprofen_data_dir):
+        """Test that dereplicate_c13 auto-detects SQLite database."""
+        from lucy_ng.mcp.server import dereplicate_c13
+
+        # Don't provide database_path - should auto-detect
+        result = dereplicate_c13(
+            c13_path=str(ibuprofen_data_dir / "2"),
+            molecular_formula="C13H18O2",
+            top_n=3,
+        )
+
+        assert result["success"] is True
+        assert result["database_type"] == "sqlite"
+        assert result["database"] == "compounds.db"
+        assert "compound_count" in result
+
+    def test_dereplicate_c13_database_type_field(self, ibuprofen_data_dir):
+        """Test that database_type field is always present in results."""
+        from lucy_ng.mcp.server import dereplicate_c13
+
+        # Skip if no database available
+        if not (
+            Path("data/reference/compounds.db").exists()
+            or Path("data/reference/nmrshiftdb2withsignals.sd").exists()
+        ):
+            pytest.skip("No reference database available")
+
+        result = dereplicate_c13(
+            c13_path=str(ibuprofen_data_dir / "2"),
+            molecular_formula="C13H18O2",
+            top_n=3,
+        )
+
+        assert result["success"] is True
+        assert "database_type" in result
+        assert result["database_type"] in ["sqlite", "nmrshiftdb_sd", "coconut_sd"]
+
+    def test_dereplicate_c13_env_var_database(self, ibuprofen_data_dir, tmp_path):
+        """Test LUCY_DATABASE environment variable is respected."""
+        from lucy_ng.cli.dereplicate import _find_database_path
+
+        # Create a mock .db file
+        mock_db = tmp_path / "env_test.db"
+        mock_db.touch()
+
+        # Test that _find_database_path respects env var
+        with patch.dict(os.environ, {"LUCY_DATABASE": str(mock_db)}):
+            result = _find_database_path()
+            assert result == mock_db
+
+    def test_dereplicate_c13_no_database(self, ibuprofen_data_dir):
+        """Test error when no database is available."""
+        from lucy_ng.mcp.server import dereplicate_c13
+
+        # Provide a non-existent explicit path (triggers error)
+        result = dereplicate_c13(
+            c13_path=str(ibuprofen_data_dir / "2"),
+            molecular_formula="C13H18O2",
+            database_path="/nonexistent/database.sd",
+        )
+
+        assert result["success"] is False
+        assert "error" in result
 
 
 class TestLSDTools:
