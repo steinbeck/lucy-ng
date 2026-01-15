@@ -5,16 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-01-15)
 
 **Core value:** AI-agent powered structure elucidation from NMR data
-**Current focus:** Planning next milestone
+**Current focus:** v1.2 HOSE Database Prediction
 
 ## Current Position
 
-**Milestone**: v1.1 — Database-Backed Dereplication (SHIPPED)
-**Phase**: All phases complete
-**Status**: Ready for next milestone
-**Last activity**: 2026-01-15 - v1.1 milestone shipped
+**Milestone**: v1.2 — HOSE Database Prediction
+**Phase**: 16 of 19 (Database Schema)
+**Plan**: Not started
+**Status**: Ready to plan
+**Last activity**: 2026-01-15 - Milestone v1.2 created
 
-Progress: ██████████ 100%
+Progress: ░░░░░░░░░░ 0%
 
 ## Milestone 1.0 Complete
 
@@ -69,15 +70,19 @@ All phases of the Core CASE Pipeline have been implemented:
 - **414+ Tests**: Comprehensive coverage
 - **Documentation**: USER_GUIDE.md, CLAUDE.md, MCP_INTEGRATION.md
 
+## Roadmap Evolution
+
+- Milestone v1.2 created: HOSE Database Prediction, 4 phases (Phase 16-19)
+
 ## Session Continuity
 
 **Last session**: 2026-01-15
-**Stopped at**: Milestone v1.1 archived and shipped
+**Stopped at**: Milestone v1.2 initialization
 **Resume file**: None
 
 **Next steps**:
-- Run `/gsd:discuss-milestone` to plan v1.2 or v2.0
-- Or continue with ad-hoc feature development
+- Run `/gsd:plan-phase 16` to plan first phase
+- Or `/gsd:discuss-phase 16` to gather more context first
 
 ---
-*Last updated: 2026-01-15 after v1.1 milestone*
+*Last updated: 2026-01-15 after v1.2 milestone creation*

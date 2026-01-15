@@ -4,6 +4,7 @@
 
 - ✅ [v1.0 Core CASE Pipeline](milestones/v1.0-ROADMAP.md) - Phases 1-10 (shipped 2026-01-12)
 - ✅ [v1.1 Database-Backed Dereplication](milestones/v1.1-ROADMAP.md) - Phases 11-15 (shipped 2026-01-15)
+- 🚧 **v1.2 HOSE Database Prediction** - Phases 16-19 (in progress)
 
 ---
 
@@ -238,6 +239,71 @@
 
 ---
 
+## 🚧 v1.2 HOSE Database Prediction (In Progress)
+
+**Milestone Goal:** Replace in-memory HOSE lookup with database-backed prediction using extended COCONUT dataset (~895K compounds) for improved accuracy and confidence scoring.
+
+### Phase 16: Database Schema
+**Goal**: Add hose_codes and hose_stats tables to compounds.db for HOSE-based shift prediction
+**Depends on**: Milestone v1.1 complete
+**Research**: Unlikely (SQLite patterns established in v1.1)
+
+- Schema for hose_codes table (hose_code, shift_ppm, compound_id, atom_index, radius)
+- Schema for hose_stats table (hose_code, radius, mean, std, count)
+- Indexes on hose_code for fast lookups
+- Migration strategy for existing compounds.db
+
+Plans:
+- [ ] 16-01: TBD (run /gsd:plan-phase 16 to break down)
+
+---
+
+### Phase 17: HOSE Generation
+**Goal**: Batch generate HOSE codes (radii 1-6) for all 895K COCONUT compounds
+**Depends on**: Phase 16
+**Research**: Unlikely (hosegen library already integrated)
+
+- Iterate through all compounds in database
+- Generate HOSE codes at radii 1-6 for each carbon atom
+- Store in hose_codes table with progress reporting
+- Resumability for interrupted batch jobs
+- Compute and store statistics in hose_stats table
+
+Plans:
+- [ ] 17-01: TBD
+
+---
+
+### Phase 18: Prediction API
+**Goal**: Update HOSEPredictor to query database with radius fallback
+**Depends on**: Phase 17
+**Research**: Unlikely (internal patterns)
+
+- Query hose_stats table for shift predictions
+- Fallback from radius 6 → 5 → 4 → ... → 1 when no matches
+- Improved confidence scoring based on observation count and variance
+- Maintain backward compatibility with current API
+
+Plans:
+- [ ] 18-01: TBD
+
+---
+
+### Phase 19: CLI/MCP Integration
+**Goal**: Update `lucy predict c13` CLI and MCP tools for database-backed prediction
+**Depends on**: Phase 18
+**Research**: Unlikely (existing CLI/MCP patterns from v1.1)
+
+- Update CLI command to use database predictor
+- Update MCP tool with database backend
+- Add database status/info for HOSE tables
+- Documentation updates
+
+Plans:
+- [ ] 19-01: TBD
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans | Status | Completed |
@@ -262,6 +328,10 @@
 | 13. Database Query API | v1.1 | 1/1 | Complete | 2026-01-13 |
 | 14. CLI Integration | v1.1 | 1/1 | Complete | 2026-01-15 |
 | 15. MCP Integration | v1.1 | 1/1 | Complete | 2026-01-15 |
+| 16. Database Schema | v1.2 | 0/? | Not started | - |
+| 17. HOSE Generation | v1.2 | 0/? | Not started | - |
+| 18. Prediction API | v1.2 | 0/? | Not started | - |
+| 19. CLI/MCP Integration | v1.2 | 0/? | Not started | - |
 
 ---
 *Last updated: 2026-01-15*
