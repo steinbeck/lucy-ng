@@ -23,24 +23,61 @@ if TYPE_CHECKING:
 def _find_database_path() -> Path | None:
     """Find SQLite database in default locations.
 
-    Checks:
+    Search order:
     1. LUCY_DATABASE environment variable
-    2. data/reference/compounds.db (project location)
+    2. data/reference/lucy-ng-derep.db (project location)
+    3. Common locations (~/.lucy/, ~/lucy-ng/, etc.)
+    4. macOS Spotlight search (mdfind)
+    5. Recursive search in home directory (last resort)
 
     Returns:
         Path to database file if found, None otherwise
     """
-    # Check environment variable first
+    import subprocess
+
+    db_name = "lucy-ng-derep.db"
+
+    # 1. Check environment variable first
     env_db = os.environ.get("LUCY_DATABASE")
     if env_db:
         env_path = Path(env_db)
         if env_path.exists() and env_path.suffix == ".db":
             return env_path
 
-    # Check default location
-    default_db = Path("data/reference/compounds.db")
+    # 2. Check project location
+    default_db = Path("data/reference") / db_name
     if default_db.exists():
         return default_db
+
+    # 3. Check common locations
+    common_paths = [
+        Path.home() / ".lucy" / db_name,
+        Path.home() / "lucy-ng" / "data" / "reference" / db_name,
+        Path.home() / ".local" / "share" / "lucy-ng" / db_name,
+    ]
+    for p in common_paths:
+        if p.exists():
+            return p
+
+    # 4. macOS Spotlight search (fast)
+    try:
+        result = subprocess.run(
+            ["mdfind", "-name", db_name],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            found_path = Path(result.stdout.strip().split("\n")[0])
+            if found_path.exists():
+                return found_path
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass  # mdfind not available or timed out
+
+    # 5. Search in Dropbox/develop (common dev location)
+    dropbox_dev = Path.home() / "Dropbox" / "develop" / "lucy-ng" / "data" / "reference" / db_name
+    if dropbox_dev.exists():
+        return dropbox_dev
 
     return None
 

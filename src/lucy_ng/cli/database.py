@@ -15,7 +15,7 @@ from lucy_ng.database import DatabaseImporter, DatabaseManager
 DATABASE_DOI = "10.6084/m9.figshare.31073554"
 DATABASE_URL = "https://figshare.com/ndownloader/files/61034746"
 DATABASE_SIZE_MB = 343  # Compressed size
-DEFAULT_DB_PATH = Path("data/reference/compounds.db")
+DEFAULT_DB_PATH = Path("data/reference/lucy-ng-derep.db")
 
 
 @click.group()
@@ -38,8 +38,8 @@ def database() -> None:
     "--output",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("compounds.db"),
-    help="Output database path (default: compounds.db)",
+    default=Path("lucy-ng-derep.db"),
+    help="Output database path (default: lucy-ng-derep.db)",
 )
 @click.option(
     "--batch-size",
