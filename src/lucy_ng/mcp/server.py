@@ -4,17 +4,20 @@ Exposes NMR processing and structure elucidation tools to AI agents
 via the Model Context Protocol (MCP).
 """
 
+from pathlib import Path
+from typing import Any
+
 from mcp.server.fastmcp import FastMCP
 
-from pathlib import Path
-
 from lucy_ng.analysis import SymmetryAnalyzer
+from lucy_ng.cli.dereplicate import _find_database_path, _is_sqlite_database
+from lucy_ng.database import DatabaseQueryService
 from lucy_ng.dereplication import CoconutLoader, DereplicationService, NMRShiftDBLoader
 from lucy_ng.lsd import LSDInputGenerator, LSDRunner
 from lucy_ng.lsd.parser import LSDOutputParser
-from lucy_ng.prediction import C13Predictor, HOSELookupTable
+from lucy_ng.prediction import C13Predictor
+from lucy_ng.processing import AdaptivePeakPicker, DEPTGuidedPicker, HMBCGuidedPicker
 from lucy_ng.ranking import SolutionRanker
-from lucy_ng.processing import DEPTGuidedPicker, HMBCGuidedPicker, AdaptivePeakPicker
 from lucy_ng.readers import BrukerReader
 
 # Create MCP server instance
@@ -322,53 +325,94 @@ def dereplicate_c13(
     """Dereplicate 13C spectrum against reference database.
 
     Matches observed 13C peaks against reference spectra filtered by
-    molecular formula. Uses COCONUT by default (~895K natural products),
-    falls back to nmrshiftdb (~33K compounds) if COCONUT unavailable.
+    molecular formula. Uses SQLite database by default (~928K compounds)
+    for fast O(1) lookup. Falls back to SD file scanning if database
+    unavailable.
 
-    COCONUT uses streaming mode - only parses entries matching the formula,
-    making it practical for large databases.
+    Database auto-detection order:
+    1. Explicit database_path if provided
+    2. LUCY_DATABASE environment variable
+    3. data/reference/compounds.db (default location)
+    4. SD files (COCONUT, then NMRShiftDB)
 
     Args:
         c13_path: Path to 13C Bruker experiment directory
         molecular_formula: Target molecular formula (e.g., "C13H18O2")
-        database_path: Optional path to SD file (auto-discovers if not set)
+        database_path: Optional path to database (.db) or SD file (.sd/.sdf)
         top_n: Number of top matches to return (default: 5)
         match_threshold: Score threshold for is_match (default: 0.7)
 
     Returns:
-        Dictionary with candidates found, match scores, and top matches
+        Dictionary with candidates found, match scores, top matches,
+        and database_type indicating which backend was used
     """
+    # Loader can be DatabaseQueryService, NMRShiftDBLoader, or CoconutLoader
+    loader: Any = None
+    db_query_service: DatabaseQueryService | None = None
+    database_type: str = "unknown"
+    compound_count: int | None = None
+
     try:
-        # Auto-discover database
-        db_path = database_path
-        is_coconut = False
+        # Check for SQLite database FIRST
+        if database_path is not None and _is_sqlite_database(database_path):
+            # Explicit SQLite database path provided
+            db_query_service = DatabaseQueryService(database_path)
+            db_query_service.open()
+            compound_count = db_query_service.get_compound_count()
+            loader = db_query_service
+            database_type = "sqlite"
+            db_name = Path(database_path).name
+        elif database_path is None:
+            # No explicit path - try SQLite database first
+            db_path = _find_database_path()
+            if db_path is not None:
+                db_query_service = DatabaseQueryService(db_path)
+                db_query_service.open()
+                compound_count = db_query_service.get_compound_count()
+                loader = db_query_service
+                database_type = "sqlite"
+                db_name = db_path.name
 
-        if db_path is None:
-            search_paths = [
-                (Path("data/reference/coconut_predicted.sd"), True),
-                (Path("data/reference/nmrshiftdb2withsignals.sd"), False),
-                (Path.home() / ".lucy" / "coconut_predicted.sd", True),
-                (Path.home() / ".lucy" / "nmrshiftdb.sd", False),
-            ]
-            for p, coconut_flag in search_paths:
-                if p.exists():
-                    db_path = str(p)
-                    is_coconut = coconut_flag
-                    break
+        # Fall back to SD files if no database found/loaded
+        if loader is None:
+            is_coconut = False
+            sd_database: str | None = database_path
 
-        if db_path is None:
-            return {"success": False, "error": "No reference database found"}
+            if sd_database is None:
+                # Try default SD file locations
+                search_paths = [
+                    (Path("data/reference/coconut_predicted.sd"), True),
+                    (Path("data/reference/nmrshiftdb2withsignals.sd"), False),
+                    (Path.home() / ".lucy" / "coconut_predicted.sd", True),
+                    (Path.home() / ".lucy" / "nmrshiftdb.sd", False),
+                ]
+                for p, coconut_flag in search_paths:
+                    if p.exists():
+                        sd_database = str(p)
+                        is_coconut = coconut_flag
+                        break
 
-        # Determine database type if path was provided
-        if database_path is not None:
-            is_coconut = "coconut" in Path(db_path).name.lower()
+            if sd_database is None:
+                return {
+                    "success": False,
+                    "error": "No reference database found. "
+                    "Run 'lucy database download' to get the database.",
+                }
 
-        # Create loader (COCONUT uses streaming, nmrshiftdb loads fully)
-        if is_coconut:
-            loader = CoconutLoader(db_path)
-        else:
-            loader = NMRShiftDBLoader(db_path)
-            loader.load()
+            # Determine database type if path was provided
+            if database_path is not None:
+                is_coconut = "coconut" in Path(sd_database).name.lower()
+
+            # Create SD file loader
+            if is_coconut:
+                loader = CoconutLoader(sd_database)
+                database_type = "coconut_sd"
+            else:
+                loader = NMRShiftDBLoader(sd_database)
+                loader.load()
+                database_type = "nmrshiftdb_sd"
+
+            db_name = Path(sd_database).name
 
         # Run dereplication
         spectrum = BrukerReader.read_1d(c13_path)
@@ -380,9 +424,10 @@ def dereplicate_c13(
             match_threshold=match_threshold,
         )
 
-        return {
+        response = {
             "success": True,
-            "database": Path(db_path).name,
+            "database": db_name,
+            "database_type": database_type,
             "molecular_formula": result.molecular_formula,
             "expected_carbons": result.expected_carbons,
             "observed_peaks": result.observed_peaks,
@@ -403,8 +448,19 @@ def dereplicate_c13(
                 for m in result.top_matches
             ],
         }
+
+        # Add compound count if available (SQLite databases)
+        if compound_count is not None:
+            response["compound_count"] = compound_count
+
+        return response
+
     except Exception as e:
         return {"success": False, "error": str(e)}
+    finally:
+        # Clean up database connection if using SQLite
+        if db_query_service is not None:
+            db_query_service.close()
 
 
 # =============================================================================
