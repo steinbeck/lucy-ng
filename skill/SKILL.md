@@ -35,7 +35,22 @@ lucy lsd check
 ```
 Should report both LSD and outlsd as available.
 
-### 4. Create Permissions File
+### 4. Download Compound Database (REQUIRED for dereplication)
+```bash
+lucy database download
+```
+
+This downloads the pre-built compound database (~343 MB compressed) from Figshare:
+- DOI: 10.6084/m9.figshare.31073554
+- Contains 928K compounds (COCONUT + NMRShiftDB) with 13C NMR shifts
+- Auto-decompresses to `data/reference/compounds.db` (~1.0 GB)
+
+Verify installation:
+```bash
+lucy database info data/reference/compounds.db
+```
+
+### 5. Create Permissions File
 Create `.claude/settings.json` in the working directory:
 ```json
 {
@@ -259,21 +274,38 @@ Once setup is complete, follow this workflow. The best possible outcome is betwe
 
 ## Reference Data
 
-Reference databases for dereplication are stored in `data/reference/`:
+### Pre-built Compound Database (Recommended)
+
+The recommended way to get reference data is to download the pre-built SQLite database:
+
+```bash
+lucy database download
+```
+
+| Source | DOI | Contents | Size |
+|--------|-----|----------|------|
+| Figshare | 10.6084/m9.figshare.31073554 | 928K compounds (COCONUT + NMRShiftDB) | 343 MB (compressed) |
+
+The database contains:
+- **COCONUT**: 895,099 natural products with predicted 13C shifts
+- **NMRShiftDB**: 33,344 compounds with experimental 13C shifts
+- **111,493 unique molecular formulas** indexed for fast lookup
+
+### Alternative: SD Files
+
+For development or custom databases, SD files can also be used in `data/reference/`:
 
 | File | Description | Entries | Size | Included |
 |------|-------------|---------|------|----------|
 | `nmrshiftdb2withsignals.sd.gz` | NMRShiftDB SD file with 13C chemical shifts | ~33,000 | ~20 MB | **Yes** |
 | `coconut_predicted.sd` | COCONUT natural products (predicted shifts) | ~895,000 | ~4.8 GB | No |
 
-**Usage**: The CLI `lucy dereplicate c13` command auto-discovers databases in `data/reference/`. The included NMRShiftDB database is auto-decompressed on first use.
-
 **Auto-decompression**: When running from the lucy-ng directory, the CLI will:
 1. Find `nmrshiftdb2withsignals.sd.gz` in `data/reference/`
 2. Automatically decompress it to `nmrshiftdb2withsignals.sd` on first use
 3. Use the decompressed file for subsequent runs
 
-**Optional**: For larger database coverage, obtain COCONUT separately from https://coconut.naturalproducts.net/
+**Optional**: For building custom databases, obtain COCONUT separately from https://coconut.naturalproducts.net/
 
 ---
 
