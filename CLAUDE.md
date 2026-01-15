@@ -30,7 +30,22 @@ lucy lsd check
 ```
 Should report both LSD and outlsd as available.
 
-### 4. Create Permissions File
+### 4. Download Compound Database (REQUIRED for dereplication)
+```bash
+lucy database download
+```
+
+This downloads the pre-built compound database (~343 MB compressed) from Figshare:
+- DOI: 10.6084/m9.figshare.31073554
+- Contains 928K compounds (COCONUT + NMRShiftDB) with 13C NMR shifts
+- Auto-decompresses to `data/reference/compounds.db` (~1.0 GB)
+
+Verify installation:
+```bash
+lucy database info data/reference/compounds.db
+```
+
+### 5. Create Permissions File
 Create `.claude/settings.json` in the working directory:
 ```json
 {
