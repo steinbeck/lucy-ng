@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 Core CASE Pipeline** - Phases 1-10 (complete 2026-01-12)
-- 🚧 **v1.1 Database-Backed Dereplication** - Phases 11-15 (in progress)
+- ✅ **v1.1 Database-Backed Dereplication** - Phases 11-15 (complete 2026-01-15)
 
 ---
 
@@ -279,7 +279,7 @@ Plans:
 **Research**: Unlikely (existing MCP patterns)
 
 Plans:
-- [ ] 15-01: TBD
+- [x] 15-01: MCP Integration
 
 ---
 
@@ -306,7 +306,7 @@ Plans:
 | 12. Database Import | v1.1 | 1/1 | Complete | 2026-01-13 |
 | 13. Database Query API | v1.1 | 1/1 | Complete | 2026-01-13 |
 | 14. CLI Integration | v1.1 | 1/1 | Complete | 2026-01-15 |
-| 15. MCP Integration | v1.1 | 0/? | Not started | - |
+| 15. MCP Integration | v1.1 | 1/1 | Complete | 2026-01-15 |
 
 ---
 *Last updated: 2026-01-15*
