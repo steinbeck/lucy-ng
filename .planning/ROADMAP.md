@@ -260,19 +260,18 @@ Plans:
 
 ---
 
-### Phase 17: HOSE Generation
+### Phase 17: HOSE Generation ✅
 **Goal**: Batch generate HOSE codes (radii 1-6) for all 895K COCONUT compounds
 **Depends on**: Phase 16
-**Research**: Unlikely (hosegen library already integrated)
+**Completed**: 2026-01-16
 
-- Iterate through all compounds in database
-- Generate HOSE codes at radii 1-6 for each carbon atom
-- Store in hose_codes table with progress reporting
-- Resumability for interrupted batch jobs
-- Compute and store statistics in hose_stats table
+- iter_compounds_with_shifts() for memory-efficient iteration
+- HOSEStatsGenerator service for batch processing
+- CLI command: `lucy database generate-hose-stats`
+- Progress bar, error handling, statistics tracking
 
 Plans:
-- [ ] 17-01: TBD
+- [x] 17-01: HOSE generation infrastructure (3 tasks)
 
 ---
 
@@ -331,9 +330,9 @@ Plans:
 | 14. CLI Integration | v1.1 | 1/1 | Complete | 2026-01-15 |
 | 15. MCP Integration | v1.1 | 1/1 | Complete | 2026-01-15 |
 | 16. Database Schema | v1.2 | 1/1 | Complete | 2026-01-15 |
-| 17. HOSE Generation | v1.2 | 0/? | Not started | - |
+| 17. HOSE Generation | v1.2 | 1/1 | Complete | 2026-01-16 |
 | 18. Prediction API | v1.2 | 0/? | Not started | - |
 | 19. CLI/MCP Integration | v1.2 | 0/? | Not started | - |
 
 ---
-*Last updated: 2026-01-15*
+*Last updated: 2026-01-16*
