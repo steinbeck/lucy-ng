@@ -97,6 +97,11 @@ def visualize() -> None:
     default=False,
     help="Show J-coupling labels (²J, ³J) on HMBC arrows (requires --sol).",
 )
+@click.option(
+    "--show-all-labels/--hide-all-labels",
+    default=False,
+    help="Show element symbols for all atoms (C, H, etc.).",
+)
 def visualize_correlations(
     smiles: str | None,
     sol: str | None,
@@ -112,6 +117,7 @@ def visualize_correlations(
     show_legend: bool,
     show_atom_numbers: bool,
     show_j_coupling: bool,
+    show_all_labels: bool,
 ) -> None:
     """Generate NMR correlation diagram from SMILES and correlation data.
 
@@ -146,6 +152,7 @@ def visualize_correlations(
         height=height,
         show_atom_indices=show_indices,
         show_hydrogens=show_hydrogens,
+        show_all_atom_labels=show_all_labels,
         show_legend=show_legend,
         show_atom_numbers=show_atom_numbers,
     )

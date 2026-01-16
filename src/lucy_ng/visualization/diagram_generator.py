@@ -535,6 +535,12 @@ class CorrelationDiagramGenerator:
         for atom in mol.GetAtoms():
             atom.SetAtomMapNum(0)
 
+        # If show_all_atom_labels is enabled, set explicit labels for all atoms
+        if self.config.show_all_atom_labels:
+            for atom in mol.GetAtoms():
+                symbol = atom.GetSymbol()
+                atom.SetProp("atomLabel", symbol)
+
         # Use RDKit's drawer
         drawer = rdMolDraw2D.MolDraw2DSVG(self.config.width, self.config.height)
 
@@ -542,6 +548,8 @@ class CorrelationDiagramGenerator:
         opts = drawer.drawOptions()
         opts.addAtomIndices = self.config.show_atom_indices
         opts.addStereoAnnotation = False
+        if self.config.show_all_atom_labels:
+            opts.explicitMethyl = True  # Show CH3 groups explicitly
 
         # Draw the molecule
         drawer.DrawMolecule(mol)

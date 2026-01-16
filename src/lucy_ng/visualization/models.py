@@ -69,6 +69,7 @@ class DiagramConfig(BaseModel):
     show_chemical_shifts: bool = True
     show_atom_indices: bool = False
     show_hydrogens: bool = False  # Publication style: no explicit H atoms (cleaner)
+    show_all_atom_labels: bool = False  # Show element symbols for all atoms (C, H, etc.)
     show_legend: bool = True
     hmbc_style: ArrowStyle = Field(
         default_factory=lambda: ArrowStyle(color="#E41A1C")  # Red
