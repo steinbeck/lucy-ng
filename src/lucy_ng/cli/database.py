@@ -260,3 +260,74 @@ def download(output: Path, force: bool) -> None:
     with DatabaseManager(output) as db:
         click.echo(f"  Compounds: {db.get_compound_count():,}")
         click.echo(f"  Formulas: {db.get_formula_count():,}")
+
+
+@database.command("generate-hose-stats")
+@click.option(
+    "--db",
+    type=click.Path(exists=True, path_type=Path),
+    default=DEFAULT_DB_PATH,
+    help=f"Path to database (default: {DEFAULT_DB_PATH})",
+)
+@click.option(
+    "--max-radius",
+    default=6,
+    type=click.IntRange(1, 6),
+    help="Maximum HOSE code radius (default: 6)",
+)
+@click.option(
+    "--batch-size",
+    default=10000,
+    type=int,
+    help="Batch size for database insertion (default: 10000)",
+)
+def generate_hose_stats(
+    db: Path,
+    max_radius: int,
+    batch_size: int,
+) -> None:
+    """Generate HOSE code statistics from database compounds.
+
+    Processes all compounds in the database, generates HOSE codes for each
+    carbon with a known shift (at radii 1 through max-radius), and computes
+    aggregated statistics (mean, std, count) per HOSE code.
+
+    This populates the hose_stats table for database-backed 13C shift prediction.
+
+    Examples:
+
+        lucy database generate-hose-stats
+
+        lucy database generate-hose-stats --db compounds.db --max-radius 4
+    """
+    import time
+
+    from lucy_ng.prediction import HOSEStatsGenerator
+    from lucy_ng.prediction.hose import HOSEGEN_AVAILABLE
+
+    if not HOSEGEN_AVAILABLE:
+        click.echo("Error: hosegen library not available.", err=True)
+        click.echo("Install with: pip install git+https://github.com/Ratsemaat/HOSE_code_generator.git --no-deps", err=True)
+        raise click.Abort()
+
+    click.echo(f"Generating HOSE statistics...")
+    click.echo(f"  Database: {db}")
+    click.echo(f"  Max radius: {max_radius}")
+
+    start_time = time.time()
+
+    with DatabaseManager(db) as db_manager:
+        compound_count = db_manager.get_compound_count()
+        click.echo(f"  Compounds to process: {compound_count:,}")
+
+        generator = HOSEStatsGenerator(db_manager, max_radius=max_radius)
+        count = generator.populate_database(progress=True, batch_size=batch_size)
+
+        elapsed = time.time() - start_time
+        elapsed_min = elapsed / 60
+
+        click.echo(f"\nGenerated {count:,} statistics from {generator.compounds_processed:,} compounds")
+        if generator.compounds_failed > 0:
+            click.echo(f"  Compounds failed (invalid SMILES): {generator.compounds_failed:,}")
+        click.echo(f"  Shifts processed: {generator.shifts_processed:,}")
+        click.echo(f"  Time: {elapsed_min:.1f} min")
