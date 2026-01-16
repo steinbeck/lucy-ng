@@ -428,13 +428,42 @@ print("PDF report generated: analysis/CASE_Report.pdf")
 EOF
 ```
 
-**The PDF report must include:**
-1. Summary table (formula, MW, DBE, solution count)
-2. 13C NMR data table with shifts, multiplicities, and assignments
-3. Key HMBC correlations table
-4. Rendered 2D structure images for all candidate structures (using RDKit)
-5. Ranking comparison table with MAE scores
-6. Recommended structure with larger image
+**CRITICAL: Use data from the successful analysis**
+
+Do NOT re-pick peaks for the PDF. Extract all data directly from the LSD file that produced successful solutions. The LSD file contains the exact peaks and correlations that were used.
+
+**The PDF report must include complete tables of ALL data used:**
+
+1. **Summary table** — formula, MW, DBE, solution count, recommended structure
+
+2. **Complete 13C NMR table** — ALL carbons used in the LSD file:
+   - Carbon number (C1, C2, ...)
+   - Chemical shift (ppm)
+   - Multiplicity (C, CH, CH2, CH3) from DEPT
+   - Hybridization (sp2/sp3)
+   - H-count
+   - Assignment/interpretation
+
+3. **Complete HSQC table** — ALL direct C-H correlations from the LSD file:
+   - Every HSQC command in the LSD file becomes a row
+   - Include carbon identity, shift, multiplicity, and proton chemical shift if known
+
+4. **Complete HMBC table** — ALL long-range correlations from the LSD file:
+   - Every HMBC command in the LSD file becomes a row
+   - Include "From Carbon", "To Proton", correlation notation, and structural interpretation
+   - Note: Reciprocal correlations (e.g., C1→H7 and C7→H2) appear as separate entries because they provide independent constraints
+
+5. **Excluded signals section** — Document WHY certain peaks were not used:
+   - Solvent peaks (e.g., CDCl3 at 77 ppm)
+   - Noise/artifacts
+   - Duplicate signals from overlapping peaks
+   - Signals that couldn't be assigned confidently
+
+6. **Structure candidates** — Rendered 2D images (RDKit) with SMILES and MAE scores
+
+7. **Ranking comparison table** — All candidates with MAE, quality rating, carbons within tolerance
+
+8. **Recommended structure** — Larger image with SMILES and InChI, plus reasoning if not Rank #1
 
 **Required dependencies:**
 ```bash
