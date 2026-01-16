@@ -316,6 +316,57 @@ class DatabaseManager:
         for row in cursor:
             yield row[0]
 
+    def iter_compounds_with_shifts(
+        self, batch_size: int = 1000
+    ) -> Iterator[tuple[int, str, list[tuple[int | None, float]]]]:
+        """Iterate over all compounds with their shifts for batch processing.
+
+        Memory-efficient iterator that fetches compounds in batches.
+        Only yields compounds that have both SMILES and at least one shift.
+
+        Args:
+            batch_size: Number of compounds to fetch per batch
+
+        Yields:
+            Tuples of (compound_id, smiles, [(atom_index, shift_ppm), ...])
+            Only yields compounds with non-empty SMILES and at least one shift.
+        """
+        conn = self.connection
+        cursor = conn.cursor()
+
+        # Get compounds with SMILES in batches
+        cursor.execute(
+            """
+            SELECT id, smiles FROM compounds
+            WHERE smiles IS NOT NULL AND smiles != ''
+            ORDER BY id
+            """
+        )
+
+        while True:
+            rows = cursor.fetchmany(batch_size)
+            if not rows:
+                break
+
+            for row in rows:
+                compound_id = row["id"]
+                smiles = row["smiles"]
+
+                # Get shifts for this compound
+                shift_cursor = conn.cursor()
+                shift_cursor.execute(
+                    """
+                    SELECT atom_index, shift_ppm FROM shifts
+                    WHERE compound_id = ?
+                    """,
+                    (compound_id,),
+                )
+                shifts = [(r["atom_index"], r["shift_ppm"]) for r in shift_cursor.fetchall()]
+
+                # Only yield if compound has shifts
+                if shifts:
+                    yield (compound_id, smiles, shifts)
+
     def close(self) -> None:
         """Close database connection."""
         if self._conn is not None:

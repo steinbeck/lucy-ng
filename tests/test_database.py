@@ -431,6 +431,133 @@ class TestDatabaseManager:
             # Should be sorted
             assert unique_formulas == sorted(unique_formulas)
 
+    def test_iter_compounds_with_shifts(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test iterating over compounds with their shifts."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            # Insert compound with SMILES and shifts
+            compound1 = CompoundRecord(
+                name="Ethane",
+                smiles="CC",
+                formula="C2H6",
+                source="test",
+            )
+            shifts1 = [
+                ShiftRecord(shift_ppm=15.0, atom_index=0, hydrogen_count=3),
+                ShiftRecord(shift_ppm=15.0, atom_index=1, hydrogen_count=3),
+            ]
+            db.insert_compound(compound1, shifts1)
+
+            # Insert another compound
+            compound2 = CompoundRecord(
+                name="Propane",
+                smiles="CCC",
+                formula="C3H8",
+                source="test",
+            )
+            shifts2 = [
+                ShiftRecord(shift_ppm=16.0, atom_index=0, hydrogen_count=3),
+                ShiftRecord(shift_ppm=17.0, atom_index=1, hydrogen_count=2),
+                ShiftRecord(shift_ppm=16.0, atom_index=2, hydrogen_count=3),
+            ]
+            db.insert_compound(compound2, shifts2)
+
+            # Iterate and verify
+            results = list(db.iter_compounds_with_shifts())
+            assert len(results) == 2
+
+            # Check structure
+            compound_id, smiles, shifts = results[0]
+            assert isinstance(compound_id, int)
+            assert smiles == "CC"
+            assert len(shifts) == 2
+            assert shifts[0][0] == 0  # atom_index
+            assert shifts[0][1] == 15.0  # shift_ppm
+
+    def test_iter_compounds_with_shifts_skips_empty_smiles(
+        self, tmp_path: pytest.TempPathFactory
+    ) -> None:
+        """Test that compounds without SMILES are skipped."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            # Compound with SMILES
+            compound1 = CompoundRecord(
+                name="WithSMILES",
+                smiles="CC",
+                formula="C2H6",
+                source="test",
+            )
+            db.insert_compound(compound1, [ShiftRecord(shift_ppm=15.0, atom_index=0)])
+
+            # Compound without SMILES (empty string)
+            compound2 = CompoundRecord(
+                name="NoSMILES",
+                smiles="",
+                formula="C3H8",
+                source="test",
+            )
+            db.insert_compound(compound2, [ShiftRecord(shift_ppm=16.0, atom_index=0)])
+
+            results = list(db.iter_compounds_with_shifts())
+            assert len(results) == 1
+            assert results[0][1] == "CC"
+
+    def test_iter_compounds_with_shifts_skips_no_shifts(
+        self, tmp_path: pytest.TempPathFactory
+    ) -> None:
+        """Test that compounds without shifts are skipped."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            # Compound with shifts
+            compound1 = CompoundRecord(
+                name="WithShifts",
+                smiles="CC",
+                formula="C2H6",
+                source="test",
+            )
+            db.insert_compound(compound1, [ShiftRecord(shift_ppm=15.0, atom_index=0)])
+
+            # Compound without shifts
+            compound2 = CompoundRecord(
+                name="NoShifts",
+                smiles="CCC",
+                formula="C3H8",
+                source="test",
+            )
+            db.insert_compound(compound2, [])  # No shifts
+
+            results = list(db.iter_compounds_with_shifts())
+            assert len(results) == 1
+            assert results[0][1] == "CC"
+
+    def test_iter_compounds_with_shifts_batch_processing(
+        self, tmp_path: pytest.TempPathFactory
+    ) -> None:
+        """Test batch processing with small batch size."""
+        db_path = tmp_path / "test.db"
+        with DatabaseManager(db_path) as db:
+            db.create_tables()
+
+            # Insert 25 compounds
+            for i in range(25):
+                compound = CompoundRecord(
+                    name=f"Compound{i}",
+                    smiles=f"C{'C' * i}",  # CC, CCC, CCCC, etc.
+                    formula=f"C{i+2}H{(i+2)*2+2}",
+                    source="test",
+                )
+                db.insert_compound(compound, [ShiftRecord(shift_ppm=float(i), atom_index=0)])
+
+            # Iterate with small batch size
+            results = list(db.iter_compounds_with_shifts(batch_size=5))
+            assert len(results) == 25
+
     def test_context_manager(self, tmp_path: pytest.TempPathFactory) -> None:
         """Test that context manager properly closes connection."""
         db_path = tmp_path / "test.db"
