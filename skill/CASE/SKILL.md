@@ -307,6 +307,140 @@ lucy lsd rank solutions.smi --shifts "187.8,152.5,135.7,..."
 [Final structure proposal or need for additional data]
 ```
 
+### Step 12: Generate PDF Report
+
+**Always generate a PDF report** with rendered structures and formatted tables at the end of every CASE analysis.
+
+```python
+# Generate PDF report with structures and tables
+python3 << 'EOF'
+from rdkit import Chem
+from rdkit.Chem import Draw, AllChem
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
+from reportlab.lib.enums import TA_CENTER
+import io
+
+# Create the PDF document
+doc = SimpleDocTemplate(
+    "analysis/CASE_Report.pdf",
+    pagesize=A4,
+    rightMargin=0.75*inch,
+    leftMargin=0.75*inch,
+    topMargin=0.75*inch,
+    bottomMargin=0.75*inch
+)
+
+# Styles
+styles = getSampleStyleSheet()
+title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'],
+    fontSize=20, spaceAfter=30, alignment=TA_CENTER)
+heading_style = ParagraphStyle('CustomHeading', parent=styles['Heading2'],
+    fontSize=14, spaceBefore=20, spaceAfter=10)
+normal_style = styles['Normal']
+
+story = []
+
+# Title
+story.append(Paragraph("CASE Structure Elucidation Report", title_style))
+story.append(Spacer(1, 0.25*inch))
+
+# Summary table
+story.append(Paragraph("Summary", heading_style))
+summary_data = [
+    ["Molecular Formula", "<FORMULA>"],
+    ["Molecular Weight", "<MW> Da"],
+    ["Degree of Unsaturation (DBE)", "<DBE>"],
+    ["LSD Solutions Found", "<COUNT>"],
+]
+summary_table = Table(summary_data, colWidths=[2.5*inch, 3*inch])
+summary_table.setStyle(TableStyle([
+    ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+    ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+    ('PADDING', (0, 0), (-1, -1), 8),
+]))
+story.append(summary_table)
+story.append(Spacer(1, 0.3*inch))
+
+# 13C NMR Data Table
+story.append(Paragraph("13C NMR Data", heading_style))
+c13_data = [
+    ["#", "Shift (ppm)", "Multiplicity", "Assignment"],
+    # Add rows for each carbon signal:
+    # ["1", "131.29", "C (quat)", "=C< olefinic"],
+]
+c13_table = Table(c13_data, colWidths=[0.4*inch, 1.2*inch, 1.2*inch, 2.5*inch])
+c13_table.setStyle(TableStyle([
+    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4472C4')),
+    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+    ('PADDING', (0, 0), (-1, -1), 6),
+]))
+story.append(c13_table)
+story.append(Spacer(1, 0.3*inch))
+
+# Structure rendering function
+def smiles_to_image(smiles, size=(400, 300)):
+    mol = Chem.MolFromSmiles(smiles)
+    AllChem.Compute2DCoords(mol)
+    img = Draw.MolToImage(mol, size=size)
+    img_buffer = io.BytesIO()
+    img.save(img_buffer, format='PNG')
+    img_buffer.seek(0)
+    return img_buffer
+
+# For each candidate structure:
+story.append(Paragraph("Structure Candidates", heading_style))
+# candidate_smiles = ["SMILES1", "SMILES2", ...]
+# for i, smi in enumerate(candidate_smiles, 1):
+#     story.append(Paragraph(f"<b>Rank {i}:</b> {name}", normal_style))
+#     story.append(Paragraph(f"MAE: {mae} ppm | SMILES: {smi}", normal_style))
+#     img = smiles_to_image(smi)
+#     story.append(Image(img, width=3*inch, height=2.25*inch))
+#     story.append(Spacer(1, 0.2*inch))
+
+# Ranking comparison table
+story.append(Paragraph("Ranking Comparison", heading_style))
+rank_data = [
+    ["Rank", "Structure", "MAE (ppm)", "Quality", "Within 3ppm"],
+    # ["1", "Name", "2.69", "Good", "6/10"],
+]
+rank_table = Table(rank_data, colWidths=[0.5*inch, 2.5*inch, 1*inch, 0.8*inch, 1*inch])
+rank_table.setStyle(TableStyle([
+    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4472C4')),
+    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+    ('PADDING', (0, 0), (-1, -1), 6),
+]))
+story.append(rank_table)
+
+# Build PDF
+doc.build(story)
+print("PDF report generated: analysis/CASE_Report.pdf")
+EOF
+```
+
+**The PDF report must include:**
+1. Summary table (formula, MW, DBE, solution count)
+2. 13C NMR data table with shifts, multiplicities, and assignments
+3. Key HMBC correlations table
+4. Rendered 2D structure images for all candidate structures (using RDKit)
+5. Ranking comparison table with MAE scores
+6. Recommended structure with larger image
+
+**Required dependencies:**
+```bash
+pip install reportlab  # For PDF generation (RDKit should already be installed)
+```
+
 ---
 
 ## Troubleshooting
@@ -339,10 +473,12 @@ lucy lsd rank solutions.smi --shifts "187.8,152.5,135.7,..."
 # Full workflow
 mkdir -p analysis
 lucy pick 1d ./2                                    # 13C peaks
-lucy pick hsqc ./5 --dept135 ./3                   # HSQC + multiplicities
-lucy pick hmbc ./6 --c13 ./2 --hsqc ./5            # HMBC correlations
-lucy lsd generate . C16H10N2O2 -o compound.lsd     # Generate LSD input
-lucy lsd run compound.lsd                           # Solve
-outlsd 5 < compound.sol > solutions.smi            # Convert to SMILES
-lucy lsd rank solutions.smi --spectrum ./2         # Rank by 13C prediction
+lucy pick hsqc ./5 ./3 --dept90 ./4                # HSQC + multiplicities
+lucy pick hmbc ./6 ./2 ./5 --dept135 ./3           # HMBC correlations
+lucy lsd generate . C16H10N2O2 -o analysis/compound.lsd  # Generate LSD input
+cd analysis && LSD compound.lsd                     # Solve
+lucy lsd rank solutions.smi --spectrum ../2        # Rank by 13C prediction
+# Generate PDF report (see Step 12 for full template)
 ```
+
+**IMPORTANT:** Always generate a PDF report at the end of every CASE analysis (Step 12).
