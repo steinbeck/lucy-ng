@@ -1,7 +1,7 @@
 """SQLite schema definitions for the dereplication database."""
 
 # Schema version for migrations
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 # Compounds table - stores compound metadata
 CREATE_COMPOUNDS_TABLE = """
@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
 """
 
 # HOSE statistics table - precomputed mean/std/count per HOSE code at each radius
+# m2 is the sum of squared differences from mean (for Welford's online algorithm)
 CREATE_HOSE_STATS_TABLE = """
 CREATE TABLE IF NOT EXISTS hose_stats (
     hose_code TEXT NOT NULL,
@@ -58,7 +59,17 @@ CREATE TABLE IF NOT EXISTS hose_stats (
     mean REAL NOT NULL,
     std REAL NOT NULL,
     count INTEGER NOT NULL,
+    m2 REAL NOT NULL DEFAULT 0.0,
     PRIMARY KEY (hose_code, radius)
+)
+"""
+
+# Operation checkpoint table for resumable operations
+CREATE_CHECKPOINT_TABLE = """
+CREATE TABLE IF NOT EXISTS operation_checkpoint (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 )
 """
 
@@ -77,4 +88,5 @@ SCHEMA_STATEMENTS = [
     CREATE_SCHEMA_META_TABLE,
     CREATE_HOSE_STATS_TABLE,
     CREATE_HOSE_STATS_INDEX,
+    CREATE_CHECKPOINT_TABLE,
 ]

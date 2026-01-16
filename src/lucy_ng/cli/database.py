@@ -276,15 +276,40 @@ def download(output: Path, force: bool) -> None:
     help="Maximum HOSE code radius (default: 6)",
 )
 @click.option(
-    "--batch-size",
+    "--chunk-size",
     default=10000,
     type=int,
-    help="Batch size for database insertion (default: 10000)",
+    help="Compounds per chunk for resumable mode (default: 10000)",
+)
+@click.option(
+    "--log-file",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Log file for detached operation (nohup)",
+)
+@click.option(
+    "--resume/--no-resume",
+    default=True,
+    help="Resume from checkpoint if exists (default: --resume)",
+)
+@click.option(
+    "--fresh",
+    is_flag=True,
+    help="Clear existing stats and checkpoint before starting",
+)
+@click.option(
+    "--legacy",
+    is_flag=True,
+    help="Use legacy in-memory generator (not recommended for large DBs)",
 )
 def generate_hose_stats(
     db: Path,
     max_radius: int,
-    batch_size: int,
+    chunk_size: int,
+    log_file: Path | None,
+    resume: bool,
+    fresh: bool,
+    legacy: bool,
 ) -> None:
     """Generate HOSE code statistics from database compounds.
 
@@ -294,15 +319,40 @@ def generate_hose_stats(
 
     This populates the hose_stats table for database-backed 13C shift prediction.
 
+    The default mode uses a resumable, chunked generator that:
+
+    \b
+    - Processes compounds in chunks (--chunk-size)
+    - Saves checkpoints after each chunk for resume capability
+    - Supports file-based logging for detached operation (nohup)
+    - Uses O(1) memory per HOSE code via Welford's algorithm
+
+    For production runs on large databases:
+
+    \b
+        nohup lucy database generate-hose-stats --log-file hose.log &
+        tail -f hose.log  # Monitor progress
+
+    To resume after interruption:
+
+    \b
+        lucy database generate-hose-stats  # Automatically resumes
+
+    To start fresh (clear existing data):
+
+    \b
+        lucy database generate-hose-stats --fresh
+
     Examples:
 
+    \b
         lucy database generate-hose-stats
-
         lucy database generate-hose-stats --db compounds.db --max-radius 4
+        lucy database generate-hose-stats --chunk-size 5000 --log-file gen.log
+        lucy database generate-hose-stats --fresh --no-resume
     """
     import time
 
-    from lucy_ng.prediction import HOSEStatsGenerator
     from lucy_ng.prediction.hose import HOSEGEN_AVAILABLE
 
     if not HOSEGEN_AVAILABLE:
@@ -310,24 +360,69 @@ def generate_hose_stats(
         click.echo("Install with: pip install git+https://github.com/Ratsemaat/HOSE_code_generator.git --no-deps", err=True)
         raise click.Abort()
 
-    click.echo(f"Generating HOSE statistics...")
-    click.echo(f"  Database: {db}")
-    click.echo(f"  Max radius: {max_radius}")
-
     start_time = time.time()
 
-    with DatabaseManager(db) as db_manager:
-        compound_count = db_manager.get_compound_count()
-        click.echo(f"  Compounds to process: {compound_count:,}")
+    if legacy:
+        # Legacy in-memory mode
+        from lucy_ng.prediction import HOSEStatsGenerator
 
-        generator = HOSEStatsGenerator(db_manager, max_radius=max_radius)
-        count = generator.populate_database(progress=True, batch_size=batch_size)
+        click.echo("Generating HOSE statistics (legacy mode)...")
+        click.echo(f"  Database: {db}")
+        click.echo(f"  Max radius: {max_radius}")
 
-        elapsed = time.time() - start_time
-        elapsed_min = elapsed / 60
+        with DatabaseManager(db) as db_manager:
+            compound_count = db_manager.get_compound_count()
+            click.echo(f"  Compounds to process: {compound_count:,}")
 
-        click.echo(f"\nGenerated {count:,} statistics from {generator.compounds_processed:,} compounds")
-        if generator.compounds_failed > 0:
-            click.echo(f"  Compounds failed (invalid SMILES): {generator.compounds_failed:,}")
-        click.echo(f"  Shifts processed: {generator.shifts_processed:,}")
-        click.echo(f"  Time: {elapsed_min:.1f} min")
+            generator = HOSEStatsGenerator(db_manager, max_radius=max_radius)
+            count = generator.populate_database(progress=True, batch_size=chunk_size)
+
+            elapsed = time.time() - start_time
+            elapsed_min = elapsed / 60
+
+            click.echo(f"\nGenerated {count:,} statistics from {generator.compounds_processed:,} compounds")
+            if generator.compounds_failed > 0:
+                click.echo(f"  Compounds failed (invalid SMILES): {generator.compounds_failed:,}")
+            click.echo(f"  Shifts processed: {generator.shifts_processed:,}")
+            click.echo(f"  Time: {elapsed_min:.1f} min")
+    else:
+        # Resumable chunked mode (default)
+        from lucy_ng.prediction import ResumableHOSEStatsGenerator
+
+        if not log_file:
+            click.echo("Generating HOSE statistics (resumable mode)...")
+            click.echo(f"  Database: {db}")
+            click.echo(f"  Max radius: {max_radius}")
+            click.echo(f"  Chunk size: {chunk_size:,}")
+            click.echo(f"  Resume: {resume}")
+            if fresh:
+                click.echo("  Fresh start: clearing existing data")
+
+        with DatabaseManager(db) as db_manager:
+            # Ensure checkpoint table exists
+            db_manager.create_tables()
+
+            if not log_file:
+                compound_count = db_manager.get_compound_count()
+                click.echo(f"  Compounds to process: {compound_count:,}")
+
+            generator = ResumableHOSEStatsGenerator(db_manager, max_radius=max_radius)
+            result = generator.run(
+                chunk_size=chunk_size,
+                log_file=log_file,
+                resume=resume,
+                fresh=fresh,
+            )
+
+            elapsed = time.time() - start_time
+            elapsed_min = elapsed / 60
+
+            if not log_file:
+                click.echo(f"\nGenerated {result.total_stats:,} statistics from {result.compounds_processed:,} compounds")
+                if result.compounds_failed > 0:
+                    click.echo(f"  Compounds failed (invalid SMILES): {result.compounds_failed:,}")
+                click.echo(f"  Shifts processed: {result.shifts_processed:,}")
+                click.echo(f"  Time: {elapsed_min:.1f} min")
+            else:
+                # Minimal output when using log file (for nohup)
+                click.echo(f"Generation complete. See {log_file} for details.")

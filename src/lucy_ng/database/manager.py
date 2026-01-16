@@ -500,3 +500,230 @@ class DatabaseManager:
         cursor.execute("SELECT COUNT(*) FROM hose_stats")
         row = cursor.fetchone()
         return row[0] if row else 0
+
+    def clear_hose_stats(self) -> int:
+        """Clear all HOSE statistics from the database.
+
+        Returns:
+            Number of rows deleted
+        """
+        conn = self.connection
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM hose_stats")
+        row = cursor.fetchone()
+        count: int = row[0] if row else 0
+        cursor.execute("DELETE FROM hose_stats")
+        conn.commit()
+        return count
+
+    def upsert_hose_stats_incremental(
+        self,
+        stats: list[tuple[str, int, int, float, float]],
+    ) -> int:
+        """Incrementally upsert HOSE statistics using Welford's parallel merge algorithm.
+
+        For each (hose_code, radius), if it exists in the database, merge the
+        new observations using Welford's parallel algorithm. Otherwise insert.
+
+        This enables chunked processing where each chunk's statistics are
+        merged into the database incrementally.
+
+        Args:
+            stats: List of (hose_code, radius, count, mean, m2) tuples
+
+        Returns:
+            Number of records upserted
+        """
+        import math
+
+        conn = self.connection
+        cursor = conn.cursor()
+        count = 0
+
+        for hose_code, radius, new_count, new_mean, new_m2 in stats:
+            # Check if entry exists
+            cursor.execute(
+                """
+                SELECT count, mean, m2 FROM hose_stats
+                WHERE hose_code = ? AND radius = ?
+                """,
+                (hose_code, radius),
+            )
+            row = cursor.fetchone()
+
+            if row is None:
+                # New entry - compute std from m2
+                std = math.sqrt(new_m2 / new_count) if new_count > 1 else 0.0
+                cursor.execute(
+                    """
+                    INSERT INTO hose_stats (hose_code, radius, mean, std, count, m2)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (hose_code, radius, new_mean, std, new_count, new_m2),
+                )
+            else:
+                # Merge using Welford's parallel algorithm
+                old_count, old_mean, old_m2 = row["count"], row["mean"], row["m2"]
+                combined_count = old_count + new_count
+
+                # Delta between means
+                delta = new_mean - old_mean
+
+                # Combined mean
+                combined_mean = old_mean + delta * (new_count / combined_count)
+
+                # Combined M2
+                combined_m2 = (
+                    old_m2
+                    + new_m2
+                    + delta * delta * (old_count * new_count / combined_count)
+                )
+
+                # Compute std from combined M2
+                std = (
+                    math.sqrt(combined_m2 / combined_count) if combined_count > 1 else 0.0
+                )
+
+                cursor.execute(
+                    """
+                    UPDATE hose_stats
+                    SET mean = ?, std = ?, count = ?, m2 = ?
+                    WHERE hose_code = ? AND radius = ?
+                    """,
+                    (combined_mean, std, combined_count, combined_m2, hose_code, radius),
+                )
+
+            count += 1
+
+        conn.commit()
+        return count
+
+    # =========================================================================
+    # Checkpoint Methods
+    # =========================================================================
+
+    def set_checkpoint(self, key: str, value: str) -> None:
+        """Save a checkpoint value.
+
+        Args:
+            key: Checkpoint key (e.g., "hose_stats_last_compound_id")
+            value: Checkpoint value (serialized as string)
+        """
+        conn = self.connection
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO operation_checkpoint (key, value, updated_at)
+            VALUES (?, ?, datetime('now'))
+            """,
+            (key, value),
+        )
+        conn.commit()
+
+    def get_checkpoint(self, key: str) -> str | None:
+        """Get a checkpoint value.
+
+        Args:
+            key: Checkpoint key
+
+        Returns:
+            Checkpoint value if exists, None otherwise
+        """
+        conn = self.connection
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT value FROM operation_checkpoint WHERE key = ?",
+                (key,),
+            )
+            row = cursor.fetchone()
+            return row["value"] if row else None
+        except Exception:
+            return None
+
+    def clear_checkpoint(self, key: str) -> bool:
+        """Delete a checkpoint.
+
+        Args:
+            key: Checkpoint key
+
+        Returns:
+            True if checkpoint was deleted, False if not found
+        """
+        conn = self.connection
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM operation_checkpoint WHERE key = ?",
+            (key,),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+    # =========================================================================
+    # Extended Iteration Methods
+    # =========================================================================
+
+    def iter_compounds_with_shifts_from(
+        self,
+        start_id: int = 0,
+        batch_size: int = 1000,
+    ) -> Iterator[tuple[int, str, list[tuple[int | None, float]]]]:
+        """Iterate over compounds starting from a specific ID.
+
+        Like iter_compounds_with_shifts but allows resuming from a checkpoint.
+
+        Args:
+            start_id: Start from this compound ID (exclusive, i.e., id > start_id)
+            batch_size: Number of compounds to fetch per batch
+
+        Yields:
+            Tuples of (compound_id, smiles, [(atom_index, shift_ppm), ...])
+        """
+        conn = self.connection
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT id, smiles FROM compounds
+            WHERE smiles IS NOT NULL AND smiles != ''
+              AND id > ?
+            ORDER BY id
+            """,
+            (start_id,),
+        )
+
+        while True:
+            rows = cursor.fetchmany(batch_size)
+            if not rows:
+                break
+
+            for row in rows:
+                compound_id = row["id"]
+                smiles = row["smiles"]
+
+                # Get shifts for this compound
+                shift_cursor = conn.cursor()
+                shift_cursor.execute(
+                    """
+                    SELECT atom_index, shift_ppm FROM shifts
+                    WHERE compound_id = ?
+                    """,
+                    (compound_id,),
+                )
+                shifts = [(r["atom_index"], r["shift_ppm"]) for r in shift_cursor.fetchall()]
+
+                # Only yield if compound has shifts
+                if shifts:
+                    yield (compound_id, smiles, shifts)
+
+    def get_max_compound_id(self) -> int:
+        """Get the maximum compound ID in the database.
+
+        Returns:
+            Maximum compound ID, or 0 if no compounds exist
+        """
+        conn = self.connection
+        cursor = conn.cursor()
+        cursor.execute("SELECT MAX(id) FROM compounds")
+        row = cursor.fetchone()
+        return row[0] if row and row[0] is not None else 0

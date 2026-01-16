@@ -4,7 +4,12 @@ from .hose import HOSEGEN_AVAILABLE, HOSECodeGenerator
 from .lookup import HOSELookupTable
 from .models import PredictedShift, PredictionResult, ShiftEntry
 from .predictor import C13Predictor
-from .stats_generator import HOSEStatsGenerator
+from .stats_generator import (
+    HOSEStatsGenerator,
+    ResumableHOSEStatsGenerator,
+    ResumableHOSEStatsResult,
+    WelfordAccumulator,
+)
 
 __all__ = [
     "C13Predictor",
@@ -14,5 +19,8 @@ __all__ = [
     "HOSEStatsGenerator",
     "PredictedShift",
     "PredictionResult",
+    "ResumableHOSEStatsGenerator",
+    "ResumableHOSEStatsResult",
     "ShiftEntry",
+    "WelfordAccumulator",
 ]
