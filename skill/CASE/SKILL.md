@@ -312,6 +312,28 @@ lucy lsd analyze compound.sol compound.lsd --draw solution_{n}.png
 
 This generates a 2D structure image where each atom is labeled with its LSD index (C1, C2, ..., O11), making the HMBC table directly readable against the structure.
 
+**Generate publication-quality correlation diagrams with arrows:**
+
+For visualizing HMBC correlations directly on the structure with curved arrows and J-coupling labels:
+
+```bash
+# Generate correlation diagram with atom numbers and J-coupling labels
+lucy visualize correlations \
+    --sol compound.sol \
+    --lsd-file compound.lsd \
+    --show-atom-numbers \
+    --show-j-coupling \
+    -o analysis/hmbc_diagram.svg
+```
+
+This creates a publication-quality SVG diagram showing:
+- Clean 2D structure (from the solved .sol file)
+- Red atom number annotations positioned away from the structure
+- Curved HMBC arrows connecting correlating atoms
+- ²J/³J labels on arrows indicating coupling path length
+
+**Include the correlation diagram next to the HMBC table** in your PDF report - it provides an immediate visual representation of how the HMBC correlations connect the molecular fragments.
+
 ### Step 12: Report Results
 
 ```markdown
@@ -492,7 +514,7 @@ Do NOT re-pick peaks for the PDF. Extract all data directly from the LSD file th
    - Every HSQC command in the LSD file becomes a row
    - Include carbon identity, shift, multiplicity, and proton chemical shift if known
 
-4. **Complete HMBC table** — ALL long-range correlations from the LSD file:
+4. **Complete HMBC table with correlation diagram** — ALL long-range correlations from the LSD file:
    - Every HMBC command in the LSD file becomes a row
    - Columns: "From Carbon", "To Proton", "<sup>n</sup>J<sub>CH</sub>", "Structural Information"
    - The J-coupling column shows path length using spectroscopist notation:
@@ -507,6 +529,13 @@ Do NOT re-pick peaks for the PDF. Extract all data directly from the LSD file th
    - All HMBC correlations should be ²J or ³J. If you find ⁴J+, the CASE likely required ELIM.
    - **ReportLab note:** Use `Paragraph()` objects for cells with super/subscript. Use `<super>` and `<sub>` tags.
    - Note: Reciprocal correlations (e.g., C1→H7 and C7→H2) appear as separate entries because they provide independent constraints
+   - **Include an HMBC correlation diagram** next to the table! Generate with:
+     ```bash
+     lucy visualize correlations --sol compound.sol --lsd-file compound.lsd \
+         --show-atom-numbers --show-j-coupling -o analysis/hmbc_diagram.svg
+     ```
+     Convert SVG to PNG for ReportLab (use cairosvg or Inkscape), then include as Image.
+     This diagram shows curved arrows on the structure connecting each HMBC correlation.
 
 5. **Excluded signals section** — Document WHY certain peaks were not used:
    - Solvent peaks (e.g., CDCl3 at 77 ppm)
@@ -521,9 +550,39 @@ Do NOT re-pick peaks for the PDF. Extract all data directly from the LSD file th
 8. **Recommended structure** — Larger image with SMILES and InChI, plus reasoning if not Rank #1
 
 **Required dependencies:**
+
+**CRITICAL: Install missing dependencies - do NOT fall back to suboptimal solutions (like text placeholders instead of images).**
+
 ```bash
-pip install reportlab  # For PDF generation (RDKit should already be installed)
+# Core PDF generation (RDKit should already be installed)
+pip install reportlab
+
+# SVG to PNG conversion for embedding diagrams in PDF
+pip install cairosvg
+
+# cairosvg requires the Cairo system library - install if not present:
+# macOS:
+brew install cairo
+# Then run Python with the library path if needed:
+# DYLD_LIBRARY_PATH=/opt/homebrew/opt/cairo/lib:$DYLD_LIBRARY_PATH python3 script.py
+
+# Linux (Debian/Ubuntu):
+# sudo apt-get install libcairo2-dev
+
+# Linux (RHEL/CentOS):
+# sudo yum install cairo-devel
 ```
+
+**Before generating the PDF**, verify all dependencies are working:
+```python
+# Test imports - if any fail, install the missing package
+from reportlab.platypus import SimpleDocTemplate
+from rdkit import Chem
+from rdkit.Chem import Draw
+import cairosvg  # For SVG→PNG conversion
+```
+
+If `cairosvg` import fails with "no library called cairo", install the system Cairo library as shown above.
 
 ---
 
