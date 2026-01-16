@@ -153,6 +153,7 @@ class SolutionGraph:
         output_path: str | Path,
         size: tuple[int, int] = (600, 450),
         font_size: int = 20,
+        show_h_labels: bool = True,
     ) -> bool:
         """Draw structure with LSD atom numbers as labels.
 
@@ -160,6 +161,7 @@ class SolutionGraph:
             output_path: Path to save image (PNG or SVG based on extension)
             size: Image dimensions (width, height)
             font_size: Font size for atom labels
+            show_h_labels: If True, show H indices for protonated carbons (e.g., "C7/H7")
 
         Returns:
             True if successful, False if RDKit not available
@@ -186,10 +188,17 @@ class SolutionGraph:
         opts.atomLabelFontSize = font_size
 
         # Set atom labels to element + LSD number
+        # For protonated carbons, also show H index (e.g., "C7/H7")
         for atom in mol.GetAtoms():
             lsd_num = atom.GetAtomMapNum()
             sym = atom.GetSymbol()
-            opts.atomLabels[atom.GetIdx()] = f"{sym}{lsd_num}"
+            h_count = atom.GetNumExplicitHs()
+
+            if show_h_labels and sym == "C" and h_count > 0:
+                # Show both C and H labels for protonated carbons
+                opts.atomLabels[atom.GetIdx()] = f"C{lsd_num}/H{lsd_num}"
+            else:
+                opts.atomLabels[atom.GetIdx()] = f"{sym}{lsd_num}"
 
         drawer.DrawMolecule(mol)
         drawer.FinishDrawing()
