@@ -268,7 +268,44 @@ lucy lsd rank solutions.smi --shifts "187.8,152.5,135.7,..."
 | 3.5 - 5.0 | Moderate | Review carefully |
 | > 5.0 | Poor | Likely incorrect |
 
-### Step 11: Report Results
+### Step 11: Analyze J-Coupling Path Lengths
+
+After solving, use `lucy lsd analyze` to compute the actual J-coupling path lengths for all HMBC correlations:
+
+```bash
+lucy lsd analyze compound.sol compound.lsd
+```
+
+This command:
+- Parses the OUTLSD section of the .sol file to extract molecular connectivity
+- Builds a graph from atom neighbors
+- Uses BFS shortest path to compute bonds between carbon and proton-bearing carbon
+- Reports nJ = path_length + 1 for each HMBC correlation
+
+**Example output:**
+```
+Solution 2: 9× ²J 11× ³J (all ²J/³J, no ELIM needed)
+
+HMBC Correlations:
+-------------------------------------------------------
+  C#   H#    C (ppm)   Path   J-coupling
+-------------------------------------------------------
+   1    7     131.29      1        ²J_CH
+   1   10     131.29      1        ²J_CH
+   2    7     124.71      2        ³J_CH
+   ...
+```
+
+**Interpretation:**
+- All ²J/³J correlations: Structure is consistent with standard HMBC without ELIM
+- Contains ⁴J+ correlations: May explain why ELIM was needed
+
+**JSON output for PDF generation:**
+```bash
+lucy lsd analyze compound.sol compound.lsd --format json > analysis/j_coupling.json
+```
+
+### Step 12: Report Results
 
 ```markdown
 ## CASE Results
@@ -307,7 +344,7 @@ lucy lsd rank solutions.smi --shifts "187.8,152.5,135.7,..."
 [Final structure proposal or need for additional data]
 ```
 
-### Step 12: Generate PDF Report
+### Step 13: Generate PDF Report
 
 **Always generate a PDF report** with rendered structures and formatted tables at the end of every CASE analysis.
 
@@ -455,11 +492,11 @@ Do NOT re-pick peaks for the PDF. Extract all data directly from the LSD file th
      - ²J<sub>CH</sub> = 2-bond (C directly bonded to C bearing H)
      - ³J<sub>CH</sub> = 3-bond (most common in HMBC)
      - ⁴J<sub>CH</sub> = 4-bond (W-pathway, rare in HMBC)
-   - **CRITICAL: Calculate path lengths from the .sol file, do NOT guess!**
-     - Parse the OUTLSD section of the .sol file to extract molecular connectivity
-     - Build a graph from atom neighbors
-     - Use BFS/shortest path to compute bonds between carbon and proton-bearing carbon
-     - nJ = path_length + 1
+   - **CRITICAL: Use `lucy lsd analyze` to calculate path lengths, do NOT guess!**
+     ```bash
+     lucy lsd analyze compound.sol compound.lsd --format json > analysis/j_coupling.json
+     ```
+     This parses the OUTLSD section and uses BFS to compute actual bond distances.
    - All HMBC correlations should be ²J or ³J. If you find ⁴J+, the CASE likely required ELIM.
    - **ReportLab note:** Use `Paragraph()` objects for cells with super/subscript. Use `<super>` and `<sub>` tags.
    - Note: Reciprocal correlations (e.g., C1→H7 and C7→H2) appear as separate entries because they provide independent constraints
@@ -517,8 +554,10 @@ lucy pick hsqc ./5 ./3 --dept90 ./4                # HSQC + multiplicities
 lucy pick hmbc ./6 ./2 ./5 --dept135 ./3           # HMBC correlations
 lucy lsd generate . C16H10N2O2 -o analysis/compound.lsd  # Generate LSD input
 cd analysis && LSD compound.lsd                     # Solve
+outlsd 5 < compound.sol > solutions.smi            # Convert to SMILES
 lucy lsd rank solutions.smi --spectrum ../2        # Rank by 13C prediction
-# Generate PDF report (see Step 12 for full template)
+lucy lsd analyze compound.sol compound.lsd         # Analyze J-coupling paths
+# Generate PDF report (see Step 13 for full template)
 ```
 
-**IMPORTANT:** Always generate a PDF report at the end of every CASE analysis (Step 12).
+**IMPORTANT:** Always generate a PDF report at the end of every CASE analysis (Step 13).
