@@ -85,7 +85,7 @@ class DiagramConfig(BaseModel):
     font_family: str = "Arial, sans-serif"
     font_size: float = 12.0  # Increased from 10.0 for better readability
     shift_label_offset: float = 14.0  # Increased from 12.0
-    arrow_offset_from_atom: float = 10.0  # Increased from 8.0 for clearer separation
+    arrow_offset_from_atom: float = 15.0  # Offset from atom center for clearer separation
 
     # Publication-style atom numbering (red annotations near atoms)
     show_atom_numbers: bool = False

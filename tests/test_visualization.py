@@ -491,10 +491,11 @@ class TestCorrelationDiagramGenerator:
 
         assert result.correlation_count == 3
         assert result.arrows_routed == 3
-        # Check all marker types are defined
-        assert 'id="hmbc-arrow"' in result.svg_content
-        assert 'id="hsqc-arrow"' in result.svg_content
-        assert 'id="cosy-arrow"' in result.svg_content
+        # Check all marker types are defined (circles at start and end, no arrowheads)
+        assert 'id="hmbc-start"' in result.svg_content
+        assert 'id="hmbc-end"' in result.svg_content
+        assert 'id="hsqc-start"' in result.svg_content
+        assert 'id="cosy-start"' in result.svg_content
 
     def test_generate_aromatic(self) -> None:
         """Test generating diagram for aromatic molecule (benzene)."""

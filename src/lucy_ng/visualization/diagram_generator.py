@@ -437,17 +437,18 @@ class CorrelationDiagramGenerator:
                     proton_shift=pos.proton_shift,
                 )
 
-        # Add arrow markers for each correlation type (end markers - arrowheads)
-        builder.add_arrow_marker("hmbc-arrow", self.config.hmbc_style.color, self.config.hmbc_style.head_size)
-        builder.add_arrow_marker("hsqc-arrow", self.config.hsqc_style.color, self.config.hsqc_style.head_size)
-        builder.add_arrow_marker("cosy-arrow", self.config.cosy_style.color, self.config.cosy_style.head_size)
-        builder.add_arrow_marker("noesy-arrow", self.config.noesy_style.color, self.config.noesy_style.head_size)
-
-        # Add start markers (circles) for clear arrow origin indication
+        # Add start markers (circles) for clear correlation origin indication
+        # No arrowheads - just circles at start and end points for cleaner look
         builder.add_start_marker("hmbc-start", self.config.hmbc_style.color, self.config.hmbc_style.start_marker_size)
         builder.add_start_marker("hsqc-start", self.config.hsqc_style.color, self.config.hsqc_style.start_marker_size)
         builder.add_start_marker("cosy-start", self.config.cosy_style.color, self.config.cosy_style.start_marker_size)
         builder.add_start_marker("noesy-start", self.config.noesy_style.color, self.config.noesy_style.start_marker_size)
+
+        # Add end markers (smaller circles) for correlation target indication
+        builder.add_start_marker("hmbc-end", self.config.hmbc_style.color, self.config.hmbc_style.start_marker_size * 0.8)
+        builder.add_start_marker("hsqc-end", self.config.hsqc_style.color, self.config.hsqc_style.start_marker_size * 0.8)
+        builder.add_start_marker("cosy-end", self.config.cosy_style.color, self.config.cosy_style.start_marker_size * 0.8)
+        builder.add_start_marker("noesy-end", self.config.noesy_style.color, self.config.noesy_style.start_marker_size * 0.8)
 
         # Route arrows using actual drawing coordinates
         # Re-route arrows with the correct screen coordinates
@@ -460,16 +461,16 @@ class CorrelationDiagramGenerator:
 
         # Add arrows (already in screen coordinates now)
         for arrow in routed_arrows:
-            # Get marker ids based on correlation type
+            # Get marker ids based on correlation type (circles at both ends, no arrowheads)
             marker_ids = {
-                CorrelationType.HMBC: ("hmbc-arrow", "hmbc-start"),
-                CorrelationType.HSQC: ("hsqc-arrow", "hsqc-start"),
-                CorrelationType.COSY: ("cosy-arrow", "cosy-start"),
-                CorrelationType.NOESY: ("noesy-arrow", "noesy-start"),
-                CorrelationType.ROESY: ("noesy-arrow", "noesy-start"),
+                CorrelationType.HMBC: ("hmbc-end", "hmbc-start"),
+                CorrelationType.HSQC: ("hsqc-end", "hsqc-start"),
+                CorrelationType.COSY: ("cosy-end", "cosy-start"),
+                CorrelationType.NOESY: ("noesy-end", "noesy-start"),
+                CorrelationType.ROESY: ("noesy-end", "noesy-start"),
             }
             end_marker_id, start_marker_id = marker_ids.get(
-                arrow.correlation.correlation_type, ("hmbc-arrow", "hmbc-start")
+                arrow.correlation.correlation_type, ("hmbc-end", "hmbc-start")
             )
 
             builder.add_bezier_arrow(arrow, end_marker_id, start_marker_id)

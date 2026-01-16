@@ -293,11 +293,9 @@ class SVGBuilder:
                 f'fill="{style.color}" />'
             )
 
-            # Add arrowhead indicator (larger)
+            # Add end point circle (slightly smaller than start)
             self._elements.append(
-                f'<polygon points="{line_x2},{line_y} '
-                f'{line_x2 - arrow_head_size},{line_y - arrow_head_size / 2} '
-                f'{line_x2 - arrow_head_size},{line_y + arrow_head_size / 2}" '
+                f'<circle cx="{line_x2}" cy="{line_y}" r="{start_marker_size / 2 * 0.8}" '
                 f'fill="{style.color}" />'
             )
 
