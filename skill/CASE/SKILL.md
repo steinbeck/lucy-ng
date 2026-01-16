@@ -454,9 +454,14 @@ Do NOT re-pick peaks for the PDF. Extract all data directly from the LSD file th
    - The J-coupling column shows path length using spectroscopist notation:
      - ²J<sub>CH</sub> = 2-bond (C directly bonded to C bearing H)
      - ³J<sub>CH</sub> = 3-bond (most common in HMBC)
-     - ⁴J<sub>CH</sub> = 4-bond (W-pathway, less common)
-   - Determine path lengths from the solved structure
-   - **ReportLab note:** Use `Paragraph()` objects for cells with super/subscript (plain strings don't parse HTML). Use `<super>` and `<sub>` tags (not `<sup>`).
+     - ⁴J<sub>CH</sub> = 4-bond (W-pathway, rare in HMBC)
+   - **CRITICAL: Calculate path lengths from the .sol file, do NOT guess!**
+     - Parse the OUTLSD section of the .sol file to extract molecular connectivity
+     - Build a graph from atom neighbors
+     - Use BFS/shortest path to compute bonds between carbon and proton-bearing carbon
+     - nJ = path_length + 1
+   - All HMBC correlations should be ²J or ³J. If you find ⁴J+, the CASE likely required ELIM.
+   - **ReportLab note:** Use `Paragraph()` objects for cells with super/subscript. Use `<super>` and `<sub>` tags.
    - Note: Reciprocal correlations (e.g., C1→H7 and C7→H2) appear as separate entries because they provide independent constraints
 
 5. **Excluded signals section** — Document WHY certain peaks were not used:
