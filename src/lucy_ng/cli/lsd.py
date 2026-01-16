@@ -5,7 +5,7 @@ from pathlib import Path
 
 import click
 
-from lucy_ng.lsd import LSDInputGenerator, LSDProblem, LSDRunner
+from lucy_ng.lsd import LSDInputGenerator, LSDProblem, LSDRunner, LSDSolutionAnalyzer
 from lucy_ng.lsd.parser import LSDOutputParser
 from lucy_ng.processing import AdaptivePeakPicker, DEPTGuidedPicker
 from lucy_ng.processing.hmbc_guided_picker import HMBCGuidedPicker
@@ -445,3 +445,96 @@ def lsd_rank(
                 click.echo(f"     {sol.tolerance_summary()}")
         else:
             click.echo("No solutions could be ranked.")
+
+
+@lsd.command("analyze")
+@click.argument("sol_file", type=click.Path(exists=True))
+@click.argument("lsd_file", type=click.Path(exists=True))
+@click.option(
+    "--solution",
+    "-s",
+    type=int,
+    default=None,
+    help="Analyze specific solution number (1-based). All if not set.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    help="Output format.",
+)
+def lsd_analyze(
+    sol_file: str, lsd_file: str, solution: int | None, output_format: str
+) -> None:
+    """Analyze J-coupling path lengths in LSD solutions.
+
+    SOL_FILE is the .sol file containing molecular connectivity from LSD.
+    LSD_FILE is the .lsd input file containing HMBC correlations.
+
+    For each HMBC correlation, computes the actual path length (number of bonds)
+    between the carbon and proton-bearing carbon using BFS on the molecular graph.
+    This determines whether correlations are ²J, ³J, ⁴J, etc.
+
+    Examples:
+
+      lucy lsd analyze compound.sol compound.lsd
+
+      lucy lsd analyze compound.sol compound.lsd --solution 2 --format json
+    """
+    results = LSDSolutionAnalyzer.analyze(
+        sol_path=sol_file,
+        lsd_path=lsd_file,
+        solution_number=solution,
+    )
+
+    if not results:
+        click.echo("No solutions found or solution number not in file.", err=True)
+        raise SystemExit(1)
+
+    if output_format == "json":
+        data = {
+            "solutions": [
+                {
+                    "solution_number": r.solution_number,
+                    "all_2j_3j": r.all_2j_3j,
+                    "max_j": r.max_j,
+                    "correlations": [
+                        {
+                            "carbon_idx": c.carbon_idx,
+                            "proton_idx": c.proton_idx,
+                            "carbon_shift": c.carbon_shift,
+                            "path_length": c.path_length,
+                            "j_coupling": c.j_coupling,
+                            "j_notation": c.j_notation,
+                        }
+                        for c in r.correlations
+                    ],
+                }
+                for r in results
+            ]
+        }
+        click.echo(json.dumps(data, indent=2))
+    else:
+        for r in results:
+            click.echo(r.summary())
+            click.echo()
+            click.echo("HMBC Correlations:")
+            click.echo("-" * 55)
+            click.echo(f"{'C#':>4} {'H#':>4} {'C (ppm)':>10} {'Path':>6} {'J-coupling':>12}")
+            click.echo("-" * 55)
+
+            for c in r.correlations:
+                shift_str = f"{c.carbon_shift:.2f}" if c.carbon_shift else "?"
+                path_str = str(c.path_length) if c.path_length is not None else "?"
+                click.echo(
+                    f"{c.carbon_idx:>4} {c.proton_idx:>4} {shift_str:>10} {path_str:>6} {c.j_notation:>12}"
+                )
+
+            click.echo()
+            if r.all_2j_3j:
+                click.echo("All correlations are ²J or ³J - no ELIM needed.")
+            else:
+                click.echo(
+                    f"Contains {r.max_j}J correlations - ELIM may have been required."
+                )

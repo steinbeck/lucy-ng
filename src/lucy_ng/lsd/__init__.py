@@ -35,6 +35,12 @@ if LSDRunner.is_available():
 ```
 """
 
+from lucy_ng.lsd.analyzer import (
+    AnalysisResult,
+    HMBCCorrelation,
+    LSDSolutionAnalyzer,
+    SolutionGraph,
+)
 from lucy_ng.lsd.generator import LSDInputGenerator
 from lucy_ng.lsd.models import Hybridization, LSDAtom, LSDConstraint, LSDCorrelation, LSDProblem
 from lucy_ng.lsd.parser import LSDOutputParser, LSDSolution
@@ -55,4 +61,9 @@ __all__ = [
     # Parser
     "LSDOutputParser",
     "LSDSolution",
+    # Analyzer
+    "LSDSolutionAnalyzer",
+    "SolutionGraph",
+    "HMBCCorrelation",
+    "AnalysisResult",
 ]

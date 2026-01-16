@@ -110,3 +110,104 @@ class TestLSDRun:
         assert result.exit_code == 0
         assert "--timeout" in result.output
         assert "--output-dir" in result.output
+
+
+class TestLSDAnalyze:
+    """Tests for lucy lsd analyze command."""
+
+    def test_analyze_help(self) -> None:
+        """Test analyze command help."""
+        runner = CliRunner()
+        result = runner.invoke(lsd, ["analyze", "--help"])
+        assert result.exit_code == 0
+        assert "SOL_FILE" in result.output
+        assert "LSD_FILE" in result.output
+        assert "--solution" in result.output
+
+    def test_analyze_text_output(self, tmp_path: Path) -> None:
+        """Test analyze with text output."""
+        # Create minimal .sol file
+        sol_file = tmp_path / "test.sol"
+        sol_file.write_text("""OUTLSD
+2 1
+ 1  C 4 3 1 1  0   2 1   0 0   0 0   0 0
+ 1  C 4 3 1 1  0   1 1   0 0   0 0   0 0
+0
+""")
+        # Create minimal .lsd file
+        lsd_file = tmp_path / "test.lsd"
+        lsd_file.write_text("""MULT 1 C 3 3
+MULT 2 C 3 3
+SHIX 1 20.0
+SHIX 2 30.0
+HSQC 1 1
+HSQC 2 2
+HMBC 1 2
+EXIT
+""")
+
+        runner = CliRunner()
+        result = runner.invoke(lsd, ["analyze", str(sol_file), str(lsd_file)])
+        assert result.exit_code == 0
+        assert "Solution 1" in result.output
+        assert "²J" in result.output
+
+    def test_analyze_json_output(self, tmp_path: Path) -> None:
+        """Test analyze with JSON output."""
+        # Create minimal .sol file
+        sol_file = tmp_path / "test.sol"
+        sol_file.write_text("""OUTLSD
+2 1
+ 1  C 4 3 1 1  0   2 1   0 0   0 0   0 0
+ 1  C 4 3 1 1  0   1 1   0 0   0 0   0 0
+0
+""")
+        # Create minimal .lsd file
+        lsd_file = tmp_path / "test.lsd"
+        lsd_file.write_text("""MULT 1 C 3 3
+MULT 2 C 3 3
+HSQC 1 1
+HSQC 2 2
+HMBC 1 2
+EXIT
+""")
+
+        runner = CliRunner()
+        result = runner.invoke(lsd, ["analyze", str(sol_file), str(lsd_file), "--format", "json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "solutions" in data
+        assert len(data["solutions"]) == 1
+        assert data["solutions"][0]["solution_number"] == 1
+        assert data["solutions"][0]["all_2j_3j"] is True
+
+    def test_analyze_specific_solution(self, tmp_path: Path) -> None:
+        """Test analyzing a specific solution."""
+        # Create .sol file with 2 solutions
+        sol_file = tmp_path / "test.sol"
+        sol_file.write_text("""OUTLSD
+2 1
+ 1  C 4 3 1 1  0   2 1   0 0   0 0   0 0
+ 1  C 4 3 1 1  0   1 1   0 0   0 0   0 0
+2 2
+ 1  C 4 3 1 1  0   2 1   0 0   0 0   0 0
+ 1  C 4 3 1 1  0   1 1   0 0   0 0   0 0
+0
+""")
+        lsd_file = tmp_path / "test.lsd"
+        lsd_file.write_text("""MULT 1 C 3 3
+MULT 2 C 3 3
+HSQC 1 1
+HSQC 2 2
+HMBC 1 2
+EXIT
+""")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            lsd, ["analyze", str(sol_file), str(lsd_file), "--solution", "2", "--format", "json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert len(data["solutions"]) == 1
+        assert data["solutions"][0]["solution_number"] == 2
