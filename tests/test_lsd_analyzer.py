@@ -334,3 +334,112 @@ EXIT
 
         assert len(results) == 1
         assert results[0].solution_number == 2
+
+
+class TestSolutionGraphRDKit:
+    """Tests for RDKit conversion methods."""
+
+    @pytest.fixture
+    def temp_dir(self):
+        """Create temporary directory."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield Path(tmpdir)
+
+    def test_to_smiles(self, temp_dir):
+        """Test SMILES generation from solution graph."""
+        # Create a simple ethane molecule: C-C
+        sol_file = temp_dir / "test.sol"
+        sol_file.write_text("""OUTLSD
+2 1
+ 1  C 4 3 1 1  0   2 1   0 0   0 0   0 0
+ 1  C 4 3 1 1  0   1 1   0 0   0 0   0 0
+0
+""")
+        solutions = LSDSolutionAnalyzer.parse_sol_file(sol_file)
+        graph = solutions[0]
+
+        smiles = graph.to_smiles()
+        assert smiles is not None
+        assert "C" in smiles
+
+    def test_to_smiles_with_double_bond(self, temp_dir):
+        """Test SMILES generation with double bonds."""
+        # Create ethene: C=C (bond order 2)
+        sol_file = temp_dir / "test.sol"
+        sol_file.write_text("""OUTLSD
+2 1
+ 1  C 4 2 1 1  0   2 2   0 0   0 0   0 0
+ 1  C 4 2 1 1  0   1 2   0 0   0 0   0 0
+0
+""")
+        solutions = LSDSolutionAnalyzer.parse_sol_file(sol_file)
+        graph = solutions[0]
+
+        smiles = graph.to_smiles()
+        assert smiles is not None
+        assert "=" in smiles  # Double bond present
+
+    def test_to_rdkit_mol(self, temp_dir):
+        """Test RDKit molecule creation."""
+        sol_file = temp_dir / "test.sol"
+        sol_file.write_text("""OUTLSD
+3 1
+ 1  C 4 3 1 1  0   2 1   0 0   0 0   0 0
+ 1  C 4 2 2 2  0   1 1   3 1   0 0   0 0
+ 1  C 4 3 1 1  0   2 1   0 0   0 0   0 0
+0
+""")
+        solutions = LSDSolutionAnalyzer.parse_sol_file(sol_file)
+        graph = solutions[0]
+
+        mol = graph.to_rdkit_mol()
+        assert mol is not None
+
+        # Check atom map numbers (LSD indices)
+        atom_maps = [atom.GetAtomMapNum() for atom in mol.GetAtoms()]
+        assert sorted(atom_maps) == [1, 2, 3]
+
+    def test_draw_with_atom_numbers(self, temp_dir):
+        """Test structure image generation."""
+        sol_file = temp_dir / "test.sol"
+        sol_file.write_text("""OUTLSD
+2 1
+ 1  C 4 3 1 1  0   2 1   0 0   0 0   0 0
+ 1  C 4 3 1 1  0   1 1   0 0   0 0   0 0
+0
+""")
+        solutions = LSDSolutionAnalyzer.parse_sol_file(sol_file)
+        graph = solutions[0]
+
+        # Test PNG output
+        png_path = temp_dir / "test.png"
+        success = graph.draw_with_atom_numbers(png_path)
+        assert success is True
+        assert png_path.exists()
+        assert png_path.stat().st_size > 0
+
+        # Test SVG output
+        svg_path = temp_dir / "test.svg"
+        success = graph.draw_with_atom_numbers(svg_path)
+        assert success is True
+        assert svg_path.exists()
+        content = svg_path.read_text()
+        assert "<svg" in content
+
+    def test_bond_orders_parsed(self, temp_dir):
+        """Test that bond orders are correctly parsed."""
+        sol_file = temp_dir / "test.sol"
+        sol_file.write_text("""OUTLSD
+3 1
+ 1  C 4 0 2 2  0   2 2   3 1   0 0   0 0
+ 1  C 4 1 2 2  0   1 2   0 0   0 0   0 0
+ 1  C 4 3 1 1  0   1 1   0 0   0 0   0 0
+0
+""")
+        solutions = LSDSolutionAnalyzer.parse_sol_file(sol_file)
+        graph = solutions[0]
+
+        # Atom 1 has double bond to 2, single to 3
+        assert graph.atoms[1].bond_orders == [2, 1]
+        # Atom 2 has double bond to 1
+        assert graph.atoms[2].bond_orders == [2]

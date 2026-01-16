@@ -20,6 +20,7 @@ class SolutionAtom:
     element: str
     h_count: int
     neighbors: list[int] = field(default_factory=list)
+    bond_orders: list[int] = field(default_factory=list)  # Bond order for each neighbor
 
 
 @dataclass
@@ -70,6 +71,133 @@ class SolutionGraph:
                     queue.append((neighbor, dist + 1))
 
         return -1  # No path found
+
+    def to_rdkit_mol(self) -> "Chem.Mol | None":
+        """Convert solution graph to RDKit molecule with LSD atom numbering.
+
+        Creates an RDKit molecule from the molecular connectivity stored in
+        this solution graph. Each atom's AtomMapNum is set to its LSD index
+        (1-based), enabling labeled structure rendering.
+
+        Returns:
+            RDKit Mol object with atom map numbers set to LSD indices,
+            or None if RDKit is not available.
+
+        Example:
+            >>> graph = LSDSolutionAnalyzer.parse_sol_file("compound.sol")[0]
+            >>> mol = graph.to_rdkit_mol()
+            >>> # Render with atom labels
+            >>> from rdkit.Chem import Draw
+            >>> Draw.MolToFile(mol, "structure.png")
+        """
+        try:
+            from rdkit import Chem
+            from rdkit.Chem import AllChem
+        except ImportError:
+            return None
+
+        mol = Chem.RWMol()
+        atom_map: dict[int, int] = {}  # LSD index -> RDKit index
+
+        # Add atoms in LSD index order
+        for lsd_idx in sorted(self.atoms.keys()):
+            atom = self.atoms[lsd_idx]
+            rdkit_atom = Chem.Atom(atom.element)
+            rdkit_atom.SetNumExplicitHs(atom.h_count)
+            rdkit_atom.SetAtomMapNum(lsd_idx)  # Store LSD index for labeling
+            rdkit_idx = mol.AddAtom(rdkit_atom)
+            atom_map[lsd_idx] = rdkit_idx
+
+        # Add bonds (only once per pair, using bond orders)
+        bond_type_map = {
+            1: Chem.BondType.SINGLE,
+            2: Chem.BondType.DOUBLE,
+            3: Chem.BondType.TRIPLE,
+        }
+        added_bonds: set[tuple[int, int]] = set()
+
+        for lsd_idx, atom in self.atoms.items():
+            for i, neighbor in enumerate(atom.neighbors):
+                bond_key = tuple(sorted([lsd_idx, neighbor]))
+                if bond_key not in added_bonds:
+                    # Get bond order (default to single if not available)
+                    bond_order = atom.bond_orders[i] if i < len(atom.bond_orders) else 1
+                    bond_type = bond_type_map.get(bond_order, Chem.BondType.SINGLE)
+                    mol.AddBond(atom_map[lsd_idx], atom_map[neighbor], bond_type)
+                    added_bonds.add(bond_key)
+
+        mol = mol.GetMol()
+        AllChem.Compute2DCoords(mol)
+        return mol
+
+    def to_smiles(self) -> str | None:
+        """Generate SMILES string from solution graph.
+
+        Returns:
+            SMILES string, or None if RDKit is not available.
+        """
+        mol = self.to_rdkit_mol()
+        if mol is None:
+            return None
+
+        from rdkit import Chem
+
+        # Remove atom map numbers for clean SMILES
+        mol_clean = Chem.RWMol(mol)
+        for atom in mol_clean.GetAtoms():
+            atom.SetAtomMapNum(0)
+        return Chem.MolToSmiles(mol_clean.GetMol())
+
+    def draw_with_atom_numbers(
+        self,
+        output_path: str | Path,
+        size: tuple[int, int] = (600, 450),
+        font_size: int = 20,
+    ) -> bool:
+        """Draw structure with LSD atom numbers as labels.
+
+        Args:
+            output_path: Path to save image (PNG or SVG based on extension)
+            size: Image dimensions (width, height)
+            font_size: Font size for atom labels
+
+        Returns:
+            True if successful, False if RDKit not available
+        """
+        mol = self.to_rdkit_mol()
+        if mol is None:
+            return False
+
+        try:
+            from rdkit.Chem.Draw import rdMolDraw2D
+        except ImportError:
+            return False
+
+        output_path = Path(output_path)
+        suffix = output_path.suffix.lower()
+
+        if suffix == ".svg":
+            drawer = rdMolDraw2D.MolDraw2DSVG(*size)
+        else:
+            drawer = rdMolDraw2D.MolDraw2DCairo(*size)
+
+        opts = drawer.drawOptions()
+        opts.bondLineWidth = 2
+        opts.atomLabelFontSize = font_size
+
+        # Set atom labels to element + LSD number
+        for atom in mol.GetAtoms():
+            lsd_num = atom.GetAtomMapNum()
+            sym = atom.GetSymbol()
+            opts.atomLabels[atom.GetIdx()] = f"{sym}{lsd_num}"
+
+        drawer.DrawMolecule(mol)
+        drawer.FinishDrawing()
+
+        with open(output_path, "wb" if suffix != ".svg" else "w") as f:
+            f.write(drawer.GetDrawingText())
+
+        return True
 
 
 @dataclass
@@ -205,6 +333,7 @@ class LSDSolutionAnalyzer:
 
             # Atom line: starts with "1" (status), then element (C, O, N, etc.)
             # Format: "1  C 4 0 3 3  0   2 2   7 1  10 1   0 0"
+            # Fields: status element ? h_count ? ? ? (neighbor bond_order)...
             if current_solution and re.match(r"^1\s+[A-Z]", line):
                 atom_idx += 1
                 parts = line.split()
@@ -215,16 +344,19 @@ class LSDSolutionAnalyzer:
 
                     # Parse neighbors: pairs of (atom_num, bond_order) starting at index 7
                     neighbors = []
+                    bond_orders = []
                     for i in range(7, len(parts), 2):
                         neighbor_atom = int(parts[i])
-                        if neighbor_atom > 0:
+                        if neighbor_atom > 0 and i + 1 < len(parts):
                             neighbors.append(neighbor_atom)
+                            bond_orders.append(int(parts[i + 1]))
 
                     current_solution.atoms[atom_idx] = SolutionAtom(
                         index=atom_idx,
                         element=element,
                         h_count=h_count,
                         neighbors=neighbors,
+                        bond_orders=bond_orders,
                     )
 
         return solutions

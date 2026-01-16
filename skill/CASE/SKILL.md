@@ -305,6 +305,13 @@ HMBC Correlations:
 lucy lsd analyze compound.sol compound.lsd --format json > analysis/j_coupling.json
 ```
 
+**Generate structure images with LSD atom numbering:**
+```bash
+lucy lsd analyze compound.sol compound.lsd --draw solution_{n}.png
+```
+
+This generates a 2D structure image where each atom is labeled with its LSD index (C1, C2, ..., O11), making the HMBC table directly readable against the structure.
+
 ### Step 12: Report Results
 
 ```markdown
@@ -556,7 +563,7 @@ lucy lsd generate . C16H10N2O2 -o analysis/compound.lsd  # Generate LSD input
 cd analysis && LSD compound.lsd                     # Solve
 outlsd 5 < compound.sol > solutions.smi            # Convert to SMILES
 lucy lsd rank solutions.smi --spectrum ../2        # Rank by 13C prediction
-lucy lsd analyze compound.sol compound.lsd         # Analyze J-coupling paths
+lucy lsd analyze compound.sol compound.lsd --draw structure_{n}.png  # Analyze with numbered structures
 # Generate PDF report (see Step 13 for full template)
 ```
 

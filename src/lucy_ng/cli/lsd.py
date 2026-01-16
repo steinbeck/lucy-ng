@@ -464,8 +464,15 @@ def lsd_rank(
     default="text",
     help="Output format.",
 )
+@click.option(
+    "--draw",
+    "-d",
+    type=click.Path(),
+    default=None,
+    help="Draw structure with LSD atom numbers. Use {n} for solution number (e.g., 'solution_{n}.png').",
+)
 def lsd_analyze(
-    sol_file: str, lsd_file: str, solution: int | None, output_format: str
+    sol_file: str, lsd_file: str, solution: int | None, output_format: str, draw: str | None
 ) -> None:
     """Analyze J-coupling path lengths in LSD solutions.
 
@@ -476,12 +483,23 @@ def lsd_analyze(
     between the carbon and proton-bearing carbon using BFS on the molecular graph.
     This determines whether correlations are ²J, ³J, ⁴J, etc.
 
+    Use --draw to generate structure images with LSD atom numbering, useful for
+    interpreting the HMBC correlation table.
+
     Examples:
 
       lucy lsd analyze compound.sol compound.lsd
 
       lucy lsd analyze compound.sol compound.lsd --solution 2 --format json
+
+      lucy lsd analyze compound.sol compound.lsd --draw solution_{n}.png
     """
+    # Parse solution graphs for drawing (if requested)
+    solution_graphs = None
+    if draw:
+        from lucy_ng.lsd.analyzer import LSDSolutionAnalyzer as Analyzer
+        solution_graphs = {g.solution_number: g for g in Analyzer.parse_sol_file(sol_file)}
+
     results = LSDSolutionAnalyzer.analyze(
         sol_path=sol_file,
         lsd_path=lsd_file,
@@ -493,27 +511,34 @@ def lsd_analyze(
         raise SystemExit(1)
 
     if output_format == "json":
-        data = {
-            "solutions": [
-                {
-                    "solution_number": r.solution_number,
-                    "all_2j_3j": r.all_2j_3j,
-                    "max_j": r.max_j,
-                    "correlations": [
-                        {
-                            "carbon_idx": c.carbon_idx,
-                            "proton_idx": c.proton_idx,
-                            "carbon_shift": c.carbon_shift,
-                            "path_length": c.path_length,
-                            "j_coupling": c.j_coupling,
-                            "j_notation": c.j_notation,
-                        }
-                        for c in r.correlations
-                    ],
-                }
-                for r in results
-            ]
-        }
+        solutions_data = []
+        for r in results:
+            sol_data = {
+                "solution_number": r.solution_number,
+                "all_2j_3j": r.all_2j_3j,
+                "max_j": r.max_j,
+                "correlations": [
+                    {
+                        "carbon_idx": c.carbon_idx,
+                        "proton_idx": c.proton_idx,
+                        "carbon_shift": c.carbon_shift,
+                        "path_length": c.path_length,
+                        "j_coupling": c.j_coupling,
+                        "j_notation": c.j_notation,
+                    }
+                    for c in r.correlations
+                ],
+            }
+            # Add SMILES and image path if graphs available
+            if solution_graphs and r.solution_number in solution_graphs:
+                graph = solution_graphs[r.solution_number]
+                sol_data["smiles"] = graph.to_smiles()
+                if draw:
+                    img_path = draw.replace("{n}", str(r.solution_number))
+                    if graph.draw_with_atom_numbers(img_path):
+                        sol_data["image_path"] = img_path
+            solutions_data.append(sol_data)
+        data = {"solutions": solutions_data}
         click.echo(json.dumps(data, indent=2))
     else:
         for r in results:
@@ -538,3 +563,12 @@ def lsd_analyze(
                 click.echo(
                     f"Contains {r.max_j}J correlations - ELIM may have been required."
                 )
+
+            # Generate structure image if requested
+            if draw and solution_graphs and r.solution_number in solution_graphs:
+                graph = solution_graphs[r.solution_number]
+                img_path = draw.replace("{n}", str(r.solution_number))
+                if graph.draw_with_atom_numbers(img_path):
+                    smiles = graph.to_smiles()
+                    click.echo(f"\nSMILES: {smiles}")
+                    click.echo(f"Structure image: {img_path}")
