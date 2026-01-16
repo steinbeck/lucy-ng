@@ -157,6 +157,24 @@ class SolutionGraph:
     ) -> bool:
         """Draw structure with LSD atom numbers as labels.
 
+        .. deprecated::
+            Use `CorrelationDiagramGenerator.generate_from_sol_file()` for
+            publication-quality diagrams with clean atom numbering and
+            optional HMBC correlation arrows with J-coupling labels.
+
+            Example::
+
+                from lucy_ng.visualization import CorrelationDiagramGenerator, DiagramConfig
+
+                config = DiagramConfig(show_atom_numbers=True)
+                gen = CorrelationDiagramGenerator(config)
+                result = gen.generate_from_sol_file(
+                    sol_path="compound.sol",
+                    lsd_path="compound.lsd",
+                    show_j_coupling=True,
+                )
+                Path("diagram.svg").write_text(result.svg_content)
+
         Args:
             output_path: Path to save image (PNG or SVG based on extension)
             size: Image dimensions (width, height)
@@ -166,6 +184,15 @@ class SolutionGraph:
         Returns:
             True if successful, False if RDKit not available
         """
+        import warnings
+
+        warnings.warn(
+            "draw_with_atom_numbers is deprecated. Use "
+            "CorrelationDiagramGenerator.generate_from_sol_file() for "
+            "publication-quality diagrams with clean atom numbering.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         mol = self.to_rdkit_mol()
         if mol is None:
             return False

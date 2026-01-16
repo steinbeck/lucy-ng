@@ -960,6 +960,211 @@ def fetch_nmrxiv_dataset(
         return {"success": False, "error": f"Unexpected error: {e}"}
 
 
+# =============================================================================
+# Visualization Tools
+# =============================================================================
+
+
+@mcp.tool()
+def generate_correlation_diagram(
+    smiles: str | None = None,
+    correlations: list[dict] | None = None,
+    carbon_shifts: dict | None = None,
+    lsd_content: str | None = None,
+    sol_content: str | None = None,
+    solution_number: int = 1,
+    width: int = 800,
+    height: int = 600,
+    show_legend: bool = True,
+    show_hydrogens: bool = True,
+    show_atom_numbers: bool = False,
+    show_j_coupling: bool = False,
+) -> dict:
+    """Generate NMR correlation diagram showing molecular structure with arrows.
+
+    Creates publication-quality SVG diagrams with:
+    - Molecular structure rendered by RDKit
+    - Curved arrows showing NMR correlations (HMBC, HSQC, COSY)
+    - Chemical shift annotations
+    - Publication-style atom numbering (optional red annotations)
+    - J-coupling labels on arrows (²J, ³J, etc.)
+    - Legend showing correlation types
+
+    Correlations can be provided either as a list of dicts, by parsing
+    LSD input file content, or from a solved .sol file.
+
+    Args:
+        smiles: Molecular structure in SMILES format (not required with sol_content)
+        correlations: List of correlation dicts with keys:
+            - type: "HMBC", "HSQC", "COSY", "NOESY" (required)
+            - source: source atom index, 0-based (required)
+            - target: target atom index, 0-based (required)
+        carbon_shifts: Dict mapping atom index (as string or int) to 13C shift
+            e.g., {"0": 22.5, "2": 30.2} or {0: 22.5, 2: 30.2}
+        lsd_content: Raw LSD input file content to parse (for correlations)
+        sol_content: Raw LSD solution file (.sol) content for structure generation
+        solution_number: Which solution to use from .sol file (1-based, default: 1)
+        width: Diagram width in pixels (default: 800)
+        height: Diagram height in pixels (default: 600)
+        show_legend: Show correlation type legend (default: True)
+        show_hydrogens: Show explicit hydrogen atoms (default: True)
+        show_atom_numbers: Show publication-style red atom number annotations
+        show_j_coupling: Show ²J/³J labels on HMBC arrows (requires sol_content)
+
+    Returns:
+        Dictionary with:
+        - success: True if generation succeeded
+        - svg_content: Complete SVG document as string
+        - atom_count: Number of atoms in the diagram
+        - correlation_count: Number of correlations visualized
+        - arrows_routed: Number of arrows drawn
+
+    Example:
+        >>> result = generate_correlation_diagram(
+        ...     smiles="CC(C)Cc1ccc(cc1)C(C)C(=O)O",
+        ...     correlations=[
+        ...         {"type": "HMBC", "source": 0, "target": 3},
+        ...         {"type": "HMBC", "source": 12, "target": 10},
+        ...     ],
+        ...     carbon_shifts={"0": 22.5, "12": 180.5},
+        ...     show_atom_numbers=True,
+        ... )
+        >>> svg_content = result["svg_content"]
+    """
+    from lucy_ng.cli.visualize import parse_lsd_input_file
+    from lucy_ng.lsd.models import LSDProblem
+    from lucy_ng.visualization import (
+        Correlation,
+        CorrelationDiagramGenerator,
+        CorrelationType,
+        DiagramConfig,
+    )
+
+    try:
+        # Build configuration
+        config = DiagramConfig(
+            width=width,
+            height=height,
+            show_legend=show_legend,
+            show_hydrogens=show_hydrogens,
+            show_atom_numbers=show_atom_numbers,
+        )
+        generator = CorrelationDiagramGenerator(config=config)
+
+        # Mode 1: Generate from .sol file (solved structure)
+        if sol_content and lsd_content:
+            import tempfile
+
+            # Write sol content to temp file
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".sol", delete=False
+            ) as f:
+                f.write(sol_content)
+                f.flush()
+                sol_temp_path = Path(f.name)
+
+            # Write lsd content to temp file
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".lsd", delete=False
+            ) as f:
+                f.write(lsd_content)
+                f.flush()
+                lsd_temp_path = Path(f.name)
+
+            try:
+                result = generator.generate_from_sol_file(
+                    sol_path=sol_temp_path,
+                    lsd_path=lsd_temp_path,
+                    solution_number=solution_number,
+                    show_j_coupling=show_j_coupling,
+                )
+            finally:
+                sol_temp_path.unlink()
+                lsd_temp_path.unlink()
+
+        else:
+            # SMILES is required for other modes
+            if not smiles:
+                return {
+                    "success": False,
+                    "error": "smiles is required unless both sol_content and lsd_content are provided",
+                }
+
+            # Parse LSD content if provided
+            lsd_problem: LSDProblem | None = None
+            if lsd_content:
+                import tempfile
+
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".lsd", delete=False
+                ) as f:
+                    f.write(lsd_content)
+                    f.flush()
+                    temp_path = Path(f.name)
+
+                lsd_problem = parse_lsd_input_file(temp_path)
+                temp_path.unlink()
+
+            # Parse correlations from list
+            parsed_correlations: list[Correlation] = []
+            if correlations:
+                type_map = {
+                    "HMBC": CorrelationType.HMBC,
+                    "HSQC": CorrelationType.HSQC,
+                    "HMQC": CorrelationType.HSQC,
+                    "COSY": CorrelationType.COSY,
+                    "NOESY": CorrelationType.NOESY,
+                    "ROESY": CorrelationType.ROESY,
+                }
+
+                for corr in correlations:
+                    corr_type_str = corr.get("type", "HMBC").upper()
+                    corr_type = type_map.get(corr_type_str)
+                    if corr_type is None:
+                        continue
+
+                    source = corr.get("source")
+                    target = corr.get("target")
+                    if source is None or target is None:
+                        continue
+
+                    parsed_correlations.append(
+                        Correlation(
+                            source_atom=int(source),
+                            target_atom=int(target),
+                            correlation_type=corr_type,
+                        )
+                    )
+
+            # Parse carbon shifts
+            parsed_shifts: dict[int, float] | None = None
+            if carbon_shifts:
+                parsed_shifts = {int(k): float(v) for k, v in carbon_shifts.items()}
+
+            # Generate diagram
+            if lsd_problem:
+                result = generator.generate_from_lsd_problem(smiles, lsd_problem)
+            else:
+                result = generator.generate(
+                    smiles=smiles,
+                    correlations=parsed_correlations,
+                    carbon_shifts=parsed_shifts,
+                )
+
+        return {
+            "success": True,
+            "svg_content": result.svg_content,
+            "atom_count": result.atom_count,
+            "correlation_count": result.correlation_count,
+            "arrows_routed": result.arrows_routed,
+            "width": result.width,
+            "height": result.height,
+        }
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 def main() -> None:
     """Run the MCP server with stdio transport."""
     mcp.run(transport="stdio")

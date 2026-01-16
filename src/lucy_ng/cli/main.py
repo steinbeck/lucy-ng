@@ -11,6 +11,7 @@ from lucy_ng.cli.lsd import lsd
 from lucy_ng.cli.pick import pick
 from lucy_ng.cli.predict import predict
 from lucy_ng.cli.read import read
+from lucy_ng.cli.visualize import visualize
 
 
 @click.group()
@@ -30,6 +31,7 @@ def cli() -> None:
       dereplicate Match against reference databases
       predict     Predict NMR chemical shifts
       lsd         LSD structure elucidation
+      visualize   Generate NMR correlation diagrams
       fetch       Fetch data from external sources
       database    Database management (build, info)
     """
@@ -43,5 +45,6 @@ cli.add_command(analyze)
 cli.add_command(dereplicate)
 cli.add_command(predict)
 cli.add_command(lsd)
+cli.add_command(visualize)
 cli.add_command(fetch)
 cli.add_command(database)
