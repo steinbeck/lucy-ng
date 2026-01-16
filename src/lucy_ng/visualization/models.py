@@ -25,7 +25,7 @@ class ArrowStyle(BaseModel):
     dash_pattern: str | None = None  # None = solid, "5,3" = dashed
     head_size: float = 10.0  # Increased from 6.0 for clearer arrow heads
     start_marker_size: float = 5.0  # Size of circle at arrow start point
-    curvature: float = 0.3  # Bezier control point offset factor
+    curvature: float = 0.8  # Bezier control point offset factor (0.8 for publication-style wide arcs)
 
 
 class AtomPosition(BaseModel):
@@ -68,7 +68,7 @@ class DiagramConfig(BaseModel):
     padding: int = 50
     show_chemical_shifts: bool = True
     show_atom_indices: bool = False
-    show_hydrogens: bool = True  # Show explicit H atoms for arrows
+    show_hydrogens: bool = False  # Publication style: no explicit H atoms (cleaner)
     show_legend: bool = True
     hmbc_style: ArrowStyle = Field(
         default_factory=lambda: ArrowStyle(color="#E41A1C")  # Red

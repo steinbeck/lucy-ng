@@ -22,8 +22,8 @@ class ArrowRouter:
     Algorithm:
     1. Sort correlations by distance (longest first)
     2. Compute initial straight-line paths
-    3. Detect ring systems and prefer curving outside rings
-    4. Apply curvature offsets to avoid collisions
+    3. Calculate molecule center and curve OUTWARD (away from center)
+    4. Apply curvature offsets to create publication-style wide arcs
     5. Fan out multiple arrows from the same atom
     """
 
@@ -31,6 +31,7 @@ class ArrowRouter:
         """Initialize arrow router."""
         self._ring_atoms: set[int] = set()
         self._bond_midpoints: list[tuple[float, float]] = []
+        self._molecule_center: tuple[float, float] = (0.0, 0.0)
 
     def route_arrows(
         self,
@@ -52,6 +53,15 @@ class ArrowRouter:
         """
         if not correlations:
             return []
+
+        # Calculate molecule center for outward curving
+        if atom_positions:
+            # Only use heavy atoms (non-H) for center calculation
+            heavy_positions = [p for p in atom_positions.values() if p.element != "H"]
+            if heavy_positions:
+                center_x = sum(p.x for p in heavy_positions) / len(heavy_positions)
+                center_y = sum(p.y for p in heavy_positions) / len(heavy_positions)
+                self._molecule_center = (center_x, center_y)
 
         # Extract ring information if molecule provided
         if mol is not None:
@@ -120,7 +130,10 @@ class ArrowRouter:
         existing_arrows: list[RoutedArrow],
         config: DiagramConfig,
     ) -> RoutedArrow | None:
-        """Route a single arrow, avoiding collisions.
+        """Route a single arrow, curving OUTWARD from molecule center.
+
+        Publication-style HMBC diagrams show arrows that arc around
+        the outside of the molecule structure, not through it.
 
         Returns None if source or target atom not found.
         """
@@ -157,17 +170,18 @@ class ArrowRouter:
         end_x = target.x - dir_x * offset
         end_y = target.y - dir_y * offset
 
-        # Midpoint
+        # Midpoint of the arrow
         mid_x = (start_x + end_x) / 2
         mid_y = (start_y + end_y) / 2
 
-        # Determine curvature direction
+        # Determine curvature direction - ALWAYS curve OUTWARD from molecule center
         style = config.get_style_for_type(correlation.correlation_type)
-        curvature_direction = self._calculate_curvature_direction(
-            correlation, source, target, existing_arrows
+        curvature_direction = self._calculate_outward_direction(
+            mid_x, mid_y, perp_x, perp_y, existing_arrows, correlation
         )
 
         # Calculate control point offset based on arrow length
+        # Use higher curvature for longer arrows (they need to arc more to go around)
         curve_offset = style.curvature * length * curvature_direction
 
         # Single control point for quadratic Bezier
@@ -183,6 +197,51 @@ class ArrowRouter:
             control_points=[(ctrl_x, ctrl_y)],
             style=style,
         )
+
+    def _calculate_outward_direction(
+        self,
+        mid_x: float,
+        mid_y: float,
+        perp_x: float,
+        perp_y: float,
+        existing_arrows: list[RoutedArrow],
+        correlation: Correlation,
+    ) -> float:
+        """Determine curvature direction to curve AWAY from molecule center.
+
+        This creates publication-style arrows that arc around the outside
+        of the molecule rather than cutting through it.
+
+        Returns:
+            +1.0 or -1.0 indicating which direction curves outward
+        """
+        center_x, center_y = self._molecule_center
+
+        # Vector from molecule center to arrow midpoint
+        to_mid_x = mid_x - center_x
+        to_mid_y = mid_y - center_y
+
+        # Dot product with perpendicular determines which perpendicular
+        # direction points AWAY from the center
+        dot = to_mid_x * perp_x + to_mid_y * perp_y
+
+        # Base direction: curve away from center
+        base_direction = 1.0 if dot > 0 else -1.0
+
+        # Check for collisions with existing arrows and alternate if needed
+        for arrow in existing_arrows:
+            if self._arrows_overlap(correlation, arrow.correlation):
+                # If another arrow from same atom curves in this direction,
+                # consider alternating (but still prefer outward)
+                if arrow.control_points:
+                    existing_ctrl_y = arrow.control_points[0][1]
+                    existing_mid_y = (arrow.start_y + arrow.end_y) / 2
+                    existing_dir = 1.0 if existing_ctrl_y > existing_mid_y else -1.0
+                    if existing_dir == base_direction:
+                        # Alternate for variety, but don't go inward
+                        pass  # Keep base_direction for now
+
+        return base_direction
 
     def _calculate_curvature_direction(
         self,

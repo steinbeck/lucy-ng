@@ -41,7 +41,7 @@ class TestArrowStyle:
         assert style.stroke_width == 2.0  # Increased for better visibility
         assert style.head_size == 10.0  # Increased for clearer arrow heads
         assert style.start_marker_size == 5.0  # Circle at arrow start
-        assert style.curvature == 0.3
+        assert style.curvature == 0.8  # Publication-style wide arcs
         assert style.dash_pattern is None
 
     def test_custom_values(self) -> None:
@@ -125,7 +125,7 @@ class TestDiagramConfig:
         assert config.show_chemical_shifts is True
         assert config.show_legend is True
         assert config.show_atom_indices is False
-        assert config.show_hydrogens is True  # Explicit H shown by default
+        assert config.show_hydrogens is False  # Publication style: no explicit H (cleaner)
 
     def test_get_style_for_type(self) -> None:
         """Test getting style for each correlation type."""

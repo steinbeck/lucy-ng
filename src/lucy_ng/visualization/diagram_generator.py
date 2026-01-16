@@ -113,6 +113,67 @@ class CorrelationDiagramGenerator:
             arrows_routed=len(routed_arrows),
         )
 
+    def _generate_from_mol(
+        self,
+        mol: Chem.Mol,
+        correlations: list[Correlation],
+        carbon_shifts: dict[int, float] | None = None,
+        proton_shifts: dict[int, float] | None = None,
+        atom_numbers: dict[int, str] | None = None,
+        j_couplings: dict[tuple[int, int], int] | None = None,
+    ) -> DiagramResult:
+        """Generate correlation diagram from pre-built RDKit molecule.
+
+        This method is used when atom ordering must be preserved (e.g., from LSD).
+        The molecule should already have 2D coordinates computed.
+
+        Args:
+            mol: RDKit molecule with 2D coordinates
+            correlations: List of NMR correlations to visualize
+            carbon_shifts: Optional dict of atom_index -> 13C shift (ppm)
+            proton_shifts: Optional dict of atom_index -> 1H shift (ppm)
+            atom_numbers: Optional dict of atom_index -> label string
+            j_couplings: Optional dict of (source, target) -> J value
+
+        Returns:
+            DiagramResult with SVG content and metadata
+        """
+        # Optionally add explicit hydrogens
+        if self.config.show_hydrogens:
+            mol = Chem.AddHs(mol)
+            AllChem.Compute2DCoords(mol)
+
+        # Extract atom positions
+        atom_positions = self._extract_atom_positions(mol)
+
+        # Add chemical shift data
+        if carbon_shifts:
+            self._annotate_shifts(atom_positions, carbon_shifts, "carbon")
+        if proton_shifts:
+            self._annotate_shifts(atom_positions, proton_shifts, "proton")
+
+        # Route arrows to minimize overlaps
+        routed_arrows = self._router.route_arrows(
+            correlations, atom_positions, self.config, mol
+        )
+
+        # Fan out arrows sharing endpoints
+        routed_arrows = fan_out_arrows(routed_arrows)
+
+        # Build SVG
+        svg_content = self._build_svg(
+            mol, atom_positions, routed_arrows, atom_numbers, j_couplings
+        )
+
+        return DiagramResult(
+            svg_content=svg_content,
+            width=self.config.width,
+            height=self.config.height,
+            atom_count=mol.GetNumAtoms(),
+            correlation_count=len(correlations),
+            arrows_routed=len(routed_arrows),
+        )
+
     def generate_from_lsd_problem(
         self,
         smiles: str,
@@ -164,6 +225,9 @@ class CorrelationDiagramGenerator:
         a correlation diagram with the solved structure. Optionally includes
         J-coupling annotations (²J, ³J, etc.) on HMBC arrows.
 
+        IMPORTANT: Uses to_rdkit_mol() directly to preserve LSD atom ordering.
+        This ensures LSD index N corresponds to RDKit index N-1.
+
         Args:
             sol_path: Path to .sol file with molecular connectivity
             lsd_path: Path to .lsd file with correlations and shifts
@@ -187,12 +251,14 @@ class CorrelationDiagramGenerator:
 
         result = results[0]
 
-        # Get SMILES from solved structure
-        smiles = result.graph.to_smiles()
-        if smiles is None:
-            raise ValueError("Could not generate SMILES from solution")
+        # Get RDKit mol directly to preserve LSD atom ordering
+        # CRITICAL: Don't use to_smiles() as it canonicalizes and breaks index mapping!
+        mol = result.graph.to_rdkit_mol()
+        if mol is None:
+            raise ValueError("Could not generate RDKit molecule from solution")
 
         # Convert correlations (LSD 1-based → RDKit 0-based)
+        # Since to_rdkit_mol() preserves order: LSD index N → RDKit index N-1
         correlations: list[Correlation] = []
         j_couplings: dict[tuple[int, int], int] = {}
 
@@ -218,8 +284,8 @@ class CorrelationDiagramGenerator:
         if self.config.show_atom_numbers:
             atom_numbers = {i - 1: str(i) for i in result.graph.atoms.keys()}
 
-        return self.generate(
-            smiles=smiles,
+        return self._generate_from_mol(
+            mol=mol,
             correlations=correlations,
             carbon_shifts=shifts if shifts else None,
             atom_numbers=atom_numbers,
@@ -344,43 +410,6 @@ class CorrelationDiagramGenerator:
         Returns:
             Complete SVG document as string
         """
-        # Get bounding box of molecule coordinates
-        min_x = min(p.x for p in atom_positions.values())
-        max_x = max(p.x for p in atom_positions.values())
-        min_y = min(p.y for p in atom_positions.values())
-        max_y = max(p.y for p in atom_positions.values())
-
-        # Calculate scaling to fit in canvas with padding
-        mol_width = max_x - min_x
-        mol_height = max_y - min_y
-
-        # Available space (accounting for legend)
-        legend_width = 100 if self.config.show_legend else 0
-        available_width = self.config.width - 2 * self.config.padding - legend_width
-        available_height = self.config.height - 2 * self.config.padding
-
-        # Scale factor
-        scale_x = available_width / mol_width if mol_width > 0 else 1
-        scale_y = available_height / mol_height if mol_height > 0 else 1
-        scale = min(scale_x, scale_y) * 0.8  # 80% to leave room for labels
-
-        # Center offset
-        offset_x = self.config.padding + (available_width - mol_width * scale) / 2 - min_x * scale
-        offset_y = self.config.padding + (available_height - mol_height * scale) / 2 - min_y * scale
-
-        # Transform positions to canvas coordinates
-        transformed_positions: dict[int, AtomPosition] = {}
-        for idx, pos in atom_positions.items():
-            transformed_positions[idx] = AtomPosition(
-                atom_index=pos.atom_index,
-                x=pos.x * scale + offset_x,
-                y=pos.y * scale + offset_y,
-                element=pos.element,
-                hydrogen_count=pos.hydrogen_count,
-                carbon_shift=pos.carbon_shift,
-                proton_shift=pos.proton_shift,
-            )
-
         # Create SVG builder
         builder = SVGBuilder(self.config.width, self.config.height)
 
@@ -389,9 +418,24 @@ class CorrelationDiagramGenerator:
             f'<rect width="{self.config.width}" height="{self.config.height}" fill="white" />'
         )
 
-        # Render molecule using RDKit
-        mol_svg = self._render_molecule_svg(mol, scale, offset_x, offset_y, min_x, min_y)
+        # Render molecule using RDKit and get actual drawing coordinates
+        mol_svg, drawing_coords = self._render_molecule_svg_with_coords(mol)
         builder.add_raw_svg(mol_svg)
+
+        # Update atom positions with actual drawing coordinates
+        transformed_positions: dict[int, AtomPosition] = {}
+        for idx, pos in atom_positions.items():
+            if idx in drawing_coords:
+                draw_x, draw_y = drawing_coords[idx]
+                transformed_positions[idx] = AtomPosition(
+                    atom_index=pos.atom_index,
+                    x=draw_x,
+                    y=draw_y,
+                    element=pos.element,
+                    hydrogen_count=pos.hydrogen_count,
+                    carbon_shift=pos.carbon_shift,
+                    proton_shift=pos.proton_shift,
+                )
 
         # Add arrow markers for each correlation type (end markers - arrowheads)
         builder.add_arrow_marker("hmbc-arrow", self.config.hmbc_style.color, self.config.hmbc_style.head_size)
@@ -405,11 +449,17 @@ class CorrelationDiagramGenerator:
         builder.add_start_marker("cosy-start", self.config.cosy_style.color, self.config.cosy_style.start_marker_size)
         builder.add_start_marker("noesy-start", self.config.noesy_style.color, self.config.noesy_style.start_marker_size)
 
-        # Transform and add arrows
-        for arrow in routed_arrows:
-            # Transform arrow coordinates
-            transformed_arrow = self._transform_arrow(arrow, scale, offset_x, offset_y, min_x, min_y)
+        # Route arrows using actual drawing coordinates
+        # Re-route arrows with the correct screen coordinates
+        routed_arrows = self._router.route_arrows(
+            [a.correlation for a in routed_arrows],
+            transformed_positions,
+            self.config,
+            mol,
+        )
 
+        # Add arrows (already in screen coordinates now)
+        for arrow in routed_arrows:
             # Get marker ids based on correlation type
             marker_ids = {
                 CorrelationType.HMBC: ("hmbc-arrow", "hmbc-start"),
@@ -422,7 +472,7 @@ class CorrelationDiagramGenerator:
                 arrow.correlation.correlation_type, ("hmbc-arrow", "hmbc-start")
             )
 
-            builder.add_bezier_arrow(transformed_arrow, end_marker_id, start_marker_id)
+            builder.add_bezier_arrow(arrow, end_marker_id, start_marker_id)
 
         # Add chemical shift labels
         if self.config.show_chemical_shifts:
@@ -434,9 +484,9 @@ class CorrelationDiagramGenerator:
                 builder, transformed_positions, atom_numbers
             )
 
-        # Add J-coupling labels on arrows
+        # Add J-coupling labels on arrows (arrows are already in screen coordinates)
         if j_couplings:
-            self._add_j_coupling_labels(builder, routed_arrows, j_couplings, scale, offset_x, offset_y)
+            self._add_j_coupling_labels_direct(builder, routed_arrows, j_couplings)
 
         # Add legend
         if self.config.show_legend:
@@ -468,19 +518,22 @@ class CorrelationDiagramGenerator:
 
         return builder.build()
 
-    def _render_molecule_svg(
+    def _render_molecule_svg_with_coords(
         self,
         mol: Chem.Mol,
-        scale: float,
-        offset_x: float,
-        offset_y: float,
-        min_x: float,
-        min_y: float,
-    ) -> str:
-        """Render molecule structure using RDKit.
+    ) -> tuple[str, dict[int, tuple[float, float]]]:
+        """Render molecule structure using RDKit and return drawing coordinates.
 
-        Returns just the molecule drawing elements, not a full SVG document.
+        Returns:
+            Tuple of (svg_content, drawing_coords) where drawing_coords maps
+            atom index to (x, y) pixel coordinates as drawn by RDKit.
         """
+        import re
+
+        # Clear atom map numbers to avoid double-labeling (we add our own labels)
+        for atom in mol.GetAtoms():
+            atom.SetAtomMapNum(0)
+
         # Use RDKit's drawer
         drawer = rdMolDraw2D.MolDraw2DSVG(self.config.width, self.config.height)
 
@@ -493,12 +546,15 @@ class CorrelationDiagramGenerator:
         drawer.DrawMolecule(mol)
         drawer.FinishDrawing()
 
+        # Get the actual drawing coordinates for each atom
+        drawing_coords: dict[int, tuple[float, float]] = {}
+        for atom in mol.GetAtoms():
+            idx = atom.GetIdx()
+            point = drawer.GetDrawCoords(idx)
+            drawing_coords[idx] = (point.x, point.y)
+
         # Get SVG and extract just the drawing elements
         svg_text = drawer.GetDrawingText()
-
-        # Remove XML declaration and SVG wrapper, keep inner content
-        # This is a simple extraction - we want the paths and text
-        import re
 
         # Find content between <svg...> and </svg>
         match = re.search(r'<svg[^>]*>(.*)</svg>', svg_text, re.DOTALL)
@@ -506,9 +562,9 @@ class CorrelationDiagramGenerator:
             inner_content = match.group(1)
             # Remove any rect background that RDKit adds
             inner_content = re.sub(r'<rect[^>]*fill=["\']#FFFFFF["\'][^>]*/>', '', inner_content)
-            return inner_content
+            return inner_content, drawing_coords
 
-        return ""
+        return "", drawing_coords
 
     def _transform_arrow(
         self,
@@ -667,6 +723,46 @@ class CorrelationDiagramGenerator:
                 # Midpoint for straight arrows
                 label_x = (arrow.start_x + arrow.end_x) / 2 * scale + offset_x
                 label_y = (arrow.start_y + arrow.end_y) / 2 * scale + offset_y - 5
+
+            builder.add_j_coupling_label(
+                label_x,
+                label_y,
+                j_value,
+                font_size=self.config.j_coupling_font_size,
+                color="#444444",
+            )
+
+    def _add_j_coupling_labels_direct(
+        self,
+        builder: SVGBuilder,
+        routed_arrows: list[RoutedArrow],
+        j_couplings: dict[tuple[int, int], int],
+    ) -> None:
+        """Add J-coupling labels for arrows already in screen coordinates.
+
+        Args:
+            builder: SVG builder to add labels to
+            routed_arrows: List of routed arrows (in screen coordinates)
+            j_couplings: Dict mapping (source, target) to J value
+        """
+        for arrow in routed_arrows:
+            # Check if this correlation has a J-coupling value
+            key = (arrow.correlation.source_atom, arrow.correlation.target_atom)
+            key_rev = (arrow.correlation.target_atom, arrow.correlation.source_atom)
+
+            j_value = j_couplings.get(key) or j_couplings.get(key_rev)
+            if j_value is None:
+                continue
+
+            # Calculate position at the arrow's control point (curve apex)
+            if arrow.control_points:
+                ctrl_x, ctrl_y = arrow.control_points[0]
+                label_x = ctrl_x
+                label_y = ctrl_y - 5  # Slight offset above
+            else:
+                # Midpoint for straight arrows
+                label_x = (arrow.start_x + arrow.end_x) / 2
+                label_y = (arrow.start_y + arrow.end_y) / 2 - 5
 
             builder.add_j_coupling_label(
                 label_x,
