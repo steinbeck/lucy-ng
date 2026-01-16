@@ -450,7 +450,12 @@ Do NOT re-pick peaks for the PDF. Extract all data directly from the LSD file th
 
 4. **Complete HMBC table** — ALL long-range correlations from the LSD file:
    - Every HMBC command in the LSD file becomes a row
-   - Include "From Carbon", "To Proton", correlation notation, and structural interpretation
+   - Columns: "From Carbon", "To Proton", "<sup>n</sup>J<sub>CH</sub>", "Structural Information"
+   - The J-coupling column shows path length using spectroscopist notation:
+     - <sup>2</sup>J<sub>CH</sub> = 2-bond (C directly bonded to C bearing H)
+     - <sup>3</sup>J<sub>CH</sub> = 3-bond (most common in HMBC)
+     - <sup>4</sup>J<sub>CH</sub> = 4-bond (W-pathway, less common)
+   - Determine path lengths from the solved structure
    - Note: Reciprocal correlations (e.g., C1→H7 and C7→H2) appear as separate entries because they provide independent constraints
 
 5. **Excluded signals section** — Document WHY certain peaks were not used:
