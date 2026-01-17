@@ -667,22 +667,13 @@ class CorrelationDiagramGenerator:
 
             pos = positions[idx]
 
-            # Smart positioning: offset away from molecule center
-            dx = pos.x - center_x
-            dy = pos.y - center_y
-            dist = (dx**2 + dy**2) ** 0.5
-
-            if dist > 0.001:
-                # Normalize and scale
-                offset_x = (dx / dist) * self.config.atom_number_offset
-                offset_y = (dy / dist) * self.config.atom_number_offset
-            else:
-                # Default offset if at center
-                offset_x = self.config.atom_number_offset
-                offset_y = -self.config.atom_number_offset / 2
+            # Subscript-style positioning: to the right and slightly below
+            # This mimics publication style like C₁, C₂, O₁, etc.
+            offset_x = self.config.atom_number_offset
+            offset_y = self.config.atom_number_font_size * 0.4  # Slightly below baseline
 
             label_x = pos.x + offset_x
-            label_y = pos.y + offset_y + self.config.atom_number_font_size / 3
+            label_y = pos.y + offset_y
 
             builder.add_atom_number(
                 label_x,

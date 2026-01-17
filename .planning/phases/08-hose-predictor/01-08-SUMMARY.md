@@ -44,6 +44,33 @@ lucy predict table-info
 | COCONUT as data source | ~895K molecules vs 33K in nmrshiftdb2 (27x more data) |
 | Gzip-compressed JSON | Balance between size (~1-2GB) and load speed |
 | Confidence scoring | Based on radius, match count, and std deviation |
+| **No explicit hydrogens** | HOSE codes must be generated from molecules WITHOUT explicit H atoms (see below) |
+
+### CRITICAL: Hydrogen Handling Convention
+
+**All HOSE code operations MUST use molecules WITHOUT explicit hydrogens.**
+
+This affects:
+1. **Database generation**: Read SDF/SMILES → do NOT call `AddHs()` → generate HOSE codes
+2. **Prediction**: Parse SMILES with `MolFromSmiles()` (implicit H) → generate HOSE codes
+3. **Ranking**: Same as prediction
+
+**Why this matters:**
+- With explicit H: `C-4;HHHC(//)` (ethanol CH3)
+- Without explicit H: `C-4;C(//)` (ethanol CH3)
+
+These are **different HOSE codes** and will NOT match! Using inconsistent hydrogen handling between database generation and prediction causes 100% prediction failures.
+
+**Code verification:**
+```python
+# CORRECT - no explicit H
+mol = Chem.MolFromSmiles("CCO")  # 3 atoms
+hose = generate_for_atom(mol, 0, radius=1)  # "C-4;C(//)"
+
+# WRONG - explicit H causes mismatch
+mol = Chem.AddHs(Chem.MolFromSmiles("CCO"))  # 9 atoms
+hose = generate_for_atom(mol, 0, radius=1)  # "C-4;HHHC(//)" - WON'T MATCH!
+```
 
 ## Architecture
 

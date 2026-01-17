@@ -8,6 +8,7 @@ from .stats_generator import (
     HOSEStatsGenerator,
     ResumableHOSEStatsGenerator,
     ResumableHOSEStatsResult,
+    SDFHOSEStatsGenerator,
     WelfordAccumulator,
 )
 
@@ -21,6 +22,7 @@ __all__ = [
     "PredictionResult",
     "ResumableHOSEStatsGenerator",
     "ResumableHOSEStatsResult",
+    "SDFHOSEStatsGenerator",
     "ShiftEntry",
     "WelfordAccumulator",
 ]

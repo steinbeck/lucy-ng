@@ -1,0 +1,13 @@
+2026-01-17 10:28:49 - INFO - Fresh start requested, clearing existing data...
+2026-01-17 10:29:54 - INFO - Starting SDF HOSE statistics generation: total_mols=895120, max_radius=6, chunk_size=10000, sdf=predicted_coconut.sdf
+2026-01-17 10:35:19 - INFO - Chunk 1: processed=10000, failed=0, shifts=1578006, upserted=293115, progress=1.1%
+2026-01-17 10:40:41 - INFO - Chunk 2: processed=10000, failed=0, shifts=1570986, upserted=297412, progress=2.2%
+2026-01-17 10:45:56 - INFO - Chunk 3: processed=10000, failed=0, shifts=1565334, upserted=289291, progress=3.4%
+2026-01-17 10:51:18 - INFO - Chunk 4: processed=10000, failed=1, shifts=1565418, upserted=292501, progress=4.5%
+2026-01-17 10:56:47 - INFO - Chunk 5: processed=10000, failed=0, shifts=1600830, upserted=291014, progress=5.6%
+2026-01-17 11:02:12 - INFO - Chunk 6: processed=10000, failed=0, shifts=1583304, upserted=299084, progress=6.7%
+2026-01-17 11:07:44 - INFO - Chunk 7: processed=10000, failed=0, shifts=1603950, upserted=294456, progress=7.8%
+2026-01-17 11:13:18 - INFO - Chunk 8: processed=10000, failed=0, shifts=1598244, upserted=292944, progress=8.9%
+2026-01-17 11:18:44 - INFO - Chunk 9: processed=10000, failed=0, shifts=1573728, upserted=293597, progress=10.1%
+2026-01-17 11:24:13 - INFO - Chunk 10: processed=10000, failed=1, shifts=1575648, upserted=289986, progress=11.2%
+2026-01-17 11:29:45 - INFO - Chunk 11: processed=10000, failed=0, shifts=1582596, upserted=298238, progress=12.3%

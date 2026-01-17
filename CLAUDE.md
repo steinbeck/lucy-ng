@@ -1045,4 +1045,37 @@ data/                # Test NMR datasets (Bruker format)
 - **hatch** - build system
 - **pytest** - testing
 - **ruff** - linting
+
+### Critical Architecture Decisions
+
+#### HOSE Codes: NO Explicit Hydrogens
+
+**All HOSE code operations MUST use molecules WITHOUT explicit hydrogens.**
+
+This is critical for consistency between database generation and prediction. Using inconsistent hydrogen handling causes 100% prediction failures.
+
+| Operation | Correct Approach |
+|-----------|------------------|
+| Database generation | Read SDF → do NOT call `AddHs()` → generate HOSE |
+| Prediction from SMILES | `MolFromSmiles()` (implicit H) → generate HOSE |
+| Prediction from MOL | `MolFromMolBlock(removeHs=True)` → generate HOSE |
+
+**Example:**
+```python
+# CORRECT - no explicit H
+mol = Chem.MolFromSmiles("CCO")  # 3 atoms
+hose = generate_for_atom(mol, 0, radius=1)  # "C-4;C(//)"
+
+# WRONG - causes mismatch
+mol = Chem.AddHs(Chem.MolFromSmiles("CCO"))  # 9 atoms
+hose = generate_for_atom(mol, 0, radius=1)  # "C-4;HHHC(//)" - WON'T MATCH!
+```
+
+#### COCONUT Atom Indices: 1-Based
+
+COCONUT SDF files use **1-based** atom indices in the `CNMR_SHIFTS` field. When parsing, convert to 0-based for RDKit:
+
+```python
+atom_idx_0based = int(atom_idx_from_coconut) - 1
+```
 - **mypy** - type checking (strict mode)

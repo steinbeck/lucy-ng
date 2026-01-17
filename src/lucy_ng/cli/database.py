@@ -265,9 +265,15 @@ def download(output: Path, force: bool) -> None:
 @database.command("generate-hose-stats")
 @click.option(
     "--db",
-    type=click.Path(exists=True, path_type=Path),
+    type=click.Path(path_type=Path),
     default=DEFAULT_DB_PATH,
     help=f"Path to database (default: {DEFAULT_DB_PATH})",
+)
+@click.option(
+    "--sdf",
+    type=click.Path(exists=True, path_type=Path),
+    default=None,
+    help="Path to COCONUT SDF file (uses correct atom indexing)",
 )
 @click.option(
     "--max-radius",
@@ -304,6 +310,7 @@ def download(output: Path, force: bool) -> None:
 )
 def generate_hose_stats(
     db: Path,
+    sdf: Path | None,
     max_radius: int,
     chunk_size: int,
     log_file: Path | None,
@@ -311,13 +318,19 @@ def generate_hose_stats(
     fresh: bool,
     legacy: bool,
 ) -> None:
-    """Generate HOSE code statistics from database compounds.
+    """Generate HOSE code statistics from database compounds or SDF file.
 
-    Processes all compounds in the database, generates HOSE codes for each
-    carbon with a known shift (at radii 1 through max-radius), and computes
-    aggregated statistics (mean, std, count) per HOSE code.
+    Processes all compounds, generates HOSE codes for each carbon with a
+    known shift (at radii 1 through max-radius), and computes aggregated
+    statistics (mean, std, count) per HOSE code.
 
     This populates the hose_stats table for database-backed 13C shift prediction.
+
+    RECOMMENDED: Use --sdf to read directly from the COCONUT SDF file, which
+    ensures correct atom indexing (COCONUT uses 1-based indices).
+
+    \b
+        lucy database generate-hose-stats --sdf data/reference/predicted_coconut.sdf
 
     The default mode uses a resumable, chunked generator that:
 
@@ -330,26 +343,26 @@ def generate_hose_stats(
     For production runs on large databases:
 
     \b
-        nohup lucy database generate-hose-stats --log-file hose.log &
+        nohup lucy database generate-hose-stats --sdf file.sdf --log-file hose.log &
         tail -f hose.log  # Monitor progress
 
     To resume after interruption:
 
     \b
-        lucy database generate-hose-stats  # Automatically resumes
+        lucy database generate-hose-stats --sdf file.sdf  # Automatically resumes
 
     To start fresh (clear existing data):
 
     \b
-        lucy database generate-hose-stats --fresh
+        lucy database generate-hose-stats --sdf file.sdf --fresh
 
     Examples:
 
     \b
-        lucy database generate-hose-stats
-        lucy database generate-hose-stats --db compounds.db --max-radius 4
-        lucy database generate-hose-stats --chunk-size 5000 --log-file gen.log
-        lucy database generate-hose-stats --fresh --no-resume
+        lucy database generate-hose-stats --sdf data/reference/predicted_coconut.sdf
+        lucy database generate-hose-stats --sdf file.sdf --max-radius 4
+        lucy database generate-hose-stats --sdf file.sdf --chunk-size 5000 --log-file gen.log
+        lucy database generate-hose-stats --sdf file.sdf --fresh --no-resume
     """
     import time
 
@@ -362,7 +375,53 @@ def generate_hose_stats(
 
     start_time = time.time()
 
-    if legacy:
+    if sdf:
+        # SDF mode - read directly from SDF file with correct atom indexing
+        from lucy_ng.prediction import SDFHOSEStatsGenerator
+
+        if not log_file:
+            click.echo("Generating HOSE statistics from SDF file...")
+            click.echo(f"  SDF file: {sdf}")
+            click.echo(f"  Database: {db}")
+            click.echo(f"  Max radius: {max_radius}")
+            click.echo(f"  Chunk size: {chunk_size:,}")
+            click.echo(f"  Resume: {resume}")
+            if fresh:
+                click.echo("  Fresh start: clearing existing data")
+
+        # Create database if it doesn't exist
+        with DatabaseManager(db) as db_manager:
+            db_manager.create_tables()
+
+            generator = SDFHOSEStatsGenerator(
+                db_manager, sdf, max_radius=max_radius
+            )
+
+            if not log_file:
+                from rdkit import Chem
+                supplier = Chem.SDMolSupplier(str(sdf))
+                click.echo(f"  Molecules in SDF: {len(supplier):,}")
+
+            result = generator.run(
+                chunk_size=chunk_size,
+                log_file=log_file,
+                resume=resume,
+                fresh=fresh,
+            )
+
+            elapsed = time.time() - start_time
+            elapsed_min = elapsed / 60
+
+            if not log_file:
+                click.echo(f"\nGenerated {result.total_stats:,} statistics from {result.compounds_processed:,} compounds")
+                if result.compounds_failed > 0:
+                    click.echo(f"  Compounds failed: {result.compounds_failed:,}")
+                click.echo(f"  Shifts processed: {result.shifts_processed:,}")
+                click.echo(f"  Time: {elapsed_min:.1f} min")
+            else:
+                click.echo(f"Generation complete. See {log_file} for details.")
+
+    elif legacy:
         # Legacy in-memory mode
         from lucy_ng.prediction import HOSEStatsGenerator
 

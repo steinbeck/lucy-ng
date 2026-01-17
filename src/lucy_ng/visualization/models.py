@@ -91,8 +91,8 @@ class DiagramConfig(BaseModel):
     # Publication-style atom numbering (red annotations near atoms)
     show_atom_numbers: bool = False
     atom_number_color: str = "#CC0000"  # Red like publications
-    atom_number_font_size: float = 12.0  # Increased from 9.0 for better visibility
-    atom_number_offset: float = 12.0  # Increased from 10.0
+    atom_number_font_size: float = 9.0  # Smaller to fit as subscript-style
+    atom_number_offset: float = 12.0  # Base offset, used for subscript positioning
 
     # Legend settings
     legend_font_size: float = 12.0  # Font size for legend labels
