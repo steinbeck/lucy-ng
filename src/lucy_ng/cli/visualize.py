@@ -147,12 +147,16 @@ def visualize_correlations(
         --shifts '{"0": 18.0, "1": 58.0}' --show-atom-numbers -o ethanol.svg
     """
     # Configure diagram
+    # Auto-enable show_all_atom_labels when show_atom_numbers is True
+    # for publication-style diagrams with explicit element symbols
+    effective_show_all_labels = show_all_labels or show_atom_numbers
+
     config = DiagramConfig(
         width=width,
         height=height,
         show_atom_indices=show_indices,
         show_hydrogens=show_hydrogens,
-        show_all_atom_labels=show_all_labels,
+        show_all_atom_labels=effective_show_all_labels,
         show_legend=show_legend,
         show_atom_numbers=show_atom_numbers,
     )

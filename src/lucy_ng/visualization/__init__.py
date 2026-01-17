@@ -18,13 +18,21 @@ Example:
 
 from .arrow_router import ArrowRouter, fan_out_arrows
 from .diagram_generator import CorrelationDiagramGenerator
+from .layout_optimizer import LayoutOptimizer, OptimizationConfig
 from .models import (
+    ArrowElement,
     ArrowStyle,
+    AtomNumberElement,
     AtomPosition,
+    BoundingBox,
     Correlation,
     CorrelationType,
     DiagramConfig,
     DiagramResult,
+    ElementType,
+    LayoutElement,
+    LayoutProblem,
+    LayoutSolution,
     RoutedArrow,
 )
 from .svg_builder import SVGBuilder
@@ -40,6 +48,17 @@ __all__ = [
     "DiagramConfig",
     "DiagramResult",
     "RoutedArrow",
+    # Layout optimization models
+    "ArrowElement",
+    "AtomNumberElement",
+    "BoundingBox",
+    "ElementType",
+    "LayoutElement",
+    "LayoutProblem",
+    "LayoutSolution",
+    # Layout optimizer
+    "LayoutOptimizer",
+    "OptimizationConfig",
     # Utilities
     "ArrowRouter",
     "SVGBuilder",

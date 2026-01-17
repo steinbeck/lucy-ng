@@ -224,6 +224,66 @@ BOND 1 4        ; C1 bonded to O4 (carbonyl)
 - [ ] All HSQC commands before HMBC commands
 - [ ] NO `ELIM` command on first run
 
+### Step 7b: Iterative HMBC Addition (Minimize Solutions)
+
+**CRITICAL: Do NOT add all HMBC correlations at once!**
+
+Adding too many HMBC correlations often leads to **0 solutions** (over-constrained) due to:
+- Noise artifacts in the HMBC spectrum
+- Long-range correlations (⁴J+) that exceed LSD's default 2-3 bond assumption
+- Overlapping or incorrectly assigned peaks
+
+**Strategy: Gradually add HMBC correlations until solutions reach a minimum > 0**
+
+1. **Start with high-confidence correlations only** (5-7 strongest peaks)
+2. **Run LSD and check solution count**
+3. **Add 1-2 more correlations at a time**
+4. **Re-run LSD after each addition**
+5. **Stop when solutions are minimized but still > 0**
+
+**Workflow example:**
+```bash
+# Start with base correlations
+cp compound_base.lsd compound_test.lsd
+lsd compound_test.lsd 2>&1 | grep solution
+# → "47 solutions found"
+
+# Add HMBC 4 9
+echo "HMBC 4 9" >> compound_test.lsd
+lsd compound_test.lsd 2>&1 | grep solution
+# → "12 solutions found"
+
+# Add HMBC 5 9
+echo "HMBC 5 9" >> compound_test.lsd
+lsd compound_test.lsd 2>&1 | grep solution
+# → "1 solution found" ✓ IDEAL!
+
+# If we add one more and get 0 solutions, remove it!
+```
+
+**Tracking table (recommended):**
+
+| HMBC Count | Correlations Added | Solutions | Action |
+|------------|-------------------|-----------|--------|
+| 5 | Base set | 47 | Add more |
+| 7 | + C1→H7, C2→H10 | 12 | Add more |
+| 8 | + C8→H10 | 6 | Add more |
+| 9 | + C6→H9 | 6 | Add more |
+| 10 | + C4→H9 | 5 | Add more |
+| 11 | + C5→H9 | 1 | **STOP - Ideal!** |
+| 12 | + C3→H4 | 0 | **Remove last** |
+
+**Key principles:**
+- **Ideal: 1 solution** — uniquely determined structure
+- **Acceptable: 2-10 solutions** — can rank by 13C prediction
+- **0 solutions** — over-constrained, remove last correlation(s)
+- **Never use ELIM to "fix" 0 solutions** — it masks the real problem
+
+**Prioritize correlations by:**
+1. Intensity (stronger peaks are more reliable)
+2. Proximity to known fragment assignments
+3. Correlations that connect unassigned regions
+
 ### Step 8: Run LSD Solver
 
 ```bash
@@ -514,7 +574,26 @@ Do NOT re-pick peaks for the PDF. Extract all data directly from the LSD file th
    - Every HSQC command in the LSD file becomes a row
    - Include carbon identity, shift, multiplicity, and proton chemical shift if known
 
-4. **Complete HMBC table with correlation diagram** — ALL long-range correlations from the LSD file:
+4. **HMBC Correlation Diagram** (placed ABOVE the HMBC table):
+   - **Generate the diagram FIRST** before the HMBC table:
+     ```bash
+     lucy visualize correlations --sol compound.sol --lsd-file compound.lsd \
+         --show-atom-numbers -o analysis/hmbc_diagram.svg
+     ```
+   - Convert SVG to PNG for ReportLab embedding:
+     ```python
+     import cairosvg
+     cairosvg.svg2png(url='analysis/hmbc_diagram.svg',
+                      write_to='analysis/hmbc_diagram.png', scale=2.0)
+     ```
+   - The diagram shows:
+     - Clean 2D structure with explicit atom labels (C, H, O)
+     - Red curved arrows connecting HMBC-correlating atoms
+     - Atom numbers matching the LSD file numbering
+     - Optimized layout to avoid overlaps between arrows and labels
+   - **Include as a centered Image** in the PDF, full page width (~6 inches)
+
+5. **Complete HMBC table** (placed BELOW the diagram) — ALL long-range correlations from the LSD file:
    - Every HMBC command in the LSD file becomes a row
    - Columns: "From Carbon", "To Proton", "<sup>n</sup>J<sub>CH</sub>", "Structural Information"
    - The J-coupling column shows path length using spectroscopist notation:
@@ -529,25 +608,18 @@ Do NOT re-pick peaks for the PDF. Extract all data directly from the LSD file th
    - All HMBC correlations should be ²J or ³J. If you find ⁴J+, the CASE likely required ELIM.
    - **ReportLab note:** Use `Paragraph()` objects for cells with super/subscript. Use `<super>` and `<sub>` tags.
    - Note: Reciprocal correlations (e.g., C1→H7 and C7→H2) appear as separate entries because they provide independent constraints
-   - **Include an HMBC correlation diagram** next to the table! Generate with:
-     ```bash
-     lucy visualize correlations --sol compound.sol --lsd-file compound.lsd \
-         --show-atom-numbers --show-j-coupling -o analysis/hmbc_diagram.svg
-     ```
-     Convert SVG to PNG for ReportLab (use cairosvg or Inkscape), then include as Image.
-     This diagram shows curved arrows on the structure connecting each HMBC correlation.
 
-5. **Excluded signals section** — Document WHY certain peaks were not used:
+6. **Excluded signals section** — Document WHY certain peaks were not used:
    - Solvent peaks (e.g., CDCl3 at 77 ppm)
    - Noise/artifacts
    - Duplicate signals from overlapping peaks
    - Signals that couldn't be assigned confidently
 
-6. **Structure candidates** — Rendered 2D images (RDKit) with SMILES and MAE scores
+7. **Structure candidates** — Rendered 2D images (RDKit) with SMILES and MAE scores
 
-7. **Ranking comparison table** — All candidates with MAE, quality rating, carbons within tolerance
+8. **Ranking comparison table** — All candidates with MAE, quality rating, carbons within tolerance
 
-8. **Recommended structure** — Larger image with SMILES and InChI, plus reasoning if not Rank #1
+9. **Recommended structure** — Larger image with SMILES and InChI, plus reasoning if not Rank #1
 
 **Required dependencies:**
 

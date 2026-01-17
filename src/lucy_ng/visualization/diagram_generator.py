@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -10,12 +11,19 @@ from rdkit.Chem import AllChem, Draw
 from rdkit.Chem.Draw import rdMolDraw2D
 
 from .arrow_router import ArrowRouter, fan_out_arrows
+from .layout_optimizer import LayoutOptimizer, OptimizationConfig
 from .models import (
+    ArrowElement,
+    AtomNumberElement,
     AtomPosition,
+    BoundingBox,
     Correlation,
     CorrelationType,
     DiagramConfig,
     DiagramResult,
+    ElementType,
+    LayoutElement,
+    LayoutProblem,
     RoutedArrow,
 )
 from .svg_builder import SVGBuilder
@@ -138,10 +146,13 @@ class CorrelationDiagramGenerator:
         Returns:
             DiagramResult with SVG content and metadata
         """
-        # Optionally add explicit hydrogens
+        # Optionally add explicit hydrogens (skip if already added)
         if self.config.show_hydrogens:
-            mol = Chem.AddHs(mol)
-            AllChem.Compute2DCoords(mol)
+            # Check if mol already has explicit Hs
+            has_explicit_h = any(atom.GetSymbol() == "H" for atom in mol.GetAtoms())
+            if not has_explicit_h:
+                mol = Chem.AddHs(mol)
+                AllChem.Compute2DCoords(mol)
 
         # Extract atom positions
         atom_positions = self._extract_atom_positions(mol)
@@ -228,6 +239,9 @@ class CorrelationDiagramGenerator:
         IMPORTANT: Uses to_rdkit_mol() directly to preserve LSD atom ordering.
         This ensures LSD index N corresponds to RDKit index N-1.
 
+        When show_hydrogens is enabled, HMBC arrows point from carbon atoms
+        to the actual hydrogen atoms (not to the carbon bearing the H).
+
         Args:
             sol_path: Path to .sol file with molecular connectivity
             lsd_path: Path to .lsd file with correlations and shifts
@@ -257,21 +271,56 @@ class CorrelationDiagramGenerator:
         if mol is None:
             raise ValueError("Could not generate RDKit molecule from solution")
 
+        # Add explicit hydrogens if configured
+        # This must happen BEFORE we build correlations so we can find H indices
+        if self.config.show_hydrogens:
+            mol = Chem.AddHs(mol)
+            AllChem.Compute2DCoords(mol)
+
+        # Build map from heavy atom idx to attached H atom indices
+        # (only relevant when show_hydrogens=True)
+        heavy_atom_to_h_indices: dict[int, list[int]] = {}
+        if self.config.show_hydrogens:
+            for atom in mol.GetAtoms():
+                if atom.GetSymbol() == "H":
+                    # Find which heavy atom this H is attached to
+                    for neighbor in atom.GetNeighbors():
+                        n_idx = neighbor.GetIdx()
+                        if n_idx not in heavy_atom_to_h_indices:
+                            heavy_atom_to_h_indices[n_idx] = []
+                        heavy_atom_to_h_indices[n_idx].append(atom.GetIdx())
+
         # Convert correlations (LSD 1-based → RDKit 0-based)
         # Since to_rdkit_mol() preserves order: LSD index N → RDKit index N-1
         correlations: list[Correlation] = []
         j_couplings: dict[tuple[int, int], int] = {}
 
         for c in result.correlations:
+            source_idx = c.carbon_idx - 1  # Observed carbon
+            proton_bearing_c_idx = c.proton_idx - 1  # Carbon bearing the correlated H
+
+            # Determine target: actual H atom if available, else the C bearing the H
+            if self.config.show_hydrogens and proton_bearing_c_idx in heavy_atom_to_h_indices:
+                # Point to the first H attached to this carbon
+                target_idx = heavy_atom_to_h_indices[proton_bearing_c_idx][0]
+            else:
+                # Fall back to pointing at the carbon (skeletal formula style)
+                target_idx = proton_bearing_c_idx
+
             corr = Correlation(
-                source_atom=c.carbon_idx - 1,
-                target_atom=c.proton_idx - 1,
+                source_atom=source_idx,
+                target_atom=target_idx,
                 correlation_type=CorrelationType.HMBC,
             )
             correlations.append(corr)
 
+            # J-coupling: when pointing to H, path is one bond longer
             if show_j_coupling and c.j_coupling is not None:
-                j_couplings[(c.carbon_idx - 1, c.proton_idx - 1)] = c.j_coupling
+                effective_j = c.j_coupling
+                if self.config.show_hydrogens and proton_bearing_c_idx in heavy_atom_to_h_indices:
+                    # Path to H is one bond longer than path to C bearing H
+                    effective_j = c.j_coupling + 1
+                j_couplings[(source_idx, target_idx)] = effective_j
 
         # Get shifts from analysis
         shifts: dict[int, float] = {}
@@ -280,6 +329,7 @@ class CorrelationDiagramGenerator:
                 shifts[c.carbon_idx - 1] = c.carbon_shift
 
         # Build atom number map (LSD numbering, 1-based labels)
+        # Only number heavy atoms (not hydrogens)
         atom_numbers: dict[int, str] | None = None
         if self.config.show_atom_numbers:
             atom_numbers = {i - 1: str(i) for i in result.graph.atoms.keys()}
@@ -400,6 +450,9 @@ class CorrelationDiagramGenerator:
     ) -> str:
         """Build complete SVG with structure, arrows, and labels.
 
+        Uses constraint-based optimization to position atom numbers and
+        adjust arrow curvatures to minimize overlaps.
+
         Args:
             mol: RDKit molecule
             atom_positions: Dict of atom positions
@@ -421,6 +474,9 @@ class CorrelationDiagramGenerator:
         # Render molecule using RDKit and get actual drawing coordinates
         mol_svg, drawing_coords = self._render_molecule_svg_with_coords(mol)
         builder.add_raw_svg(mol_svg)
+
+        # Store the drawer for later use
+        drawer = rdMolDraw2D.MolDraw2DSVG(self.config.width, self.config.height)
 
         # Update atom positions with actual drawing coordinates
         transformed_positions: dict[int, AtomPosition] = {}
@@ -459,31 +515,65 @@ class CorrelationDiagramGenerator:
             mol,
         )
 
-        # Add arrows (already in screen coordinates now)
-        for arrow in routed_arrows:
-            # Get marker ids based on correlation type (circles at both ends, no arrowheads)
-            marker_ids = {
-                CorrelationType.HMBC: ("hmbc-end", "hmbc-start"),
-                CorrelationType.HSQC: ("hsqc-end", "hsqc-start"),
-                CorrelationType.COSY: ("cosy-end", "cosy-start"),
-                CorrelationType.NOESY: ("noesy-end", "noesy-start"),
-                CorrelationType.ROESY: ("noesy-end", "noesy-start"),
-            }
-            end_marker_id, start_marker_id = marker_ids.get(
-                arrow.correlation.correlation_type, ("hmbc-end", "hmbc-start")
+        # =====================================================================
+        # Layout Optimization
+        # =====================================================================
+        # Collect all elements and run constraint-based optimization to
+        # minimize overlaps between atom numbers and arrows
+        use_optimization = self.config.show_atom_numbers or atom_numbers
+
+        if use_optimization:
+            # Collect layout elements
+            layout_problem = self._collect_layout_elements(
+                mol, drawer, transformed_positions, routed_arrows, atom_numbers
             )
 
-            builder.add_bezier_arrow(arrow, end_marker_id, start_marker_id)
+            # Run optimization (takes up to 8 seconds for complex diagrams)
+            optimizer = LayoutOptimizer()
+            solution = optimizer.optimize(layout_problem, max_time_seconds=8.0)
+
+            # Use optimized arrows
+            optimized_arrows = self._build_optimized_arrows(
+                layout_problem, routed_arrows
+            )
+
+            # Add optimized arrows to SVG
+            for arrow in optimized_arrows:
+                marker_ids = {
+                    CorrelationType.HMBC: ("hmbc-end", "hmbc-start"),
+                    CorrelationType.HSQC: ("hsqc-end", "hsqc-start"),
+                    CorrelationType.COSY: ("cosy-end", "cosy-start"),
+                    CorrelationType.NOESY: ("noesy-end", "noesy-start"),
+                    CorrelationType.ROESY: ("noesy-end", "noesy-start"),
+                }
+                end_marker_id, start_marker_id = marker_ids.get(
+                    arrow.correlation.correlation_type, ("hmbc-end", "hmbc-start")
+                )
+                builder.add_bezier_arrow(arrow, end_marker_id, start_marker_id)
+
+            # Add optimized atom number labels
+            self._apply_optimized_layout(builder, layout_problem)
+
+            # Use optimized arrows for J-coupling labels
+            routed_arrows = optimized_arrows
+        else:
+            # No optimization needed - use original rendering
+            for arrow in routed_arrows:
+                marker_ids = {
+                    CorrelationType.HMBC: ("hmbc-end", "hmbc-start"),
+                    CorrelationType.HSQC: ("hsqc-end", "hsqc-start"),
+                    CorrelationType.COSY: ("cosy-end", "cosy-start"),
+                    CorrelationType.NOESY: ("noesy-end", "noesy-start"),
+                    CorrelationType.ROESY: ("noesy-end", "noesy-start"),
+                }
+                end_marker_id, start_marker_id = marker_ids.get(
+                    arrow.correlation.correlation_type, ("hmbc-end", "hmbc-start")
+                )
+                builder.add_bezier_arrow(arrow, end_marker_id, start_marker_id)
 
         # Add chemical shift labels
         if self.config.show_chemical_shifts:
             self._add_shift_labels(builder, transformed_positions)
-
-        # Add publication-style atom number annotations
-        if self.config.show_atom_numbers or atom_numbers:
-            self._add_atom_number_annotations(
-                builder, transformed_positions, atom_numbers, mol
-            )
 
         # Add J-coupling labels on arrows (arrows are already in screen coordinates)
         if j_couplings:
@@ -535,12 +625,6 @@ class CorrelationDiagramGenerator:
         for atom in mol.GetAtoms():
             atom.SetAtomMapNum(0)
 
-        # If show_all_atom_labels is enabled, set explicit labels for all atoms
-        if self.config.show_all_atom_labels:
-            for atom in mol.GetAtoms():
-                symbol = atom.GetSymbol()
-                atom.SetProp("atomLabel", symbol)
-
         # Use RDKit's drawer
         drawer = rdMolDraw2D.MolDraw2DSVG(self.config.width, self.config.height)
 
@@ -548,8 +632,19 @@ class CorrelationDiagramGenerator:
         opts = drawer.drawOptions()
         opts.addAtomIndices = self.config.show_atom_indices
         opts.addStereoAnnotation = False
+
+        # If show_all_atom_labels is enabled, force all atom symbols to be drawn
+        # by setting them as atom aliases (RDKit's preferred method)
         if self.config.show_all_atom_labels:
             opts.explicitMethyl = True  # Show CH3 groups explicitly
+            # Force labels for atoms that RDKit would normally hide (C and H)
+            # RDKit respects atomLabels over default "don't draw" behavior
+            for atom in mol.GetAtoms():
+                idx = atom.GetIdx()
+                symbol = atom.GetSymbol()
+                # Set label for C and H atoms (others like O, N are already shown)
+                if symbol in ("C", "H"):
+                    opts.atomLabels[idx] = symbol
 
         # Draw the molecule
         drawer.DrawMolecule(mol)
@@ -805,3 +900,252 @@ class CorrelationDiagramGenerator:
                 font_size=self.config.j_coupling_font_size,
                 color="#444444",
             )
+
+    # =========================================================================
+    # Layout Optimization Methods
+    # =========================================================================
+
+    def _collect_layout_elements(
+        self,
+        mol: Chem.Mol,
+        drawer: rdMolDraw2D.MolDraw2DSVG,
+        transformed_positions: dict[int, AtomPosition],
+        routed_arrows: list[RoutedArrow],
+        atom_numbers: dict[int, str] | None,
+    ) -> LayoutProblem:
+        """Collect all layout elements for optimization.
+
+        Args:
+            mol: RDKit molecule
+            drawer: RDKit drawer (for getting drawing coordinates)
+            transformed_positions: Atom positions in screen coordinates
+            routed_arrows: List of routed arrows
+            atom_numbers: Dict of atom_index -> label string
+
+        Returns:
+            LayoutProblem ready for optimization
+        """
+        fixed_elements: list[LayoutElement] = []
+
+        # Extract bond segments as fixed elements
+        bond_stroke_width = 2.0
+        for bond in mol.GetBonds():
+            idx1 = bond.GetBeginAtomIdx()
+            idx2 = bond.GetEndAtomIdx()
+
+            if idx1 in transformed_positions and idx2 in transformed_positions:
+                p1 = transformed_positions[idx1]
+                p2 = transformed_positions[idx2]
+
+                bbox = BoundingBox.from_line_segment(
+                    (p1.x, p1.y), (p2.x, p2.y), bond_stroke_width
+                )
+                fixed_elements.append(
+                    LayoutElement(
+                        element_type=ElementType.BOND,
+                        bbox=bbox,
+                        is_movable=False,
+                    )
+                )
+
+        # Create atom number elements (movable)
+        atom_number_elements: list[AtomNumberElement] = []
+
+        if atom_numbers is None and self.config.show_atom_numbers:
+            # Generate default numbering for heavy atoms
+            atom_numbers = {
+                idx: str(idx + 1)
+                for idx, pos in transformed_positions.items()
+                if pos.element != "H"
+            }
+
+        if atom_numbers:
+            for idx, label in atom_numbers.items():
+                if idx not in transformed_positions:
+                    continue
+
+                pos = transformed_positions[idx]
+
+                # Calculate initial angle using the "largest gap" heuristic
+                initial_angle = self._calculate_initial_angle(
+                    idx, pos, transformed_positions, mol
+                )
+
+                atom_number_elements.append(
+                    AtomNumberElement(
+                        element_type=ElementType.ATOM_NUMBER,
+                        bbox=BoundingBox(0, 0, 0, 0),  # Will be updated
+                        is_movable=True,
+                        atom_idx=idx,
+                        label_text=label,
+                        anchor_x=pos.x,
+                        anchor_y=pos.y,
+                        font_size=self.config.atom_number_font_size,
+                        offset_angle=initial_angle,
+                        offset_distance=self.config.atom_number_offset,
+                    )
+                )
+
+        # Create arrow elements (movable curvature)
+        arrow_elements: list[ArrowElement] = []
+
+        for arrow in routed_arrows:
+            # Get initial curvature direction from the routed arrow
+            initial_direction = 1.0
+            if arrow.control_points:
+                mid_y = (arrow.start_y + arrow.end_y) / 2
+                ctrl_y = arrow.control_points[0][1]
+                # Determine which side the control point is on
+                dx = arrow.end_x - arrow.start_x
+                dy = arrow.end_y - arrow.start_y
+                length = math.sqrt(dx * dx + dy * dy)
+                if length > 1e-6:
+                    perp_y = dx / length  # Perpendicular Y component
+                    ctrl_offset_y = arrow.control_points[0][1] - mid_y
+                    initial_direction = 1.0 if ctrl_offset_y * perp_y >= 0 else -1.0
+
+            arrow_elements.append(
+                ArrowElement(
+                    element_type=ElementType.ARROW,
+                    bbox=BoundingBox(0, 0, 0, 0),  # Will be updated
+                    is_movable=True,
+                    source_atom=arrow.correlation.source_atom,
+                    target_atom=arrow.correlation.target_atom,
+                    start_pos=(arrow.start_x, arrow.start_y),
+                    end_pos=(arrow.end_x, arrow.end_y),
+                    curvature=arrow.style.curvature,
+                    direction=initial_direction,
+                    stroke_width=arrow.style.stroke_width,
+                )
+            )
+
+        return LayoutProblem(
+            fixed_elements=fixed_elements,
+            atom_numbers=atom_number_elements,
+            arrows=arrow_elements,
+            canvas_width=self.config.width,
+            canvas_height=self.config.height,
+            max_label_distance=self.config.atom_number_offset + 10,
+            min_label_distance=self.config.atom_number_offset - 6,
+            min_curvature=1.2,
+            max_curvature=2.5,
+        )
+
+    def _calculate_initial_angle(
+        self,
+        atom_idx: int,
+        pos: AtomPosition,
+        positions: dict[int, AtomPosition],
+        mol: Chem.Mol,
+    ) -> float:
+        """Calculate initial label angle using largest-gap heuristic.
+
+        Finds the largest angular gap between bonds/neighbors and places
+        the label in the middle of that gap.
+        """
+        neighbor_angles: list[float] = []
+
+        if atom_idx < mol.GetNumAtoms():
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                n_idx = neighbor.GetIdx()
+                if n_idx in positions:
+                    n_pos = positions[n_idx]
+                    dx = n_pos.x - pos.x
+                    dy = n_pos.y - pos.y
+                    angle = math.atan2(dy, dx)
+                    neighbor_angles.append(angle)
+
+        if not neighbor_angles:
+            # No neighbors, default to bottom-right (pi/4)
+            return math.pi / 4
+
+        # Sort angles and find largest gap
+        neighbor_angles.sort()
+
+        # Add 2*pi to first angle to check wrap-around gap
+        angles_extended = neighbor_angles + [neighbor_angles[0] + 2 * math.pi]
+
+        max_gap = 0.0
+        best_angle = 0.0
+
+        for i in range(len(neighbor_angles)):
+            gap = angles_extended[i + 1] - neighbor_angles[i]
+            if gap > max_gap:
+                max_gap = gap
+                # Place label in the middle of the gap
+                best_angle = neighbor_angles[i] + gap / 2
+
+        # Normalize to [0, 2*pi]
+        while best_angle < 0:
+            best_angle += 2 * math.pi
+        while best_angle >= 2 * math.pi:
+            best_angle -= 2 * math.pi
+
+        return best_angle
+
+    def _apply_optimized_layout(
+        self,
+        builder: SVGBuilder,
+        solution: LayoutProblem,
+    ) -> None:
+        """Add optimized atom number labels to the SVG.
+
+        Args:
+            builder: SVG builder to add elements to
+            solution: Optimized layout problem with positioned elements
+        """
+        for atom_num in solution.atom_numbers:
+            label_x, label_y = atom_num.get_label_position()
+
+            builder.add_atom_number(
+                label_x,
+                label_y,
+                atom_num.label_text,
+                font_size=atom_num.font_size,
+                color=self.config.atom_number_color,
+            )
+
+    def _build_optimized_arrows(
+        self,
+        solution: LayoutProblem,
+        original_arrows: list[RoutedArrow],
+    ) -> list[RoutedArrow]:
+        """Convert optimized ArrowElements back to RoutedArrows.
+
+        Args:
+            solution: Optimized layout with arrow elements
+            original_arrows: Original routed arrows (for style info)
+
+        Returns:
+            List of RoutedArrows with optimized control points
+        """
+        result = []
+
+        # Create lookup from (source, target) to original arrow
+        arrow_lookup: dict[tuple[int, int], RoutedArrow] = {}
+        for arrow in original_arrows:
+            key = (arrow.correlation.source_atom, arrow.correlation.target_atom)
+            arrow_lookup[key] = arrow
+
+        for arrow_elem in solution.arrows:
+            key = (arrow_elem.source_atom, arrow_elem.target_atom)
+            original = arrow_lookup.get(key)
+
+            if original is None:
+                continue
+
+            # Create new RoutedArrow with optimized control point
+            result.append(
+                RoutedArrow(
+                    correlation=original.correlation,
+                    start_x=arrow_elem.start_pos[0],
+                    start_y=arrow_elem.start_pos[1],
+                    end_x=arrow_elem.end_pos[0],
+                    end_y=arrow_elem.end_pos[1],
+                    control_points=[arrow_elem.control_point],
+                    style=original.style,
+                )
+            )
+
+        return result
