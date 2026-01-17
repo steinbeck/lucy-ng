@@ -482,7 +482,7 @@ class CorrelationDiagramGenerator:
         # Add publication-style atom number annotations
         if self.config.show_atom_numbers or atom_numbers:
             self._add_atom_number_annotations(
-                builder, transformed_positions, atom_numbers
+                builder, transformed_positions, atom_numbers, mol
             )
 
         # Add J-coupling labels on arrows (arrows are already in screen coordinates)
@@ -632,18 +632,22 @@ class CorrelationDiagramGenerator:
         builder: SVGBuilder,
         positions: dict[int, AtomPosition],
         atom_numbers: dict[int, str] | None,
+        mol: Chem.Mol | None = None,
     ) -> None:
         """Add publication-style atom number annotations.
 
         Places red number labels near atoms, positioned to minimize overlap
-        with the molecular structure. If atom_numbers is not provided but
-        show_atom_numbers is True, generates sequential numbers.
+        with bonds and neighboring atoms. Analyzes local geometry to find
+        the direction with most free space.
 
         Args:
             builder: SVG builder to add annotations to
             positions: Dict of atom positions (transformed to canvas space)
             atom_numbers: Optional dict of atom_index -> label string
+            mol: RDKit molecule for bond/neighbor analysis
         """
+        import math
+
         # If no explicit numbers provided, generate from indices
         # Only number heavy atoms (non-hydrogen)
         if atom_numbers is None:
@@ -653,13 +657,8 @@ class CorrelationDiagramGenerator:
                 if pos.element != "H"
             }
 
-        # Calculate molecule center for positioning
-        heavy_positions = [p for p in positions.values() if p.element != "H"]
-        if not heavy_positions:
+        if not atom_numbers:
             return
-
-        center_x = sum(p.x for p in heavy_positions) / len(heavy_positions)
-        center_y = sum(p.y for p in heavy_positions) / len(heavy_positions)
 
         for idx, label in atom_numbers.items():
             if idx not in positions:
@@ -667,13 +666,48 @@ class CorrelationDiagramGenerator:
 
             pos = positions[idx]
 
-            # Subscript-style positioning: to the right and slightly below
-            # This mimics publication style like C₁, C₂, O₁, etc.
-            offset_x = self.config.atom_number_offset
-            offset_y = self.config.atom_number_font_size * 0.4  # Slightly below baseline
+            # Find directions to avoid (where bonds/neighbors are)
+            neighbor_angles: list[float] = []
+
+            if mol is not None and idx < mol.GetNumAtoms():
+                atom = mol.GetAtomWithIdx(idx)
+                for neighbor in atom.GetNeighbors():
+                    n_idx = neighbor.GetIdx()
+                    if n_idx in positions:
+                        n_pos = positions[n_idx]
+                        dx = n_pos.x - pos.x
+                        dy = n_pos.y - pos.y
+                        angle = math.atan2(dy, dx)
+                        neighbor_angles.append(angle)
+
+            # Find the largest gap between neighbor directions
+            if neighbor_angles:
+                # Sort angles and find largest gap
+                neighbor_angles.sort()
+
+                # Add 2*pi to first angle to check wrap-around gap
+                angles_extended = neighbor_angles + [neighbor_angles[0] + 2 * math.pi]
+
+                max_gap = 0
+                best_angle = 0
+
+                for i in range(len(neighbor_angles)):
+                    gap = angles_extended[i + 1] - neighbor_angles[i]
+                    if gap > max_gap:
+                        max_gap = gap
+                        # Place label in the middle of the gap
+                        best_angle = neighbor_angles[i] + gap / 2
+
+                # Calculate offset in the best direction
+                offset_x = math.cos(best_angle) * self.config.atom_number_offset
+                offset_y = math.sin(best_angle) * self.config.atom_number_offset
+            else:
+                # No neighbors, default to bottom-right
+                offset_x = self.config.atom_number_offset * 0.7
+                offset_y = self.config.atom_number_offset * 0.7
 
             label_x = pos.x + offset_x
-            label_y = pos.y + offset_y
+            label_y = pos.y + offset_y + self.config.atom_number_font_size / 3
 
             builder.add_atom_number(
                 label_x,
