@@ -13,8 +13,8 @@ from lucy_ng.database import DatabaseImporter, DatabaseManager
 
 # Pre-built database from Figshare
 DATABASE_DOI = "10.6084/m9.figshare.31073554"
-DATABASE_URL = "https://figshare.com/ndownloader/files/61034746"
-DATABASE_SIZE_MB = 343  # Compressed size
+DATABASE_URL = "https://figshare.com/ndownloader/files/61078393"
+DATABASE_SIZE_MB = 830  # Compressed size
 DEFAULT_DB_PATH = Path("data/reference/lucy-ng-derep.db")
 
 
@@ -145,7 +145,7 @@ def info(db_path: Path) -> None:
 
     Example:
 
-        lucy database info compounds.db
+        lucy database info lucy-ng-derep.db
     """
     with DatabaseManager(db_path) as db:
         compound_count = db.get_compound_count()
@@ -187,7 +187,8 @@ def download(output: Path, force: bool) -> None:
     """Download pre-built compound database from Figshare.
 
     Downloads the lucy-ng compound database containing 928K compounds
-    (COCONUT + NMRShiftDB) with 13C NMR chemical shifts.
+    (COCONUT + NMRShiftDB) with 13C NMR shifts and 7.9M HOSE statistics
+    for 13C shift prediction.
 
     DOI: 10.6084/m9.figshare.31073554
 
@@ -195,7 +196,7 @@ def download(output: Path, force: bool) -> None:
 
         lucy database download
 
-        lucy database download -o my_compounds.db
+        lucy database download -o my_database.db
 
         lucy database download --force
     """

@@ -40,11 +40,11 @@ Should report both LSD and outlsd as available.
 lucy database download
 ```
 
-This downloads the pre-built compound database (~343 MB compressed) from Figshare:
+This downloads the pre-built compound database (~830 MB compressed) from Figshare:
 - DOI: 10.6084/m9.figshare.31073554
 - Contains 928K compounds (COCONUT + NMRShiftDB) with 13C NMR shifts
 - Contains 7.9M HOSE statistics for 13C shift prediction
-- Auto-decompresses to `data/reference/lucy-ng-derep.db` (~1.0 GB)
+- Auto-decompresses to `data/reference/lucy-ng-derep.db` (~2.8 GB)
 
 **This single database powers BOTH:**
 - **Dereplication**: Formula-indexed compound lookup
@@ -315,7 +315,7 @@ lucy database download
 
 | Source | DOI | Contents | Size |
 |--------|-----|----------|------|
-| Figshare | 10.6084/m9.figshare.31073554 | 928K compounds + 7.9M HOSE stats | 343 MB (compressed) |
+| Figshare | 10.6084/m9.figshare.31073554 | 928K compounds + 7.9M HOSE stats | 830 MB (compressed) |
 
 The database contains:
 - **928K compounds** (COCONUT + NMRShiftDB) with 13C shifts for dereplication

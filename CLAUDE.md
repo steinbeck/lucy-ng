@@ -30,19 +30,20 @@ lucy lsd check
 ```
 Should report both LSD and outlsd as available.
 
-### 4. Download Compound Database (REQUIRED for dereplication)
+### 4. Download Compound Database (REQUIRED)
 ```bash
 lucy database download
 ```
 
-This downloads the pre-built compound database (~343 MB compressed) from Figshare:
+This downloads the pre-built compound database (~830 MB compressed) from Figshare:
 - DOI: 10.6084/m9.figshare.31073554
 - Contains 928K compounds (COCONUT + NMRShiftDB) with 13C NMR shifts
-- Auto-decompresses to `data/reference/compounds.db` (~1.0 GB)
+- Contains 7.9M HOSE statistics for 13C shift prediction
+- Auto-decompresses to `data/reference/lucy-ng-derep.db` (~2.8 GB)
 
 Verify installation:
 ```bash
-lucy database info data/reference/compounds.db
+lucy database info data/reference/lucy-ng-derep.db
 ```
 
 ### 5. Create Permissions File
@@ -283,7 +284,7 @@ lucy database download
 | **Compounds** | 928,443 (COCONUT + NMRShiftDB) |
 | **HOSE Statistics** | 7.9M entries for 13C prediction |
 | **Formulas** | 111,493 unique |
-| **Size** | ~343 MB download, ~1 GB uncompressed |
+| **Size** | ~830 MB download, ~2.8 GB uncompressed |
 
 This single database powers **both** dereplication (formula-indexed compound lookup) and 13C prediction (HOSE-based shift calculation for ranking LSD solutions).
 
