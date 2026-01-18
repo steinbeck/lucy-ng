@@ -131,6 +131,12 @@ class TestRankedSolution:
 
     def test_summary(self):
         """Test human-readable summary."""
+        # Create assignments with deviations for proper summary output
+        assignments = [
+            ShiftAssignment(atom_index=0, predicted_shift=20.0, experimental_shift=21.0, error=1.0),
+            ShiftAssignment(atom_index=1, predicted_shift=30.0, experimental_shift=31.5, error=1.5),
+            ShiftAssignment(atom_index=2, predicted_shift=40.0, experimental_shift=42.0, error=2.0),
+        ]
         sol = RankedSolution(
             solution_index=1,
             smiles="CCC",
@@ -138,12 +144,14 @@ class TestRankedSolution:
             matched_count=3,
             total_carbons=3,
             prediction_rate=1.0,
+            assignments=assignments,
         )
         summary = sol.summary()
 
         assert "Solution 1" in summary
         assert "CCC" in summary
         assert "MAE: 1.50 ppm" in summary
+        # Summary now shows tolerance_summary: "≤3ppm: 3/3 | ≤5ppm: 3/3"
         assert "3/3" in summary
 
 
@@ -259,7 +267,7 @@ class TestSolutionRankerMatching:
         assert mae == pytest.approx(1.75)  # (1.5 + 2.0) / 2
 
     def test_match_outside_tolerance(self, mock_predictor):
-        """Test matching outside tolerance results in unmatched."""
+        """Test matching outside tolerance results in unmatched status but still contributes to MAE."""
         ranker = SolutionRanker(mock_predictor, tolerance=2.0)
 
         predictions = [
@@ -270,9 +278,10 @@ class TestSolutionRankerMatching:
         assignments, mae = ranker._match_shifts(predictions, experimental)
 
         assert len(assignments) == 1
-        assert not assignments[0].is_matched
-        # With N:1 matching, when no predictions match, MAE is inf
-        assert mae == float("inf")
+        assert not assignments[0].is_matched  # Outside tolerance
+        # MAE is calculated from ALL shifts, not just those within tolerance
+        # So MAE = 5.0 (the actual error), not infinity
+        assert mae == pytest.approx(5.0)
 
     def test_greedy_assignment(self, mock_predictor):
         """Test greedy algorithm assigns to closest match."""
@@ -317,10 +326,12 @@ class TestSolutionRankerMatching:
         unmatched = [a for a in assignments if not a.is_matched]
         assert len(matched) == 2
         assert len(unmatched) == 1
-        # matched_mae = (0 + 0) / 2 = 0.0
-        # penalty = (1 * 3.0 * 0.5) / 3 = 0.5
-        # total MAE = 0.0 + 0.5 = 0.5
-        assert mae == pytest.approx(0.5)
+        # MAE is calculated from ALL shifts:
+        # - 50.0 → closest 50.0 → error 0
+        # - 45.0 → closest 45.0 → error 0
+        # - 40.0 → closest 45.0 → error 5
+        # MAE = (0 + 0 + 5) / 3 = 1.67
+        assert mae == pytest.approx(5.0 / 3.0)
 
     def test_empty_predictions(self, mock_predictor):
         """Test with empty predictions."""

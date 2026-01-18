@@ -41,7 +41,7 @@ class TestArrowStyle:
         assert style.stroke_width == 2.0  # Increased for better visibility
         assert style.head_size == 10.0  # Increased for clearer arrow heads
         assert style.start_marker_size == 5.0  # Circle at arrow start
-        assert style.curvature == 0.8  # Publication-style wide arcs
+        assert style.curvature == 1.8  # Publication-style sweeping arcs
         assert style.dash_pattern is None
 
     def test_custom_values(self) -> None:
