@@ -35,7 +35,7 @@ lucy lsd check
 ```
 Should report both LSD and outlsd as available.
 
-### 4. Download Compound Database (REQUIRED for dereplication)
+### 4. Download Compound Database (REQUIRED)
 ```bash
 lucy database download
 ```
@@ -43,11 +43,16 @@ lucy database download
 This downloads the pre-built compound database (~343 MB compressed) from Figshare:
 - DOI: 10.6084/m9.figshare.31073554
 - Contains 928K compounds (COCONUT + NMRShiftDB) with 13C NMR shifts
-- Auto-decompresses to `data/reference/compounds.db` (~1.0 GB)
+- Contains 7.9M HOSE statistics for 13C shift prediction
+- Auto-decompresses to `data/reference/lucy-ng-derep.db` (~1.0 GB)
+
+**This single database powers BOTH:**
+- **Dereplication**: Formula-indexed compound lookup
+- **13C Prediction**: HOSE-based shift prediction for ranking LSD solutions
 
 Verify installation:
 ```bash
-lucy database info data/reference/compounds.db
+lucy database info data/reference/lucy-ng-derep.db
 ```
 
 ### 5. Create Permissions File
@@ -125,7 +130,14 @@ The base `/lucy-ng` skill follows the full workflow: dereplication first, then C
 
 ## Structure Elucidation Workflow
 
-Once setup is complete, follow this workflow. The best possible outcome is between one and ten solutions. In case of another outcome, the workflow needs to be repeated and adjusted automatically until a satisfactory outcome is reached. In case of no solution structure, constraints and assumptions need to be checked and adjusted. In case of too many solutions, constraints like more HMBC signals or hetero-attachments for specific carbons in the correct shift range need to be added.
+Once setup is complete, follow this workflow.
+
+**STOPPING CRITERIA**: The workflow is complete ONLY when LSD produces 1-10 solutions.
+- **0 solutions**: Over-constrained → relax constraints and re-run LSD
+- **>10 solutions**: Under-constrained → add more HMBC constraints and re-run LSD
+- **Do NOT proceed to ranking with >10 solutions** - you MUST iterate until ≤10 solutions first
+
+In case of no solution structure, constraints and assumptions need to be checked and adjusted. In case of too many solutions, constraints like more HMBC signals or hetero-attachments for specific carbons in the correct shift range need to be added.
 
 **Key Principle: Be Conservative** - Always prefer known compounds over de novo structure determination. Dereplication (database matching) is faster, more reliable, and avoids the combinatorial explosion of possible structures. Only proceed to full structure elucidation if dereplication fails.
 
@@ -140,7 +152,23 @@ Once setup is complete, follow this workflow. The best possible outcome is betwe
    - `lucy pick hmbc <hmbc> --c13 <c13> --hsqc <hsqc>` - long-range correlations
 4. **LSD Generation** - `lucy lsd generate <data_dir> <formula> -o output.lsd`
 5. **Solve** - `lucy lsd run output.lsd`
-6. **Rank** - `lucy lsd rank <smiles_file> --spectrum <c13>` or `--shifts "..."`
+   - **CRITICAL**: Check solution count before proceeding:
+     - **0 solutions**: Over-constrained. See troubleshooting, fix constraints, re-run.
+     - **1-10 solutions**: Good. Proceed to step 6.
+     - **>10 solutions**: Under-constrained. Add more HMBC correlations from step 3, then re-run. **Do NOT proceed to ranking until ≤10 solutions.**
+6. **Rank** - `lucy lsd rank <smiles_file> --spectrum <c13>` or `--shifts "..."` (only after achieving ≤10 solutions)
+
+### Validation Checkpoints
+
+Before proceeding past each step, verify:
+
+| After Step | Check | If Failed |
+|------------|-------|-----------|
+| Symmetry analysis | Observed ≈ expected carbons | Account for equivalence in LSD |
+| LSD solve | **1-10 solutions** | Iterate: 0 = relax constraints, >10 = add HMBC |
+| Ranking | Top solution MAE < 3.5 | Review structure assignment |
+
+**The LSD solution count checkpoint is mandatory. Do not skip iteration.**
 
 ---
 
@@ -179,8 +207,11 @@ Once setup is complete, follow this workflow. The best possible outcome is betwe
 | `pick_hmbc_peaks` | peaks (carbon_ppm, proton_ppm), validated_count |
 | `analyze_symmetry` | expected_carbons, observed_carbons, symmetry_detected |
 | `dereplicate_c13` | is_match, top_matches (name, smiles, score) |
-| `predict_c13_shifts` | predictions (atom_index, shift, confidence), success |
+| `predict_c13_shifts` | predictions (atom_index, shift, confidence, radius, matches), success |
+| `get_hose_stats_info` | available, total_stats, compound_count, description |
 | `rank_lsd_solutions` | ranked_solutions (smiles, mae, quality, deviations, within_3ppm, within_5ppm) |
+
+**Note**: `predict_c13_shifts` and `rank_lsd_solutions` both use the same database for HOSE-based predictions. The database auto-detects from `data/reference/lucy-ng-derep.db`.
 
 ---
 
@@ -274,9 +305,9 @@ Once setup is complete, follow this workflow. The best possible outcome is betwe
 
 ## Reference Data
 
-### Pre-built Compound Database (Recommended)
+### Compound Database
 
-The recommended way to get reference data is to download the pre-built SQLite database:
+Download the pre-built SQLite database (if not already done during setup):
 
 ```bash
 lucy database download
@@ -284,38 +315,24 @@ lucy database download
 
 | Source | DOI | Contents | Size |
 |--------|-----|----------|------|
-| Figshare | 10.6084/m9.figshare.31073554 | 928K compounds (COCONUT + NMRShiftDB) | 343 MB (compressed) |
+| Figshare | 10.6084/m9.figshare.31073554 | 928K compounds + 7.9M HOSE stats | 343 MB (compressed) |
 
 The database contains:
-- **COCONUT**: 895,099 natural products with predicted 13C shifts
-- **NMRShiftDB**: 33,344 compounds with experimental 13C shifts
+- **928K compounds** (COCONUT + NMRShiftDB) with 13C shifts for dereplication
+- **7.9M HOSE statistics** for 13C shift prediction
 - **111,493 unique molecular formulas** indexed for fast lookup
 
-### Alternative: SD Files
-
-For development or custom databases, SD files can also be used in `data/reference/`:
-
-| File | Description | Entries | Size | Included |
-|------|-------------|---------|------|----------|
-| `nmrshiftdb2withsignals.sd.gz` | NMRShiftDB SD file with 13C chemical shifts | ~33,000 | ~20 MB | **Yes** |
-| `coconut_predicted.sd` | COCONUT natural products (predicted shifts) | ~895,000 | ~4.8 GB | No |
-
-**Auto-decompression**: When running from the lucy-ng directory, the CLI will:
-1. Find `nmrshiftdb2withsignals.sd.gz` in `data/reference/`
-2. Automatically decompress it to `nmrshiftdb2withsignals.sd` on first use
-3. Use the decompressed file for subsequent runs
-
-**Optional**: For building custom databases, obtain COCONUT separately from https://coconut.naturalproducts.net/
+This is the **only** reference data needed - it powers both dereplication and prediction.
 
 ---
 
 ## Dereplication
 
-Dereplication matches observed 13C shifts against reference databases to identify known compounds before attempting de novo structure elucidation.
+Dereplication matches observed 13C shifts against the compound database to identify known compounds before attempting de novo structure elucidation.
 
-### Two Approaches
+### CLI Usage
 
-**Approach A: From Bruker Spectrum (preferred when binary data exists)**
+**From Bruker Spectrum (preferred)**
 ```bash
 lucy dereplicate c13 <bruker_experiment_path> <formula>
 ```
@@ -323,39 +340,11 @@ Example:
 ```bash
 lucy dereplicate c13 data/compound/2 C14H16 -n 10
 ```
-This requires the binary spectrum files (1r in pdata/1/).
 
-**Approach B: From Shift List (when binary data is missing)**
-
-When Bruker binary spectrum files are missing but peak lists are available (e.g., from peaklist.xml or manual extraction), use the Python API directly:
-
-```python
-from lucy_ng.dereplication import NMRShiftDBLoader, DereplicationService
-
-# Extract shifts from peaklist.xml or other source
-shifts = [139.94, 138.51, 137.16, 136.53, 133.17, ...]
-
-# Load database (from lucy-ng directory)
-loader = NMRShiftDBLoader("data/reference/nmrshiftdb2withsignals.sd")
-loader.load()
-
-# Run dereplication
-service = DereplicationService(loader)
-result = service.dereplicate_from_shifts(shifts, "C14H16", top_n=10)
-
-# Check results
-for match in result.top_matches:
-    print(f"{match.entry.name}: score={match.score:.3f}")
+**From Shift List**
+```bash
+lucy dereplicate c13 --shifts "139.94,138.51,137.16,136.53" C14H16 -n 10
 ```
-
-### When to Use Each Approach
-
-| Situation | Approach |
-|-----------|----------|
-| Full Bruker data with binary files | Use CLI: `lucy dereplicate c13` |
-| Only peaklist.xml available | Use Python API: `dereplicate_from_shifts()` |
-| Peaks extracted from TopSpin | Use Python API: `dereplicate_from_shifts()` |
-| Manual peak list from literature | Use Python API: `dereplicate_from_shifts()` |
 
 ### Interpreting Results
 
@@ -871,10 +860,13 @@ LSD Solution Count
   │       - Often differ in stereochemistry or regiochemistry
   │
   ├─ 10-100 solutions
-  │    └─ Under-constrained → ADD MORE CONSTRAINTS
-  │       - Add missing HMBC correlations
-  │       - Check if ELIM was used (remove it!)
-  │       - Use ranking to narrow candidates
+  │    └─ **STOP - DO NOT PROCEED TO RANKING**
+  │       Under-constrained → Return to HMBC picking and ADD MORE CONSTRAINTS:
+  │       1. Review raw HMBC for additional correlations not yet included
+  │       2. Check if ELIM was used (remove it!)
+  │       3. Re-run LSD
+  │       4. Repeat until ≤10 solutions
+  │       - Only proceed to ranking after achieving ≤10 solutions
   │
   └─ >100 solutions
        └─ Severely under-constrained

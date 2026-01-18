@@ -269,9 +269,9 @@ Once setup is complete, follow this workflow. The best possible outcome is betwe
 
 ## Reference Data
 
-### Pre-built Compound Database (Recommended)
+### Compound Database
 
-A pre-built SQLite database with 928K compounds is available for download:
+Download the pre-built SQLite database:
 
 ```bash
 lucy database download
@@ -280,40 +280,22 @@ lucy database download
 | Property | Value |
 |----------|-------|
 | **DOI** | [10.6084/m9.figshare.31073554](https://doi.org/10.6084/m9.figshare.31073554) |
-| **Compounds** | 928,443 total |
-| **Sources** | COCONUT (895K) + NMRShiftDB (33K) |
+| **Compounds** | 928,443 (COCONUT + NMRShiftDB) |
+| **HOSE Statistics** | 7.9M entries for 13C prediction |
 | **Formulas** | 111,493 unique |
 | **Size** | ~343 MB download, ~1 GB uncompressed |
 
-The database is indexed by molecular formula for fast O(1) lookup during dereplication.
-
-### Alternative: Raw SD Files
-
-Reference databases in SD format are stored in `data/reference/`:
-
-| File | Description | Entries | Size | Included |
-|------|-------------|---------|------|----------|
-| `nmrshiftdb2withsignals.sd.gz` | NMRShiftDB SD file with 13C chemical shifts | ~33,000 | ~20 MB | **Yes** |
-| `coconut_predicted.sdf` | COCONUT natural products (predicted shifts) | ~895,000 | ~4.8 GB | No |
-
-**Building from SD files**: If you have the raw SD files, you can build a database manually:
-```bash
-lucy database build --nmrshiftdb data/reference/nmrshiftdb2withsignals.sd \
-                    --coconut data/reference/predicted_coconut.sdf \
-                    -o data/reference/compounds.db
-```
-
-**Legacy SD file usage**: The CLI `lucy dereplicate c13` command can also use SD files directly, but the database is ~100x faster for lookups
+This single database powers **both** dereplication (formula-indexed compound lookup) and 13C prediction (HOSE-based shift calculation for ranking LSD solutions).
 
 ---
 
 ## Dereplication
 
-Dereplication matches observed 13C shifts against reference databases to identify known compounds before attempting de novo structure elucidation.
+Dereplication matches observed 13C shifts against the compound database to identify known compounds before attempting de novo structure elucidation.
 
-### Two Approaches
+### CLI Usage
 
-**Approach A: From Bruker Spectrum (preferred when binary data exists)**
+**From Bruker Spectrum (preferred)**
 ```bash
 lucy dereplicate c13 <bruker_experiment_path> <formula>
 ```
@@ -321,39 +303,11 @@ Example:
 ```bash
 lucy dereplicate c13 data/compound/2 C14H16 -n 10
 ```
-This requires the binary spectrum files (1r in pdata/1/).
 
-**Approach B: From Shift List (when binary data is missing)**
-
-When Bruker binary spectrum files are missing but peak lists are available (e.g., from peaklist.xml or manual extraction), use the Python API directly:
-
-```python
-from lucy_ng.dereplication import NMRShiftDBLoader, DereplicationService
-
-# Extract shifts from peaklist.xml or other source
-shifts = [139.94, 138.51, 137.16, 136.53, 133.17, ...]
-
-# Load database (from lucy-ng directory)
-loader = NMRShiftDBLoader("data/reference/nmrshiftdb2withsignals.sd")
-loader.load()
-
-# Run dereplication
-service = DereplicationService(loader)
-result = service.dereplicate_from_shifts(shifts, "C14H16", top_n=10)
-
-# Check results
-for match in result.top_matches:
-    print(f"{match.entry.name}: score={match.score:.3f}")
+**From Shift List**
+```bash
+lucy dereplicate c13 --shifts "139.94,138.51,137.16,136.53" C14H16 -n 10
 ```
-
-### When to Use Each Approach
-
-| Situation | Approach |
-|-----------|----------|
-| Full Bruker data with binary files | Use CLI: `lucy dereplicate c13` |
-| Only peaklist.xml available | Use Python API: `dereplicate_from_shifts()` |
-| Peaks extracted from TopSpin | Use Python API: `dereplicate_from_shifts()` |
-| Manual peak list from literature | Use Python API: `dereplicate_from_shifts()` |
 
 ### Interpreting Results
 
@@ -1000,40 +954,27 @@ The ranking now shows quality labels and multi-level tolerance:
 
 ## 13C Shift Prediction
 
-### Database-Backed Prediction (Preferred)
+The compound database (downloaded via `lucy database download`) contains **7.9M pre-computed HOSE statistics** from 895K compounds. This same database powers both dereplication AND 13C prediction.
 
-The database contains ~7.9M pre-computed HOSE statistics from 895K compounds. Use this for predictions:
+### CLI Usage
 
 ```bash
-# CLI - auto-detects database in default location
+# Predict shifts for a SMILES string (auto-detects database)
 lucy predict c13 "CCO"
 
-# CLI - explicit database path
-lucy predict c13 "CCO" --db data/reference/lucy-ng-derep.db
-
-# CLI - JSON output
+# JSON output for programmatic use
 lucy predict c13 "CCO" --format json
 ```
 
+### Python API
+
 ```python
-# Python API
 from lucy_ng.prediction import C13Predictor
 
-# From database (preferred)
 predictor = C13Predictor.from_database("data/reference/lucy-ng-derep.db")
 result = predictor.predict_from_smiles("CCO")  # Ethanol
 print(result.summary())
-
-# From JSON table (legacy)
-predictor = C13Predictor.from_table_file("hose_lookup.json.gz")
 ```
-
-### Backend Selection Priority
-
-1. Explicit `--db` option
-2. Explicit `--table` option
-3. Auto-detect database in default locations
-4. Auto-detect JSON table in default locations
 
 ### Example Output
 
