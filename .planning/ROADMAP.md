@@ -4,7 +4,7 @@
 
 - ✅ [v1.0 Core CASE Pipeline](milestones/v1.0-ROADMAP.md) - Phases 1-10 (shipped 2026-01-12)
 - ✅ [v1.1 Database-Backed Dereplication](milestones/v1.1-ROADMAP.md) - Phases 11-15 (shipped 2026-01-15)
-- 🚧 **v1.2 HOSE Database Prediction** - Phases 16-19 (in progress)
+- ✅ **v1.2 HOSE Database Prediction** - Phases 16-19 (shipped 2026-01-18)
 
 ---
 
@@ -239,9 +239,11 @@
 
 ---
 
-## 🚧 v1.2 HOSE Database Prediction (In Progress)
+## ✅ v1.2 HOSE Database Prediction (COMPLETE)
 
 **Milestone Goal:** Replace in-memory HOSE lookup with database-backed prediction using extended COCONUT dataset (~895K compounds) for improved accuracy and confidence scoring.
+
+**Completed**: 2026-01-18
 
 ### Phase 16: Database Schema ✅
 **Goal**: Add hose_stats table to compounds.db for HOSE-based shift prediction
@@ -256,7 +258,7 @@
 - Schema version bumped to 2
 
 Plans:
-- [x] 16-01: Database schema for HOSE stats (3 tasks, 4 min)
+- [x] 16-01: Database schema for HOSE stats (3 tasks)
 
 ---
 
@@ -275,33 +277,34 @@ Plans:
 
 ---
 
-### Phase 18: Prediction API
+### Phase 18: Prediction API ✅
 **Goal**: Update HOSEPredictor to query database with radius fallback
 **Depends on**: Phase 17
-**Research**: Unlikely (internal patterns)
+**Completed**: 2026-01-18
 
-- Query hose_stats table for shift predictions
-- Fallback from radius 6 → 5 → 4 → ... → 1 when no matches
-- Improved confidence scoring based on observation count and variance
-- Maintain backward compatibility with current API
+- HOSELookupProtocol for interchangeable backends
+- DatabaseHOSELookup adapter for database queries
+- C13Predictor with dual-backend support (JSON table or database)
+- CLI --db option with auto-detection
+- 18 new prediction tests
 
 Plans:
-- [ ] 18-01: TBD
+- [x] 18-01: Database-backed prediction API (6 tasks)
 
 ---
 
-### Phase 19: CLI/MCP Integration
+### Phase 19: CLI/MCP Integration ✅
 **Goal**: Update `lucy predict c13` CLI and MCP tools for database-backed prediction
 **Depends on**: Phase 18
-**Research**: Unlikely (existing CLI/MCP patterns from v1.1)
+**Completed**: 2026-01-18
 
-- Update CLI command to use database predictor
-- Update MCP tool with database backend
-- Add database status/info for HOSE tables
-- Documentation updates
+- MCP _get_predictor updated to prefer database
+- predict_c13_shifts MCP tool with db_path parameter
+- New get_hose_stats_info MCP tool for agents
+- 6 new MCP tests
 
 Plans:
-- [ ] 19-01: TBD
+- [x] 19-01: CLI/MCP integration (4 tasks)
 
 ---
 
@@ -331,8 +334,8 @@ Plans:
 | 15. MCP Integration | v1.1 | 1/1 | Complete | 2026-01-15 |
 | 16. Database Schema | v1.2 | 1/1 | Complete | 2026-01-15 |
 | 17. HOSE Generation | v1.2 | 1/1 | Complete | 2026-01-16 |
-| 18. Prediction API | v1.2 | 0/? | Not started | - |
-| 19. CLI/MCP Integration | v1.2 | 0/? | Not started | - |
+| 18. Prediction API | v1.2 | 1/1 | Complete | 2026-01-18 |
+| 19. CLI/MCP Integration | v1.2 | 1/1 | Complete | 2026-01-18 |
 
 ---
-*Last updated: 2026-01-16*
+*Last updated: 2026-01-18*

@@ -92,15 +92,16 @@ Minimum viable spectral data for v1:
 
 ## Current State
 
-**Version:** v1.1 (shipped 2026-01-15)
-**Codebase:** 11,196 lines Python, 414+ tests
+**Version:** v1.2 (shipped 2026-01-18)
+**Codebase:** ~12,000 lines Python, 633 tests
 **Tech stack:** Python 3.10+, Pydantic v2, nmrglue, RDKit, SQLite, Click, FastMCP
 
 **Capabilities:**
-- 13 MCP tools for AI agent integration
+- 15 MCP tools for AI agent integration
 - 7 CLI command groups (read, pick, analyze, dereplicate, predict, lsd, fetch)
 - SQLite database with 928K compounds (COCONUT + NMRShiftDB)
+- 7.9M HOSE statistics for database-backed 13C prediction
 - Full CASE pipeline: peak picking → LSD generation → solving → ranking
 
 ---
-*Last updated: 2026-01-15 after v1.1 milestone*
+*Last updated: 2026-01-18 after v1.2 milestone*

@@ -9,13 +9,13 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-**Milestone**: v1.2 — HOSE Database Prediction
-**Phase**: 17 of 19 (HOSE Generation) ✅
-**Plan**: 17-01 complete (3 tasks)
-**Status**: Phase complete, ready for Phase 18
-**Last activity**: 2026-01-16 - Phase 17-01 completed
+**Milestone**: v1.2 — HOSE Database Prediction ✅ COMPLETE
+**Phase**: 19 of 19 (CLI/MCP Integration) ✅
+**Plan**: All phases complete
+**Status**: Milestone v1.2 complete!
+**Last activity**: 2026-01-18 - v1.2 milestone complete
 
-Progress: █████░░░░░ 50%
+Progress: ██████████ 100%
 
 ## Milestone 1.0 Complete
 
@@ -76,14 +76,21 @@ All phases of the Core CASE Pipeline have been implemented:
 
 ## Session Continuity
 
-**Last session**: 2026-01-16
-**Stopped at**: Phase 17 complete
-**Resume file**: None
+**Last session**: 2026-01-18
+**Stopped at**: Milestone v1.2 complete
+**Resume file**: None (milestone complete)
 
 **Next steps**:
-- Run `lucy database generate-hose-stats` on production database (895K compounds)
-- Run `/gsd:plan-phase 18` to plan Prediction API phase
-- Or `/gsd:discuss-phase 18` to gather more context first
+- Run `/gsd:complete-milestone` to archive v1.2
+- Or start planning next milestone
+
+**v1.2 Deliverables**:
+- 7.9M HOSE statistics from 895K compounds (radii 1-6)
+- DatabaseHOSELookup adapter for database-backed predictions
+- C13Predictor with dual-backend support (JSON table or database)
+- CLI --db option with auto-detection
+- MCP get_hose_stats_info tool for agents
+- 633 tests all passing
 
 ---
-*Last updated: 2026-01-16 after Phase 17-01 completion*
+*Last updated: 2026-01-18 after v1.2 milestone completion*
