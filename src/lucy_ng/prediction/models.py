@@ -1,6 +1,21 @@
 """Data models for NMR chemical shift prediction."""
 
+from dataclasses import dataclass
+
 from pydantic import BaseModel, Field
+
+
+@dataclass
+class HOSEStatsResult:
+    """Statistics result from HOSE code lookup.
+
+    Used as a common return type for both in-memory lookup tables
+    and database-backed lookup adapters.
+    """
+
+    mean: float  # Mean chemical shift in ppm
+    std: float  # Standard deviation
+    count: int  # Number of observations
 
 
 class ShiftEntry(BaseModel):

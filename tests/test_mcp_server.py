@@ -372,6 +372,101 @@ class TestLSDTools:
         assert "not found" in result["error"].lower()
 
 
+# =============================================================================
+# Prediction Tools Tests
+# =============================================================================
+
+
+class TestPredictionTools:
+    """Test prediction MCP tools."""
+
+    @pytest.fixture
+    def temp_db(self, tmp_path):
+        """Create a temporary database with test HOSE stats."""
+        from lucy_ng.database import DatabaseManager
+        from lucy_ng.database.models import HOSEStatsRecord
+
+        db_path = tmp_path / "test_mcp.db"
+        db = DatabaseManager(db_path)
+        db.create_tables()
+
+        test_stats = [
+            HOSEStatsRecord(hose_code="C-4;HHHC(//", radius=1, mean=15.0, std=2.0, count=100),
+            HOSEStatsRecord(hose_code="C-3;H*C*C(//", radius=1, mean=128.5, std=3.0, count=200),
+        ]
+        db.insert_hose_stats_batch(test_stats)
+        db.close()
+
+        return db_path
+
+    def test_predict_c13_shifts_with_db(self, temp_db):
+        """Test predict_c13_shifts with explicit database."""
+        from lucy_ng.mcp.server import predict_c13_shifts
+
+        result = predict_c13_shifts("CC", db_path=str(temp_db))
+
+        assert result["success"] is True
+        assert result["smiles"] == "CC"
+        assert result["carbon_count"] == 2
+        assert "predictions" in result
+
+    def test_predict_c13_shifts_auto_detect(self):
+        """Test predict_c13_shifts with auto-detection."""
+        from lucy_ng.mcp.server import predict_c13_shifts
+
+        # This should work if database exists in default location
+        result = predict_c13_shifts("c1ccccc1")  # Benzene
+
+        if result["success"]:
+            assert result["carbon_count"] == 6
+            assert len(result["predictions"]) == 6
+            # Benzene should have aromatic shifts
+            for pred in result["predictions"]:
+                assert 120 < pred["shift"] < 140
+
+    def test_predict_c13_shifts_invalid_smiles(self):
+        """Test predict_c13_shifts with invalid SMILES."""
+        from lucy_ng.mcp.server import predict_c13_shifts
+
+        result = predict_c13_shifts("invalid_smiles_xyz")
+
+        assert result["success"] is True  # Doesn't fail, just returns no predictions
+        assert result["carbon_count"] == 0
+
+    def test_get_hose_stats_info_with_db(self, temp_db):
+        """Test get_hose_stats_info with explicit database."""
+        from lucy_ng.mcp.server import get_hose_stats_info
+
+        result = get_hose_stats_info(db_path=str(temp_db))
+
+        assert result["available"] is True
+        assert result["total_stats"] == 2
+        assert str(temp_db) in result["db_path"]
+
+    def test_get_hose_stats_info_auto_detect(self):
+        """Test get_hose_stats_info with auto-detection."""
+        from lucy_ng.mcp.server import get_hose_stats_info
+
+        result = get_hose_stats_info()
+
+        # Should work if database exists
+        if result["available"]:
+            assert result["total_stats"] > 0
+            assert "description" in result
+
+    def test_get_hose_stats_info_not_found(self, tmp_path, monkeypatch):
+        """Test get_hose_stats_info when no database found."""
+        from lucy_ng.mcp.server import get_hose_stats_info
+
+        # Run from temp dir with no database
+        monkeypatch.chdir(tmp_path)
+
+        result = get_hose_stats_info(db_path=str(tmp_path / "nonexistent.db"))
+
+        assert result["available"] is False
+        assert "error" in result
+
+
 # Fixtures
 @pytest.fixture
 def ibuprofen_data_dir():

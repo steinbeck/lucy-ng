@@ -795,51 +795,105 @@ def rank_lsd_solutions(
 # =============================================================================
 
 
-# Cache for lookup table to avoid reloading
+# Cache for prediction backends to avoid reloading
 _prediction_cache: dict[str, C13Predictor] = {}
 
+# Default database locations (preferred over JSON table)
+_DEFAULT_DB_PATHS = [
+    Path("data/reference/lucy-ng-derep.db"),
+    Path.home() / ".lucy" / "lucy-ng-derep.db",
+    Path("lucy-ng-derep.db"),
+]
 
-def _get_predictor(table_path: str | None = None) -> C13Predictor | None:
-    """Get or create a predictor instance, caching the lookup table."""
-    # Find table path
-    if table_path is None:
-        search_paths = [
-            Path("data/reference/hose_lookup.json.gz"),
-            Path.home() / ".lucy" / "hose_lookup.json.gz",
-            Path("hose_lookup.json.gz"),
-            Path("hose_lookup.json"),
-        ]
-        for p in search_paths:
-            if p.exists():
-                table_path = str(p)
-                break
+# Default JSON table locations (fallback)
+_DEFAULT_TABLE_PATHS = [
+    Path("data/reference/hose_lookup.json.gz"),
+    Path.home() / ".lucy" / "hose_lookup.json.gz",
+    Path("hose_lookup.json.gz"),
+    Path("hose_lookup.json"),
+]
 
-    if table_path is None:
-        return None
 
-    # Check cache
-    if table_path in _prediction_cache:
-        return _prediction_cache[table_path]
+def _get_predictor(
+    db_path: str | None = None,
+    table_path: str | None = None,
+) -> C13Predictor | None:
+    """Get or create a predictor instance, caching the backend.
 
-    # Load and cache
-    try:
-        predictor = C13Predictor.from_table_file(Path(table_path))
-        _prediction_cache[table_path] = predictor
-        return predictor
-    except Exception:
-        return None
+    Backend priority:
+    1. Explicit db_path
+    2. Explicit table_path
+    3. Auto-detect database in default locations
+    4. Auto-detect JSON table in default locations
+    """
+    cache_key: str | None = None
+
+    # Priority 1: Explicit database path
+    if db_path:
+        cache_key = f"db:{db_path}"
+        if cache_key in _prediction_cache:
+            return _prediction_cache[cache_key]
+        try:
+            predictor = C13Predictor.from_database(Path(db_path))
+            _prediction_cache[cache_key] = predictor
+            return predictor
+        except Exception:
+            return None
+
+    # Priority 2: Explicit table path
+    if table_path:
+        cache_key = f"table:{table_path}"
+        if cache_key in _prediction_cache:
+            return _prediction_cache[cache_key]
+        try:
+            predictor = C13Predictor.from_table_file(Path(table_path))
+            _prediction_cache[cache_key] = predictor
+            return predictor
+        except Exception:
+            return None
+
+    # Priority 3: Auto-detect database
+    for p in _DEFAULT_DB_PATHS:
+        if p.exists():
+            cache_key = f"db:{p}"
+            if cache_key in _prediction_cache:
+                return _prediction_cache[cache_key]
+            try:
+                predictor = C13Predictor.from_database(p)
+                _prediction_cache[cache_key] = predictor
+                return predictor
+            except Exception:
+                continue
+
+    # Priority 4: Auto-detect JSON table
+    for p in _DEFAULT_TABLE_PATHS:
+        if p.exists():
+            cache_key = f"table:{p}"
+            if cache_key in _prediction_cache:
+                return _prediction_cache[cache_key]
+            try:
+                predictor = C13Predictor.from_table_file(p)
+                _prediction_cache[cache_key] = predictor
+                return predictor
+            except Exception:
+                continue
+
+    return None
 
 
 @mcp.tool()
 def predict_c13_shifts(
     smiles: str,
+    db_path: str | None = None,
     table_path: str | None = None,
     max_radius: int = 6,
 ) -> dict:
     """Predict 13C NMR chemical shifts for a molecule from its structure.
 
     Uses HOSE (Hierarchically Ordered Spherical Environment) codes to
-    look up chemical shifts in a reference database built from COCONUT.
+    look up chemical shifts in a reference database. The database contains
+    ~7.9M pre-computed statistics from 895K compounds.
+
     Falls back to shorter HOSE radii when exact matches aren't found.
 
     This tool is useful for:
@@ -849,7 +903,8 @@ def predict_c13_shifts(
 
     Args:
         smiles: Molecule structure in SMILES format
-        table_path: Optional path to HOSE lookup table (uses default if not set)
+        db_path: Optional path to SQLite database with HOSE stats (preferred)
+        table_path: Optional path to HOSE lookup table JSON (legacy fallback)
         max_radius: Maximum HOSE radius for lookup (default: 6)
 
     Returns:
@@ -859,12 +914,12 @@ def predict_c13_shifts(
         - radius_used: HOSE radius at which match was found
         - match_count: number of reference matches
     """
-    predictor = _get_predictor(table_path)
+    predictor = _get_predictor(db_path=db_path, table_path=table_path)
     if predictor is None:
         return {
             "success": False,
-            "error": "No HOSE lookup table found. Build one with: "
-            "lucy predict build-table <coconut.sd>",
+            "error": "No prediction backend found. Download database with: "
+            "lucy database download",
         }
 
     try:
@@ -891,6 +946,59 @@ def predict_c13_shifts(
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+@mcp.tool()
+def get_hose_stats_info(
+    db_path: str | None = None,
+) -> dict:
+    """Get information about HOSE statistics in the database.
+
+    Returns statistics about the HOSE code database used for 13C shift prediction,
+    including the number of unique HOSE codes, total observations, and database path.
+
+    Args:
+        db_path: Optional path to SQLite database (uses default if not set)
+
+    Returns:
+        Dictionary with database statistics:
+        - total_stats: number of unique (hose_code, radius) entries
+        - db_path: path to the database being used
+        - available: whether a database was found
+    """
+    from lucy_ng.database import DatabaseManager
+
+    # Find database
+    search_paths = [Path(db_path)] if db_path else _DEFAULT_DB_PATHS
+    found_path: Path | None = None
+
+    for p in search_paths:
+        if p.exists():
+            found_path = p
+            break
+
+    if found_path is None:
+        return {
+            "available": False,
+            "error": "No HOSE statistics database found. Download with: "
+            "lucy database download",
+        }
+
+    try:
+        db = DatabaseManager(found_path)
+        stats_count = db.get_hose_stats_count()
+        compound_count = db.get_compound_count()
+        db.close()
+
+        return {
+            "available": True,
+            "db_path": str(found_path),
+            "total_stats": stats_count,
+            "compound_count": compound_count,
+            "description": f"{stats_count:,} HOSE statistics from {compound_count:,} compounds",
+        }
+    except Exception as e:
+        return {"available": False, "error": str(e)}
 
 
 # =============================================================================

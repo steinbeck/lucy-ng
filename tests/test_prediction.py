@@ -334,13 +334,17 @@ class TestCLIPredict:
         assert "c13" in result.output
         assert "build-table" in result.output
 
-    def test_predict_c13_no_table(self, cli_runner):
-        """Test prediction without lookup table."""
+    def test_predict_c13_no_backend(self, cli_runner, tmp_path, monkeypatch):
+        """Test prediction without any backend available."""
         from lucy_ng.cli import cli
+
+        # Run from a temp directory where no database or table exists
+        monkeypatch.chdir(tmp_path)
+
         result = cli_runner.invoke(cli, ["predict", "c13", "CC"])
         # Should fail with helpful error
         assert result.exit_code != 0
-        assert "lookup table" in result.output.lower() or "table" in result.output.lower()
+        assert "backend" in result.output.lower() or "database" in result.output.lower()
 
     def test_predict_build_table_help(self, cli_runner):
         """Test build-table command help."""
@@ -362,3 +366,277 @@ def cli_runner():
     """Create a CLI test runner."""
     from click.testing import CliRunner
     return CliRunner()
+
+
+# ============================================================================
+# Database Backend Tests
+# ============================================================================
+
+
+class TestHOSEStatsResult:
+    """Tests for HOSEStatsResult dataclass."""
+
+    def test_hose_stats_result_creation(self):
+        """Test creating HOSEStatsResult."""
+        from lucy_ng.prediction.models import HOSEStatsResult
+
+        result = HOSEStatsResult(mean=128.5, std=2.5, count=100)
+        assert result.mean == 128.5
+        assert result.std == 2.5
+        assert result.count == 100
+
+    def test_hose_stats_result_immutable(self):
+        """Test that HOSEStatsResult is a dataclass."""
+        from lucy_ng.prediction.models import HOSEStatsResult
+
+        result = HOSEStatsResult(mean=100.0, std=5.0, count=10)
+        # Dataclasses are mutable by default but we just test it works
+        assert result.mean == 100.0
+
+
+class TestHOSELookupProtocol:
+    """Tests for HOSELookupProtocol."""
+
+    def test_lookup_table_implements_protocol(self):
+        """Test that HOSELookupTable implements the protocol."""
+        from lucy_ng.prediction.lookup import HOSELookupProtocol, HOSELookupTable
+
+        table = HOSELookupTable()
+        assert isinstance(table, HOSELookupProtocol)
+
+    def test_protocol_method_lookup_stats_at_radius(self):
+        """Test protocol method lookup_stats_at_radius."""
+        from lucy_ng.prediction.lookup import HOSELookupTable
+        from lucy_ng.prediction.models import HOSEStatsResult
+
+        table = HOSELookupTable()
+        table.add_entry("TEST", 10.0)
+        table.add_entry("TEST", 20.0)
+        table.add_entry("TEST", 30.0)
+
+        # Radius is ignored for in-memory table (implicit in HOSE code)
+        result = table.lookup_stats_at_radius("TEST", 3)
+        assert isinstance(result, HOSEStatsResult)
+        assert result.mean == 20.0
+        assert result.count == 3
+
+    def test_protocol_method_has_code_at_radius(self):
+        """Test protocol method has_code_at_radius."""
+        from lucy_ng.prediction.lookup import HOSELookupTable
+
+        table = HOSELookupTable()
+        table.add_entry("EXISTS", 100.0)
+
+        assert table.has_code_at_radius("EXISTS", 3)
+        assert not table.has_code_at_radius("NOT_EXISTS", 3)
+
+
+class TestDatabaseHOSELookup:
+    """Tests for DatabaseHOSELookup adapter."""
+
+    @pytest.fixture
+    def temp_db(self, tmp_path):
+        """Create a temporary database with test HOSE stats."""
+        from lucy_ng.database import DatabaseManager
+        from lucy_ng.database.models import HOSEStatsRecord
+
+        db_path = tmp_path / "test_hose.db"
+        db = DatabaseManager(db_path)
+        db.create_tables()
+
+        # Insert some test HOSE statistics
+        test_stats = [
+            HOSEStatsRecord(hose_code="C-4;HHHC(//", radius=1, mean=15.0, std=2.0, count=100),
+            HOSEStatsRecord(hose_code="C-4;HHHC(//", radius=2, mean=14.5, std=1.5, count=50),
+            HOSEStatsRecord(hose_code="C-3;H*C*C(//", radius=1, mean=128.5, std=3.0, count=200),
+            HOSEStatsRecord(hose_code="C-3;H*C*C(//", radius=6, mean=128.0, std=0.5, count=10),
+        ]
+        db.insert_hose_stats_batch(test_stats)
+        db.close()
+
+        return db_path
+
+    def test_from_db_path(self, temp_db):
+        """Test creating DatabaseHOSELookup from path."""
+        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+
+        lookup = DatabaseHOSELookup.from_db_path(temp_db)
+        assert lookup.get_stats_count() == 4
+        lookup.close()
+
+    def test_lookup_stats_at_radius_found(self, temp_db):
+        """Test lookup_stats_at_radius when code exists."""
+        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+        from lucy_ng.prediction.models import HOSEStatsResult
+
+        lookup = DatabaseHOSELookup.from_db_path(temp_db)
+
+        result = lookup.lookup_stats_at_radius("C-4;HHHC(//", 1)
+        assert result is not None
+        assert isinstance(result, HOSEStatsResult)
+        assert result.mean == 15.0
+        assert result.std == 2.0
+        assert result.count == 100
+
+        lookup.close()
+
+    def test_lookup_stats_at_radius_not_found(self, temp_db):
+        """Test lookup_stats_at_radius when code doesn't exist."""
+        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+
+        lookup = DatabaseHOSELookup.from_db_path(temp_db)
+
+        result = lookup.lookup_stats_at_radius("NONEXISTENT", 1)
+        assert result is None
+
+        lookup.close()
+
+    def test_has_code_at_radius(self, temp_db):
+        """Test has_code_at_radius method."""
+        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+
+        lookup = DatabaseHOSELookup.from_db_path(temp_db)
+
+        assert lookup.has_code_at_radius("C-4;HHHC(//", 1)
+        assert lookup.has_code_at_radius("C-4;HHHC(//", 2)
+        assert not lookup.has_code_at_radius("C-4;HHHC(//", 3)  # Only r=1,2 exist
+        assert not lookup.has_code_at_radius("NONEXISTENT", 1)
+
+        lookup.close()
+
+    def test_implements_protocol(self, temp_db):
+        """Test that DatabaseHOSELookup implements the protocol."""
+        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+        from lucy_ng.prediction.lookup import HOSELookupProtocol
+
+        lookup = DatabaseHOSELookup.from_db_path(temp_db)
+        assert isinstance(lookup, HOSELookupProtocol)
+        lookup.close()
+
+    def test_repr(self, temp_db):
+        """Test string representation."""
+        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+
+        lookup = DatabaseHOSELookup.from_db_path(temp_db)
+        repr_str = repr(lookup)
+        assert "DatabaseHOSELookup" in repr_str
+        assert "stats=" in repr_str
+        lookup.close()
+
+
+class TestC13PredictorWithDatabase:
+    """Tests for C13Predictor with database backend."""
+
+    @pytest.fixture
+    def temp_db_with_ethanol(self, tmp_path):
+        """Create a database with HOSE stats for ethanol prediction."""
+        from lucy_ng.database import DatabaseManager
+        from lucy_ng.database.models import HOSEStatsRecord
+
+        db_path = tmp_path / "test_predict.db"
+        db = DatabaseManager(db_path)
+        db.create_tables()
+
+        # HOSE stats for ethanol carbons at various radii
+        # These are approximate values for testing
+        test_stats = [
+            # CH3 carbon codes
+            HOSEStatsRecord(hose_code="C-4;HHHC(//", radius=1, mean=15.0, std=2.0, count=100),
+            HOSEStatsRecord(hose_code="C-4;C(O//)//", radius=2, mean=14.5, std=1.5, count=50),
+            # CH2-O carbon codes
+            HOSEStatsRecord(hose_code="C-4;HHOC(//", radius=1, mean=60.0, std=3.0, count=80),
+            HOSEStatsRecord(hose_code="C-4;O(//C(//))", radius=2, mean=58.0, std=2.5, count=40),
+        ]
+        db.insert_hose_stats_batch(test_stats)
+        db.close()
+
+        return db_path
+
+    def test_from_database_classmethod(self, temp_db_with_ethanol):
+        """Test creating predictor from database."""
+        predictor = C13Predictor.from_database(temp_db_with_ethanol)
+        assert predictor is not None
+
+    def test_predict_from_database(self, temp_db_with_ethanol):
+        """Test prediction using database backend."""
+        predictor = C13Predictor.from_database(
+            temp_db_with_ethanol, max_radius=6, min_radius=1
+        )
+        result = predictor.predict_from_smiles("CCO")
+
+        assert result.smiles == "CCO"
+        assert result.carbon_count == 2
+        # May or may not find matches depending on HOSE codes generated
+
+    def test_lookup_property(self, temp_db_with_ethanol):
+        """Test that lookup property returns the backend."""
+        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+
+        predictor = C13Predictor.from_database(temp_db_with_ethanol)
+        assert isinstance(predictor.lookup, DatabaseHOSELookup)
+
+    def test_lookup_table_property_raises_for_database(self, temp_db_with_ethanol):
+        """Test that lookup_table property raises for database backend."""
+        predictor = C13Predictor.from_database(temp_db_with_ethanol)
+
+        with pytest.raises(TypeError, match="lookup_table property only available"):
+            _ = predictor.lookup_table
+
+
+class TestCLIPredictWithDatabase:
+    """Tests for CLI predict command with database backend."""
+
+    @pytest.fixture
+    def temp_db_for_cli(self, tmp_path):
+        """Create a database for CLI testing."""
+        from lucy_ng.database import DatabaseManager
+        from lucy_ng.database.models import HOSEStatsRecord
+
+        db_path = tmp_path / "test_cli.db"
+        db = DatabaseManager(db_path)
+        db.create_tables()
+
+        # Add minimal HOSE stats
+        test_stats = [
+            HOSEStatsRecord(hose_code="C-4;HHHC(//", radius=1, mean=15.0, std=2.0, count=100),
+        ]
+        db.insert_hose_stats_batch(test_stats)
+        db.close()
+
+        return db_path
+
+    def test_predict_c13_with_db_option(self, cli_runner, temp_db_for_cli):
+        """Test prediction with explicit --db option."""
+        from lucy_ng.cli import cli
+
+        result = cli_runner.invoke(
+            cli, ["predict", "c13", "CC", "--db", str(temp_db_for_cli)]
+        )
+        # May not find matches but should not error
+        assert result.exit_code == 0
+        assert "Carbons" in result.output
+
+    def test_predict_c13_with_db_json_output(self, cli_runner, temp_db_for_cli):
+        """Test JSON output with database."""
+        from lucy_ng.cli import cli
+        import json as json_module
+
+        result = cli_runner.invoke(
+            cli, ["predict", "c13", "CC", "--db", str(temp_db_for_cli), "--format", "json"]
+        )
+        assert result.exit_code == 0
+
+        # Should be valid JSON
+        data = json_module.loads(result.output)
+        assert "smiles" in data
+        assert "carbon_count" in data
+        assert "predictions" in data
+
+    def test_predict_c13_help_shows_db_option(self, cli_runner):
+        """Test that help shows --db option."""
+        from lucy_ng.cli import cli
+
+        result = cli_runner.invoke(cli, ["predict", "c13", "--help"])
+        assert result.exit_code == 0
+        assert "--db" in result.output
+        assert "database" in result.output.lower()

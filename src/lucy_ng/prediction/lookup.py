@@ -8,13 +8,48 @@ import statistics
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Protocol, runtime_checkable
 
 from rdkit import Chem, RDLogger
 from tqdm import tqdm
 
 from .hose import HOSECodeGenerator
-from .models import ShiftEntry
+from .models import HOSEStatsResult, ShiftEntry
+
+
+@runtime_checkable
+class HOSELookupProtocol(Protocol):
+    """Protocol for HOSE code lookup backends.
+
+    Both in-memory lookup tables and database adapters implement this protocol,
+    allowing C13Predictor to work with either backend.
+    """
+
+    def lookup_stats_at_radius(
+        self, hose_code: str, radius: int
+    ) -> HOSEStatsResult | None:
+        """Look up statistics for a HOSE code at a specific radius.
+
+        Args:
+            hose_code: HOSE code string
+            radius: Sphere radius (1-6)
+
+        Returns:
+            HOSEStatsResult with mean, std, count; or None if not found
+        """
+        ...
+
+    def has_code_at_radius(self, hose_code: str, radius: int) -> bool:
+        """Check if a HOSE code exists at a specific radius.
+
+        Args:
+            hose_code: HOSE code string
+            radius: Sphere radius (1-6)
+
+        Returns:
+            True if the code exists at this radius
+        """
+        ...
 
 # Suppress RDKit warnings in worker processes
 RDLogger.DisableLog("rdApp.*")
@@ -77,6 +112,46 @@ class HOSELookupTable:
             "max": max(shifts),
             "count": len(shifts),
         }
+
+    def lookup_stats_at_radius(
+        self, hose_code: str, radius: int  # noqa: ARG002
+    ) -> HOSEStatsResult | None:
+        """Look up statistics for a HOSE code (protocol method).
+
+        For in-memory tables, the radius is implicit in the HOSE code structure,
+        so the radius parameter is ignored. The HOSE code itself determines
+        the specificity of the lookup.
+
+        Args:
+            hose_code: HOSE code string
+            radius: Sphere radius (ignored - implicit in hose_code)
+
+        Returns:
+            HOSEStatsResult with mean, std, count; or None if not found
+        """
+        shifts = self.lookup(hose_code)
+        if not shifts:
+            return None
+
+        return HOSEStatsResult(
+            mean=statistics.mean(shifts),
+            std=statistics.stdev(shifts) if len(shifts) > 1 else 0.0,
+            count=len(shifts),
+        )
+
+    def has_code_at_radius(
+        self, hose_code: str, radius: int  # noqa: ARG002
+    ) -> bool:
+        """Check if a HOSE code exists (protocol method).
+
+        Args:
+            hose_code: HOSE code string
+            radius: Sphere radius (ignored - implicit in hose_code)
+
+        Returns:
+            True if the code exists
+        """
+        return self.has_code(hose_code)
 
     def has_code(self, hose_code: str) -> bool:
         """Check if a HOSE code exists in the table.

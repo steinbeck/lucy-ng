@@ -12,6 +12,23 @@ from lucy_ng.prediction import C13Predictor, HOSELookupTable
 DEFAULT_TABLE_PATH = Path("data/reference/hose_lookup.json.gz")
 HOME_TABLE_PATH = Path.home() / ".lucy" / "hose_lookup.json.gz"
 
+# Default database locations (preferred over JSON table)
+DEFAULT_DB_PATH = Path("data/reference/lucy-ng-derep.db")
+HOME_DB_PATH = Path.home() / ".lucy" / "lucy-ng-derep.db"
+
+
+def find_database() -> Path | None:
+    """Find database with HOSE stats in default locations."""
+    candidates = [
+        DEFAULT_DB_PATH,
+        HOME_DB_PATH,
+        Path("lucy-ng-derep.db"),
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return None
+
 
 def find_lookup_table() -> Path | None:
     """Find lookup table in default locations."""
@@ -36,11 +53,18 @@ def predict() -> None:
 @predict.command("c13")
 @click.argument("smiles")
 @click.option(
+    "--db",
+    "-d",
+    type=click.Path(exists=True),
+    default=None,
+    help="Path to SQLite database with HOSE stats (preferred over JSON table).",
+)
+@click.option(
     "--table",
     "-t",
     type=click.Path(exists=True),
     default=None,
-    help="Path to HOSE lookup table. Uses default if not specified.",
+    help="Path to HOSE lookup table (JSON). Database is preferred if available.",
 )
 @click.option(
     "--max-radius",
@@ -58,6 +82,7 @@ def predict() -> None:
 )
 def predict_c13(
     smiles: str,
+    db: str | None,
     table: str | None,
     max_radius: int,
     output_format: str,
@@ -69,25 +94,59 @@ def predict_c13(
     Predicts chemical shifts using HOSE code lookup against a reference database.
     Falls back to shorter HOSE radii when exact matches aren't found.
 
+    Backend priority:
+    1. Explicit --db option
+    2. Explicit --table option
+    3. Auto-detect database in default locations
+    4. Auto-detect JSON table in default locations
+
     Example:
 
         lucy predict c13 "CC(C)Cc1ccc(cc1)C(C)C(=O)O"
     """
-    # Find lookup table
-    table_path = Path(table) if table else find_lookup_table()
-    if table_path is None or not table_path.exists():
+    predictor: C13Predictor | None = None
+
+    # Priority 1: Explicit database path
+    if db:
+        try:
+            predictor = C13Predictor.from_database(Path(db), max_radius=max_radius)
+        except Exception as e:
+            click.echo(f"Error loading database: {e}", err=True)
+            raise SystemExit(1)
+
+    # Priority 2: Explicit table path
+    elif table:
+        try:
+            predictor = C13Predictor.from_table_file(Path(table), max_radius=max_radius)
+        except Exception as e:
+            click.echo(f"Error loading lookup table: {e}", err=True)
+            raise SystemExit(1)
+
+    # Priority 3: Auto-detect database
+    elif (db_path := find_database()):
+        try:
+            predictor = C13Predictor.from_database(db_path, max_radius=max_radius)
+        except Exception as e:
+            click.echo(f"Error loading database at {db_path}: {e}", err=True)
+            raise SystemExit(1)
+
+    # Priority 4: Auto-detect table
+    elif (table_path := find_lookup_table()):
+        try:
+            predictor = C13Predictor.from_table_file(table_path, max_radius=max_radius)
+        except Exception as e:
+            click.echo(f"Error loading lookup table at {table_path}: {e}", err=True)
+            raise SystemExit(1)
+
+    # No backend found
+    else:
         click.echo(
-            "Error: No HOSE lookup table found. Build one with:\n"
-            "  lucy predict build-table <coconut.sd>",
+            "Error: No prediction backend found.\n\n"
+            "Options:\n"
+            "  1. Download database: lucy database download\n"
+            "  2. Build JSON table: lucy predict build-table <coconut.sd>",
             err=True,
         )
-        raise SystemExit(1)
-
-    # Load predictor
-    try:
-        predictor = C13Predictor.from_table_file(table_path, max_radius=max_radius)
-    except Exception as e:
-        click.echo(f"Error loading lookup table: {e}", err=True)
         raise SystemExit(1)
 
     # Predict

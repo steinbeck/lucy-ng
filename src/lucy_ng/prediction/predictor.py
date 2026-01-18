@@ -1,14 +1,18 @@
 """13C NMR chemical shift predictor using HOSE codes."""
 
-import statistics
+import math
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from rdkit import Chem
 from rdkit.Chem import Mol
 
 from .hose import HOSECodeGenerator
-from .lookup import HOSELookupTable
-from .models import PredictedShift, PredictionResult
+from .lookup import HOSELookupProtocol, HOSELookupTable
+from .models import HOSEStatsResult, PredictedShift, PredictionResult
+
+if TYPE_CHECKING:
+    from .db_lookup import DatabaseHOSELookup
 
 
 class C13Predictor:
@@ -16,22 +20,26 @@ class C13Predictor:
 
     Uses HOSE codes to look up chemical shifts in a reference database.
     Implements fallback to shorter HOSE radii when exact matches aren't found.
+
+    Supports two backend types:
+    - HOSELookupTable: In-memory JSON-based lookup (original)
+    - DatabaseHOSELookup: SQLite database with pre-computed statistics (new)
     """
 
     def __init__(
         self,
-        lookup_table: HOSELookupTable,
+        lookup: "HOSELookupTable | DatabaseHOSELookup",
         max_radius: int = 6,
         min_radius: int = 1,
     ) -> None:
         """Initialize the predictor.
 
         Args:
-            lookup_table: Pre-built HOSE lookup table
+            lookup: HOSE lookup backend (table or database adapter)
             max_radius: Maximum HOSE radius to try (default 6)
             min_radius: Minimum HOSE radius for fallback (default 1)
         """
-        self._lookup = lookup_table
+        self._lookup = lookup
         self._hose_gen = HOSECodeGenerator()
         self._max_radius = max_radius
         self._min_radius = min_radius
@@ -41,7 +49,7 @@ class C13Predictor:
         """Create predictor from a saved lookup table file.
 
         Args:
-            table_path: Path to saved lookup table
+            table_path: Path to saved lookup table (JSON or compressed JSON)
             **kwargs: Additional arguments passed to __init__
 
         Returns:
@@ -49,6 +57,22 @@ class C13Predictor:
         """
         table = HOSELookupTable.load(table_path)
         return cls(table, **kwargs)
+
+    @classmethod
+    def from_database(cls, db_path: Path | str, **kwargs) -> "C13Predictor":  # type: ignore[no-untyped-def]
+        """Create predictor from a database with HOSE statistics.
+
+        Args:
+            db_path: Path to SQLite database with hose_stats table
+            **kwargs: Additional arguments passed to __init__
+
+        Returns:
+            Configured C13Predictor instance
+        """
+        from .db_lookup import DatabaseHOSELookup
+
+        lookup = DatabaseHOSELookup.from_db_path(Path(db_path))
+        return cls(lookup, **kwargs)
 
     def predict_from_smiles(self, smiles: str) -> PredictionResult:
         """Predict 13C shifts for a molecule from SMILES.
@@ -107,7 +131,8 @@ class C13Predictor:
         """Predict shift for a single carbon atom with fallback.
 
         Tries HOSE codes from max_radius down to min_radius until
-        a match is found.
+        a match is found. Uses the Protocol-based lookup interface
+        that works with both in-memory tables and database backends.
 
         Args:
             mol: RDKit Mol object
@@ -123,59 +148,57 @@ class C13Predictor:
             except Exception:
                 continue
 
-            shifts = self._lookup.lookup(hose_code)
+            # Use protocol-based lookup
+            stats = self._lookup.lookup_stats_at_radius(hose_code, radius)
 
-            if shifts:
-                return self._create_prediction(
+            if stats is not None:
+                return self._create_prediction_from_stats(
                     atom_idx=atom_idx,
                     hose_code=hose_code,
                     radius=radius,
-                    shifts=shifts,
+                    stats=stats,
                 )
 
         return None
 
-    def _create_prediction(
+    def _create_prediction_from_stats(
         self,
         atom_idx: int,
         hose_code: str,
         radius: int,
-        shifts: list[float],
+        stats: HOSEStatsResult,
     ) -> PredictedShift:
-        """Create a PredictedShift from lookup results.
+        """Create a PredictedShift from pre-computed statistics.
 
         Args:
             atom_idx: Atom index
             hose_code: HOSE code that matched
             radius: Radius at which match was found
-            shifts: List of matched shifts
+            stats: Pre-computed statistics (mean, std, count)
 
         Returns:
             PredictedShift with statistics
         """
-        median_shift = statistics.median(shifts)
-        std_dev = statistics.stdev(shifts) if len(shifts) > 1 else 0.0
-
         # Calculate confidence based on:
         # 1. Radius (higher = more confident)
         # 2. Number of matches (more = more confident, up to a point)
         # 3. Standard deviation (lower = more confident)
         confidence = self._calculate_confidence(
             radius=radius,
-            match_count=len(shifts),
-            std_dev=std_dev,
+            match_count=stats.count,
+            std_dev=stats.std,
         )
 
         return PredictedShift(
             atom_index=atom_idx,
-            shift=median_shift,
+            shift=stats.mean,  # Use mean from pre-computed stats
             confidence=confidence,
             hose_code=hose_code,
             radius_used=radius,
-            match_count=len(shifts),
-            std_dev=std_dev,
-            min_shift=min(shifts),
-            max_shift=max(shifts),
+            match_count=stats.count,
+            std_dev=stats.std,
+            min_shift=stats.mean - stats.std,  # Approximate min/max
+            max_shift=stats.mean + stats.std,  # Approximate min/max
         )
 
     def _calculate_confidence(
@@ -201,8 +224,6 @@ class C13Predictor:
         # Match count component (0.5 to 1.0)
         # More matches = more statistical confidence
         # Logarithmic scaling, saturates around 100 matches
-        import math
-
         match_score = min(1.0, 0.5 + 0.5 * math.log10(max(1, match_count)) / 2)
 
         # Std dev component (0.5 to 1.0)
@@ -238,6 +259,19 @@ class C13Predictor:
         return failed
 
     @property
+    def lookup(self) -> "HOSELookupTable | DatabaseHOSELookup":
+        """Access the underlying lookup backend."""
+        return self._lookup
+
+    @property
     def lookup_table(self) -> HOSELookupTable:
-        """Access the underlying lookup table."""
+        """Access the underlying lookup table (for backward compatibility).
+
+        Raises TypeError if backend is DatabaseHOSELookup.
+        """
+        if not isinstance(self._lookup, HOSELookupTable):
+            raise TypeError(
+                "lookup_table property only available with HOSELookupTable backend. "
+                "Use the 'lookup' property instead for generic access."
+            )
         return self._lookup

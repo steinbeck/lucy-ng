@@ -998,6 +998,62 @@ The ranking now shows quality labels and multi-level tolerance:
 
 ---
 
+## 13C Shift Prediction
+
+### Database-Backed Prediction (Preferred)
+
+The database contains ~7.9M pre-computed HOSE statistics from 895K compounds. Use this for predictions:
+
+```bash
+# CLI - auto-detects database in default location
+lucy predict c13 "CCO"
+
+# CLI - explicit database path
+lucy predict c13 "CCO" --db data/reference/lucy-ng-derep.db
+
+# CLI - JSON output
+lucy predict c13 "CCO" --format json
+```
+
+```python
+# Python API
+from lucy_ng.prediction import C13Predictor
+
+# From database (preferred)
+predictor = C13Predictor.from_database("data/reference/lucy-ng-derep.db")
+result = predictor.predict_from_smiles("CCO")  # Ethanol
+print(result.summary())
+
+# From JSON table (legacy)
+predictor = C13Predictor.from_table_file("hose_lookup.json.gz")
+```
+
+### Backend Selection Priority
+
+1. Explicit `--db` option
+2. Explicit `--table` option
+3. Auto-detect database in default locations
+4. Auto-detect JSON table in default locations
+
+### Example Output
+
+```
+13C Shift Predictions for: CCO
+Carbons: 2, Predicted: 2 (100%)
+
+Atom  Shift (ppm)  Confidence  Radius  Matches
+--------------------------------------------------
+C1         65.64        0.53       1   641746
+C0         14.62        0.64       2    17344
+```
+
+- **Shift**: Predicted chemical shift (mean from database)
+- **Confidence**: 0-1 score based on radius, match count, and std deviation
+- **Radius**: HOSE sphere radius at which match was found (6=most specific)
+- **Matches**: Number of observations in database
+
+---
+
 ## Developer Reference
 
 ### Quick Reference
