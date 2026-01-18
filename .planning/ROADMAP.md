@@ -4,7 +4,7 @@
 
 - ✅ [v1.0 Core CASE Pipeline](milestones/v1.0-ROADMAP.md) - Phases 1-10 (shipped 2026-01-12)
 - ✅ [v1.1 Database-Backed Dereplication](milestones/v1.1-ROADMAP.md) - Phases 11-15 (shipped 2026-01-15)
-- ✅ **v1.2 HOSE Database Prediction** - Phases 16-19 (shipped 2026-01-18)
+- ✅ [v1.2 HOSE Database Prediction](milestones/v1.2-ROADMAP.md) - Phases 16-19 (shipped 2026-01-18)
 
 ---
 
@@ -239,26 +239,14 @@
 
 ---
 
-## ✅ v1.2 HOSE Database Prediction (COMPLETE)
-
-**Milestone Goal:** Replace in-memory HOSE lookup with database-backed prediction using extended COCONUT dataset (~895K compounds) for improved accuracy and confidence scoring.
-
-**Completed**: 2026-01-18
+<details>
+<summary>✅ v1.2 HOSE Database Prediction (Phases 16-19) — SHIPPED 2026-01-18</summary>
 
 ### Phase 16: Database Schema ✅
 **Goal**: Add hose_stats table to compounds.db for HOSE-based shift prediction
 **Depends on**: Milestone v1.1 complete
 **Completed**: 2026-01-15
-
-- hose_stats table with precomputed statistics (mean, std, count) per HOSE code at each radius
-- Composite primary key (hose_code, radius) for uniqueness
-- Index on hose_code for O(1) lookups
-- HOSEStatsRecord Pydantic model
-- DatabaseManager methods for CRUD operations
-- Schema version bumped to 2
-
-Plans:
-- [x] 16-01: Database schema for HOSE stats (3 tasks)
+**Plans**: 1/1 complete
 
 ---
 
@@ -266,14 +254,7 @@ Plans:
 **Goal**: Batch generate HOSE codes (radii 1-6) for all 895K COCONUT compounds
 **Depends on**: Phase 16
 **Completed**: 2026-01-16
-
-- iter_compounds_with_shifts() for memory-efficient iteration
-- HOSEStatsGenerator service for batch processing
-- CLI command: `lucy database generate-hose-stats`
-- Progress bar, error handling, statistics tracking
-
-Plans:
-- [x] 17-01: HOSE generation infrastructure (3 tasks)
+**Plans**: 1/1 complete
 
 ---
 
@@ -281,15 +262,7 @@ Plans:
 **Goal**: Update HOSEPredictor to query database with radius fallback
 **Depends on**: Phase 17
 **Completed**: 2026-01-18
-
-- HOSELookupProtocol for interchangeable backends
-- DatabaseHOSELookup adapter for database queries
-- C13Predictor with dual-backend support (JSON table or database)
-- CLI --db option with auto-detection
-- 18 new prediction tests
-
-Plans:
-- [x] 18-01: Database-backed prediction API (6 tasks)
+**Plans**: 1/1 complete
 
 ---
 
@@ -297,14 +270,9 @@ Plans:
 **Goal**: Update `lucy predict c13` CLI and MCP tools for database-backed prediction
 **Depends on**: Phase 18
 **Completed**: 2026-01-18
+**Plans**: 1/1 complete
 
-- MCP _get_predictor updated to prefer database
-- predict_c13_shifts MCP tool with db_path parameter
-- New get_hose_stats_info MCP tool for agents
-- 6 new MCP tests
-
-Plans:
-- [x] 19-01: CLI/MCP integration (4 tasks)
+</details>
 
 ---
 

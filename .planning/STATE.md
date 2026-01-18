@@ -2,47 +2,24 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-15)
+See: .planning/PROJECT.md (updated 2026-01-18)
 
 **Core value:** AI-agent powered structure elucidation from NMR data
-**Current focus:** v1.2 HOSE Database Prediction
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-**Milestone**: v1.2 — HOSE Database Prediction ✅ COMPLETE
-**Phase**: 19 of 19 (CLI/MCP Integration) ✅
-**Plan**: All phases complete
-**Status**: Milestone v1.2 complete!
-**Last activity**: 2026-01-18 - v1.2 milestone complete
+**Milestone**: v1.2 HOSE Database Prediction ✅ ARCHIVED
+**Status**: All milestones v1.0-v1.2 complete
+**Last activity**: 2026-01-18 - v1.2 milestone archived
 
-Progress: ██████████ 100%
+## Completed Milestones
 
-## Milestone 1.0 Complete
-
-All phases of the Core CASE Pipeline have been implemented:
-
-| Phase | Name | Status |
-|-------|------|--------|
-| 1 | Foundation | Complete |
-| 2 | 1D NMR Reading | Complete |
-| 2.1 | 1D Carbon Dereplication | Complete |
-| 3 | 2D NMR Reading | Complete |
-| 4 | Peak Picking | Complete |
-| 4.1 | 2D Peak Validation | Complete |
-| 4.2 | DEPT-Guided HSQC | Complete |
-| 5 | LSD Integration | Complete |
-| 5.1 | HMBC-Guided Picking | Complete |
-| 5.2 | Symmetry Detection | Complete |
-| 6 | CLI Interface | Complete |
-| 7 | MCP Server | Complete |
-| 8 | HOSE Predictor | Complete |
-| 9 | LSD Solution Ranking | Complete |
-| 10 | NMRXiv Dataset Fetching | Complete |
-
-## Roadmap Evolution
-
-- Milestone v1.0: Core CASE Pipeline, 12 phases (Phase 1-10 + insertions), complete
-- Milestone v1.1 created: Database-Backed Dereplication, 5 phases (Phase 11-15)
+| Milestone | Phases | Shipped |
+|-----------|--------|---------|
+| v1.0 Core CASE Pipeline | 1-10 | 2026-01-12 |
+| v1.1 Database-Backed Dereplication | 11-15 | 2026-01-15 |
+| v1.2 HOSE Database Prediction | 16-19 | 2026-01-18 |
 
 ## Key Decisions
 
@@ -61,36 +38,27 @@ All phases of the Core CASE Pipeline have been implemented:
 | N:1 shift matching for ranking | 2026-01-12 | Handles molecular symmetry correctly |
 | DOI-based data fetching | 2026-01-12 | Parse NMRXiv DOIs directly for project/study IDs |
 | SQLite for dereplication DB | 2026-01-13 | Portable, no server, formula-indexed for fast lookup |
+| Protocol pattern for backends | 2026-01-18 | HOSELookupProtocol for interchangeable prediction |
+| Database-first auto-detection | 2026-01-18 | Prefer database over JSON table |
+| Single database for both features | 2026-01-18 | Same DB powers dereplication AND prediction |
 
-## Key Capabilities (v1.0)
+## Key Capabilities (v1.2)
 
-- **13 MCP Tools**: Full AI agent integration
+- **16 MCP Tools**: Full AI agent integration including get_hose_stats_info
 - **7 CLI Command Groups**: read, pick, analyze, dereplicate, predict, lsd, fetch
 - **Python API**: Direct library access
-- **414+ Tests**: Comprehensive coverage
-- **Documentation**: USER_GUIDE.md, CLAUDE.md, MCP_INTEGRATION.md
-
-## Roadmap Evolution
-
-- Milestone v1.2 created: HOSE Database Prediction, 4 phases (Phase 16-19)
+- **642 Tests**: Comprehensive coverage
+- **Documentation**: USER_GUIDE.md, CLAUDE.md, MCP_INTEGRATION.md, skill/SKILL.md
 
 ## Session Continuity
 
 **Last session**: 2026-01-18
-**Stopped at**: Milestone v1.2 complete
-**Resume file**: None (milestone complete)
+**Stopped at**: v1.2 milestone archived
+**Resume file**: None (between milestones)
 
 **Next steps**:
-- Run `/gsd:complete-milestone` to archive v1.2
-- Or start planning next milestone
-
-**v1.2 Deliverables**:
-- 7.9M HOSE statistics from 895K compounds (radii 1-6)
-- DatabaseHOSELookup adapter for database-backed predictions
-- C13Predictor with dual-backend support (JSON table or database)
-- CLI --db option with auto-detection
-- MCP get_hose_stats_info tool for agents
-- 633 tests all passing
+- Run `/gsd:discuss-milestone` to plan v1.3
+- Or start a new feature directly
 
 ---
-*Last updated: 2026-01-18 after v1.2 milestone completion*
+*Last updated: 2026-01-18 after v1.2 milestone archived*

@@ -31,6 +31,8 @@ The system reads Bruker NMR data, performs peak picking, generates constraints, 
 - NMRXiv dataset fetching — v1.0
 - SQLite database for 928K compounds (COCONUT + NMRShiftDB) — v1.1
 - Database-backed dereplication (~100x faster) — v1.1
+- Database-backed 13C prediction with 7.9M HOSE statistics — v1.2
+- MCP tool for checking prediction capability (get_hose_stats_info) — v1.2
 
 ### Active
 
@@ -93,15 +95,15 @@ Minimum viable spectral data for v1:
 ## Current State
 
 **Version:** v1.2 (shipped 2026-01-18)
-**Codebase:** ~12,000 lines Python, 633 tests
+**Codebase:** ~17,500 lines Python, 642 tests
 **Tech stack:** Python 3.10+, Pydantic v2, nmrglue, RDKit, SQLite, Click, FastMCP
 
 **Capabilities:**
-- 15 MCP tools for AI agent integration
+- 16 MCP tools for AI agent integration (including get_hose_stats_info)
 - 7 CLI command groups (read, pick, analyze, dereplicate, predict, lsd, fetch)
 - SQLite database with 928K compounds (COCONUT + NMRShiftDB)
 - 7.9M HOSE statistics for database-backed 13C prediction
 - Full CASE pipeline: peak picking → LSD generation → solving → ranking
 
 ---
-*Last updated: 2026-01-18 after v1.2 milestone*
+*Last updated: 2026-01-18 after v1.2 milestone archived*
