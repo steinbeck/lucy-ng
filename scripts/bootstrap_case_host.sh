@@ -35,6 +35,14 @@ source .venv/bin/activate
 say "1b   hose-code-generator (13C prediction; --no-deps avoids the 3.12 xmlrunner break)"
 uv pip install "git+https://github.com/Ratsemaat/HOSE_code_generator.git" --no-deps
 
+say "1c   expose lucy on PATH for CASE runs (which start outside this repo)"
+# A CASE run starts from an NMR data dir OUTSIDE this repo with the venv NOT
+# activated, so `lucy` must be reachable without activation. ~/.local/bin is on
+# PATH by default on Linux, and the venv console-script has an absolute shebang,
+# so a plain symlink works without sourcing the venv.
+mkdir -p "$HOME/.local/bin"
+ln -sfn "$REPO/.venv/bin/lucy" "$HOME/.local/bin/lucy"
+
 # ---------------------------------------------------------------------------
 say "2/6  LSD solver (LSD + outlsd on PATH)"
 if lucy lsd check 2>/dev/null | grep -qi "outlsd: available"; then
@@ -55,6 +63,14 @@ else
   warn "verify step will fail until LSD is present."
 fi
 
+# Mirror the LSD binaries into ~/.local/bin so they are found from any CASE
+# data dir. The ~/.bashrc PATH entry above only applies to interactive shells;
+# CASE runs in non-interactive ones where ~/.bashrc may early-return.
+for b in lsd outlsd genpos mol2ab; do
+  p="$(command -v "$b" 2>/dev/null || true)"
+  [ -n "$p" ] && ln -sfn "$p" "$HOME/.local/bin/$b"
+done
+
 # ---------------------------------------------------------------------------
 say "3/6  Reference database (pre-built SQLite from Figshare)"
 DB="data/reference/lucy-ng-derep.db"
@@ -65,6 +81,13 @@ else
   lucy database download -o "$DB"
 fi
 lucy database info "$DB" || warn "lucy database info failed — verify the DB download."
+
+# Make the DB discoverable from any CWD: DatabaseFinder checks ~/.lucy/ (step 3
+# of its search order) regardless of the working directory. Without this, a CASE
+# run from a data dir silently falls back to a tiny bundled HOSE table
+# (~11 matches) instead of the full 928k-compound DB.
+mkdir -p "$HOME/.lucy"
+ln -sfn "$REPO/$DB" "$HOME/.lucy/lucy-ng-derep.db"
 
 # ---------------------------------------------------------------------------
 say "4/6  CASE skill: symlink commands + the 4 team agents into ~/.claude"
@@ -89,6 +112,10 @@ ok=1
 lucy --version >/dev/null 2>&1 && echo "  [ok] lucy CLI" || { echo "  [FAIL] lucy CLI"; ok=0; }
 lucy lsd check 2>/dev/null | grep -qi "outlsd: available" && echo "  [ok] LSD + outlsd" || { echo "  [FAIL] LSD/outlsd"; ok=0; }
 lucy predict c13 "CCO" --format json >/dev/null 2>&1 && echo "  [ok] predict c13 (DB + hosegen)" || { echo "  [FAIL] predict c13"; ok=0; }
+# Discoverability from a data dir (CASE runs start outside this repo):
+[ -e "$HOME/.local/bin/lucy" ] && echo "  [ok] lucy on ~/.local/bin" || { echo "  [FAIL] ~/.local/bin/lucy missing"; ok=0; }
+[ -e "$HOME/.local/bin/outlsd" ] && echo "  [ok] outlsd on ~/.local/bin" || { echo "  [FAIL] ~/.local/bin/outlsd missing"; ok=0; }
+( cd /tmp && lucy predict c13 "CCO" --format json >/dev/null 2>&1 ) && echo "  [ok] DB found from any dir (~/.lucy)" || { echo "  [FAIL] DB not found outside repo (~/.lucy/lucy-ng-derep.db)"; ok=0; }
 
 if [ "$ok" = "1" ]; then
   say "DONE — host is CASE-capable. Next: a smoke CASE in a fresh Claude Code session:"

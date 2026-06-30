@@ -55,6 +55,18 @@ uv pip install "git+https://github.com/Ratsemaat/HOSE_code_generator.git" --no-d
 # (or: pip install ... --no-deps  in a plain venv)
 ```
 
+### Expose `lucy` on PATH (required for CASE runs)
+
+A CASE run starts from an NMR **data dir outside this repo**, with the venv **not
+activated** — so `lucy` must be on PATH without activation. Symlink the venv
+console-script into `~/.local/bin` (on PATH by default on Linux; the script has an
+absolute shebang, so no activation is needed):
+
+```bash
+mkdir -p ~/.local/bin
+ln -sfn "$PWD/.venv/bin/lucy" ~/.local/bin/lucy
+```
+
 ## 2. LSD solver (`LSD` + `outlsd`)
 
 The solver is an **external** download (not on PyPI). `outlsd` (SMILES conversion) is
@@ -76,6 +88,14 @@ Verify (this is the gate — fix until both report available):
 lucy lsd check        # must show: LSD available + outlsd available
 ```
 
+The `~/.bashrc` PATH entry above only applies to **interactive** shells; CASE runs in
+non-interactive ones. Mirror the binaries into `~/.local/bin` so they're found from any
+data dir:
+
+```bash
+for b in lsd outlsd genpos mol2ab; do ln -sfn "$(command -v "$b")" ~/.local/bin/$b; done
+```
+
 ## 3. Reference database (pre-built SQLite)
 
 CASE ranking + dereplication use one pre-built SQLite DB (~830 MB download → ~2.8 GB),
@@ -87,7 +107,16 @@ lucy database download -o data/reference/lucy-ng-derep.db
 lucy database info data/reference/lucy-ng-derep.db   # sanity-check row counts
 ```
 
-`DatabaseFinder` auto-discovers `data/reference/lucy-ng-derep.db` from a CASE data dir.
+`DatabaseFinder` only finds `data/reference/lucy-ng-derep.db` when the CWD is the repo.
+A CASE run starts from a data dir, so symlink the DB into `~/.lucy/` — `DatabaseFinder`
+checks there (step 3 of its search order) regardless of CWD. **Without this, CASE
+silently falls back to a tiny bundled HOSE table (~11 matches) instead of the full
+928k-compound DB:**
+
+```bash
+mkdir -p ~/.lucy
+ln -sfn "$PWD/data/reference/lucy-ng-derep.db" ~/.lucy/lucy-ng-derep.db
+```
 
 ## 4. Install the CASE skill (commands + agents) into `~/.claude`
 
@@ -136,6 +165,14 @@ lucy lsd check                                          # LSD + outlsd available
 lucy predict c13 "CCO" --format json | head -1          # DB + hosegen working
 ```
 
+Then confirm they also work **from outside the repo** — a CASE run never starts in the
+repo, so this is what actually exercises the `~/.local/bin` and `~/.lucy` symlinks from
+§1–§3 (`predict` here must report the full DB, not a ~11-match fallback):
+
+```bash
+( cd /tmp && lucy --version && lucy lsd check && lucy predict c13 "CCO" --format json >/dev/null && echo "OK: discoverable from any dir" )
+```
+
 Then a **smoke CASE** on bundled test data (non-blind, just proves the pipeline):
 
 ```bash
@@ -154,6 +191,7 @@ pass, the host is CASE-capable.
 - [ ] `hose-code-generator` installed `--no-deps`
 - [ ] LSD + outlsd on PATH (`lucy lsd check` green)
 - [ ] `lucy database download` → `data/reference/lucy-ng-derep.db` (`lucy database info` ok)
+- [ ] **discoverability:** `lucy` + LSD binaries symlinked into `~/.local/bin`, DB into `~/.lucy/` (so a CASE run from a data dir finds them)
 - [ ] commands symlink + **agents symlinks** in `~/.claude`
 - [ ] `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` persisted
 - [ ] all four `case.md` prereq gates pass + a smoke CASE completes
