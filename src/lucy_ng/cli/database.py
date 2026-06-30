@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import gzip
 import shutil
+import zipfile
 from pathlib import Path
 
 import click
@@ -11,9 +11,13 @@ import requests
 
 from lucy_ng.database import DatabaseImporter, DatabaseManager
 
-# Pre-built database from Figshare
+# Pre-built database from Figshare.
+# Use the canonical ndownloader host: it 302-redirects to a presigned S3 URL
+# for the archive. The figshare.com/ndownloader/... path instead returns
+# HTTP 202 ("Accepted", body empty) while the file is staged, which
+# requests treats as success -> a 0-byte download.
 DATABASE_DOI = "10.6084/m9.figshare.31073554"
-DATABASE_URL = "https://figshare.com/ndownloader/files/61078393"
+DATABASE_URL = "https://ndownloader.figshare.com/files/61078393"
 DATABASE_SIZE_MB = 830  # Compressed size
 DEFAULT_DB_PATH = Path("data/reference/lucy-ng-derep.db")
 
@@ -201,7 +205,7 @@ def download(output: Path, force: bool) -> None:
 
         lucy database download --force
     """
-    gz_path = output.with_suffix(".db.gz")
+    zip_path = output.with_suffix(".db.zip")
 
     # Check if already exists
     if output.exists() and not force:
@@ -225,7 +229,7 @@ def download(output: Path, force: bool) -> None:
         downloaded = 0
         chunk_size = 1024 * 1024  # 1 MB chunks
 
-        with open(gz_path, "wb") as f:
+        with open(zip_path, "wb") as f:
             for chunk in response.iter_content(chunk_size=chunk_size):
                 f.write(chunk)
                 downloaded += len(chunk)
@@ -240,22 +244,31 @@ def download(output: Path, force: bool) -> None:
 
     except requests.RequestException as e:
         click.echo(f"\nError downloading: {e}", err=True)
-        if gz_path.exists():
-            gz_path.unlink()
+        if zip_path.exists():
+            zip_path.unlink()
         raise click.Abort() from e
 
-    # Decompress
-    click.echo("  Decompressing...")
+    # Extract (Figshare serves the database as a .zip containing the .db)
+    click.echo("  Extracting...")
     try:
-        with gzip.open(gz_path, "rb") as f_in:
-            with open(output, "wb") as f_out:
+        with zipfile.ZipFile(zip_path) as zf:
+            members = [
+                name
+                for name in zf.namelist()
+                if name.endswith(".db") and not name.startswith("__MACOSX")
+            ]
+            if not members:
+                raise click.ClickException(
+                    "Downloaded archive does not contain a .db file"
+                )
+            with zf.open(members[0]) as f_in, open(output, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
-    except Exception as e:
-        click.echo(f"Error decompressing: {e}", err=True)
+    except zipfile.BadZipFile as e:
+        click.echo(f"Error extracting: {e}", err=True)
         raise click.Abort() from e
 
-    # Clean up compressed file
-    gz_path.unlink()
+    # Clean up archive
+    zip_path.unlink()
 
     # Verify
     click.echo(f"\nDatabase downloaded: {output}")
