@@ -26,7 +26,11 @@ classifiers = [
 dependencies = [
     "click>=8.0",
     "jsonschema>=4.18.0",
-    "nmrglue>=0.9",
+    # nmrglue 0.11 (latest PyPI release) calls np.dtype('a8') at import time,
+    # which NumPy 2.0 removed -> `import nmrglue` raises TypeError under the
+    # NumPy 2.x that rdkit/scipy pull in. Track git master (numpy-2 compatible)
+    # until a fixed release is published on PyPI.
+    "nmrglue @ git+https://github.com/jjhelmus/nmrglue.git",
     "numpy>=1.24",
     "pydantic>=2.0",
     "requests>=2.28",
