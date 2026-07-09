@@ -38,7 +38,7 @@ all organized in tabs. Builds on the v9.2 architecture where "tabs dock in witho
 
 - [x] **Phase 93: Formatted Log + Tab Framework** — tab navigation bar + hand-rolled markdown renderer for the run log; pure frontend, no new backend (completed 2026-07-08)
 - [x] **Phase 94: Data Tables** — new `tables.py` router reading `analysis/peaks/*.json` + `iteration_NN/compound.lsd`; ¹³C signals, correlations, and LSD constraint inventory tables (completed 2026-07-09)
-- [ ] **Phase 95: 1D Real Spectra + Peak Overlay** — new `spectra.py` router; real Bruker 1D traces via BrukerReader/nmrglue with picked peaks overlaid; matplotlib added to `[webview]` extra; Bruker-path wiring via `.run_manifest.json`
+- [x] **Phase 95: 1D Real Spectra + Peak Overlay** — new `spectra.py` router; real Bruker 1D traces via BrukerReader/nmrglue with picked peaks overlaid; matplotlib added to `[webview]` extra; Bruker-path wiring via `.run_manifest.json` (completed 2026-07-09)
 - [ ] **Phase 96: 2D Real Spectra + Peak Overlay** — extends `spectra.py` with HSQC/HMBC/COSY contour plots + cross-peak overlay; decimation + threshold levels + mtime PNG cache
 
 ### Phase Details
@@ -99,7 +99,7 @@ all organized in tabs. Builds on the v9.2 architecture where "tabs dock in witho
 - [x] 95-01-PLAN.md — Wave 0: matplotlib in [webview] extra + TestSpectraEndpoint (RED-by-skip)
 - [x] 95-02-PLAN.md — Backend: spectra.py router (real ¹³C/¹H trace + overlay, reversed axis, never-500 PNG) + app.py docking
 - [x] 95-03-PLAN.md — Frontend: 1D Spectra tab img mounts + refreshSpectra1D + case.md .run_manifest.json write
-- [ ] 95-04-PLAN.md — Manual browser checkpoint: real trace, reversed axis, peak overlay, unavailable states
+- [x] 95-04-PLAN.md — Manual browser checkpoint: real trace, reversed axis, peak overlay, unavailable states
 
 **UI hint**: yes
 
@@ -128,5 +128,5 @@ all organized in tabs. Builds on the v9.2 architecture where "tabs dock in witho
 |-------|----------------|--------|-----------|
 | 93. Formatted Log + Tab Framework | 3/3 | Complete   | 2026-07-08 |
 | 94. Data Tables | 4/4 | Complete   | 2026-07-09 |
-| 95. 1D Real Spectra + Peak Overlay | 3/4 | In Progress|  |
+| 95. 1D Real Spectra + Peak Overlay | 5/5 | Complete   | 2026-07-09 |
 | 96. 2D Real Spectra + Peak Overlay | 0/TBD | Not started | - |
