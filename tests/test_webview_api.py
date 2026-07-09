@@ -290,7 +290,9 @@ class TestStructuresEndpoint:
             # Index 2 is "not_a_real_smiles_XXXX" in the live fixture
             r = client.get("/api/structure/2.svg")
 
-        assert r.status_code == 200, f"Expected 200 for malformed SMILES placeholder, got {r.status_code}"
+        assert r.status_code == 200, (
+            f"Expected 200 for malformed SMILES placeholder, got {r.status_code}"
+        )
         assert "image/svg+xml" in r.headers.get("content-type", ""), (
             f"Expected image/svg+xml content-type: {r.headers.get('content-type')}"
         )
@@ -1075,3 +1077,506 @@ class TestTablesEndpoint:
 
         assert r.status_code == 200, f"Expected 200 (never 500), got {r.status_code}: {r.text}"
         assert r.json().get("state") == "waiting", f"Expected state=waiting: {r.json()}"
+
+
+# ---------------------------------------------------------------------------
+# Phase 95 fixtures — TestSpectraEndpoint [→ Plan 02]
+#
+# CASE1_ROOT is the real Bruker dataset used for the SC2 reversed-axis /
+# carbonyl-left-of-aliphatic check (RESEARCH.md). Tests relying on it must
+# skip (not fail) when the local Dropbox path is absent — same local-dataset
+# caveat already recorded for Phase 94 in STATE.md (Assumption A2).
+# ---------------------------------------------------------------------------
+
+CASE1_ROOT = (
+    Path.home()
+    / "Dropbox"
+    / "develop"
+    / "data"
+    / "nmrdata"
+    / "active-lucy-ng-testprojects"
+    / "CASE1"
+)
+
+
+@pytest.fixture
+def spectra_stale_manifest_dir(tmp_path: Path) -> Path:
+    """analysis_dir with a well-formed manifest pointing at a MISSING bruker dir (D-05)."""
+    import json as _json
+
+    (tmp_path / ".run_manifest.json").write_text(
+        _json.dumps(
+            {
+                "bruker_data_dir": "/nonexistent/path/does/not/exist",
+                "formula": "C13H18O2",
+            }
+        ),
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+@pytest.fixture
+def spectra_case1_manifest_dir(tmp_path: Path) -> Path:
+    """analysis_dir with a manifest pointing at the REAL CASE1 dataset + hand-authored peaks.
+
+    Skips (not fails) when the local CASE1 Dropbox path is absent on this
+    machine — do not hard-fail CI on a missing local dataset.
+    """
+    if not CASE1_ROOT.is_dir():
+        pytest.skip(f"Real CASE1 dataset not found at {CASE1_ROOT}")
+
+    import json as _json
+
+    (tmp_path / ".run_manifest.json").write_text(
+        _json.dumps({"bruker_data_dir": str(CASE1_ROOT), "formula": "C13H18O2"}),
+        encoding="utf-8",
+    )
+
+    peaks_dir = tmp_path / "peaks"
+    peaks_dir.mkdir()
+    (peaks_dir / "carbon_signals.json").write_text(
+        _json.dumps(
+            {
+                "formula": "C13H18O2",
+                "dbe": 5,
+                "solvent": "CDCl3",
+                "note": "hand-authored subset for the SC2 axis-direction check (ibuprofen)",
+                "signals": [
+                    {
+                        "atom": 1,
+                        "ppm": 180.9,
+                        "mult": "s",
+                        "nC": 1,
+                        "assignment": "C=O",
+                        "confidence": "high",
+                    },
+                    {
+                        "atom": 2,
+                        "ppm": 45.0,
+                        "mult": "d",
+                        "nC": 1,
+                        "assignment": "CH",
+                        "confidence": "high",
+                    },
+                    {
+                        "atom": 3,
+                        "ppm": 18.4,
+                        "mult": "q",
+                        "nC": 1,
+                        "assignment": "CH3",
+                        "confidence": "medium",
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+@pytest.fixture
+def synthetic_bruker_dir(tmp_path: Path) -> Path:
+    """A fake Bruker dataset root: numbered experiment dirs, acqus text only.
+
+    No real FID/pdata is required — the acqu2s-presence exclusion branch must
+    run BEFORE any read_1d() call, so a pure-unit test on that branch does not
+    need readable spectral data (mirrors CASE1's real exp layout: exp 1 = 1H
+    zg30, exp 2 = 13C zgpg30, exp 3 = 13C dept135, exp 5 = 2D w/ acqu2s).
+    """
+    root = tmp_path / "bruker_root"
+    root.mkdir()
+
+    def _write_acqus(exp_dir: Path, nucleus: str, pulse_program: str) -> None:
+        exp_dir.mkdir()
+        (exp_dir / "acqus").write_text(
+            f"##$NUC1= <{nucleus}>\n##$PULPROG= <{pulse_program}>\n",
+            encoding="utf-8",
+        )
+
+    _write_acqus(root / "1", "1H", "zg30")
+    _write_acqus(root / "2", "13C", "zgpg30")
+    _write_acqus(root / "3", "13C", "dept135")
+
+    # 2D experiment — acqu2s present, must be excluded BEFORE read_1d is ever called.
+    exp5 = root / "5"
+    exp5.mkdir()
+    (exp5 / "acqus").write_text("##$NUC1= <1H>\n##$PULPROG= <cosygpqf>\n", encoding="utf-8")
+    (exp5 / "acqu2s").write_text("##$NUC1= <1H>\n", encoding="utf-8")
+
+    return root
+
+
+# ---------------------------------------------------------------------------
+# TestSpectraEndpoint [→ Plan 02]
+#
+# RED-by-skip until src/lucy_ng/webview/routers/spectra.py exists (WV-08).
+# Covers SP1-01 (real 13C/1H trace, reversed axis, peak overlay, 2D/DEPT
+# exclusion) and SP-02 (never-500 "unavailable" on absent manifest / stale
+# raw path / missing peaks) — the 8 RESEARCH.md test-map rows plus the SC3
+# import guard and the 2D/DEPT-exclusion unit test.
+# ---------------------------------------------------------------------------
+
+
+class TestSpectraEndpoint:
+    """SP1-01/SP-02: GET /api/spectra/1d/{carbon,proton} PNG endpoints."""
+
+    def test_apply_nmr_axes_reverses_descending_scale(self) -> None:
+        """_apply_nmr_axes(ax, descending_ppm_scale) leaves xlim[0] > xlim[1] (SC2)."""
+        try:
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
+                _apply_nmr_axes,
+            )
+        except ImportError:
+            pytest.skip("webview extra or spectra router not yet available")
+
+        import numpy as np
+        from matplotlib.figure import Figure  # pyright: ignore[reportMissingModuleSource]
+
+        fig = Figure()
+        ax = fig.add_subplot(111)
+        ppm_scale = np.array([231.0, 150.0, 80.0, 20.0, -12.0])
+
+        _apply_nmr_axes(ax, ppm_scale)
+
+        xlim = ax.get_xlim()
+        assert xlim[0] > xlim[1], f"Expected reversed axis (xlim[0] > xlim[1]), got {xlim}"
+
+    def test_carbon_returns_png_on_case1(self, spectra_case1_manifest_dir: Path) -> None:
+        """/api/spectra/1d/carbon on the real CASE1 dataset -> 200 image/png bytes (SP1-01)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+
+            app = FastAPI()
+            app.include_router(spectra.make_router(spectra_case1_manifest_dir))
+        except ImportError:
+            pytest.skip("webview extra or spectra router not yet available")
+
+        with TestClient(app) as client:
+            r = client.get("/api/spectra/1d/carbon")
+
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.text[:200]}"
+        assert r.headers["content-type"] == "image/png", (
+            f"Expected image/png, got {r.headers.get('content-type')}"
+        )
+        assert len(r.content) > 0, "Expected non-empty PNG bytes"
+
+    def test_case1_carbonyl_left_of_aliphatic(self) -> None:
+        """Real CASE1 13C axes: reversed (SC2) + carbonyl (~181ppm) left of aliphatic CH3."""
+        if not CASE1_ROOT.is_dir():
+            pytest.skip(f"Real CASE1 dataset not found at {CASE1_ROOT}")
+        try:
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
+                _apply_nmr_axes,
+                _select_experiment,
+            )
+        except ImportError:
+            pytest.skip("webview extra or spectra router not yet available")
+
+        from matplotlib.figure import Figure  # pyright: ignore[reportMissingModuleSource]
+
+        spectrum = _select_experiment(CASE1_ROOT, "13C")
+        assert spectrum is not None, "Expected a 13C Spectrum1D from the real CASE1 dataset"
+
+        fig = Figure()
+        ax = fig.add_subplot(111)
+        _apply_nmr_axes(ax, spectrum.ppm_scale)
+
+        xlim = ax.get_xlim()
+        assert xlim[0] > xlim[1], f"Expected reversed axis, got {xlim}"
+        assert xlim[0] > 181 > 14 > xlim[1], (
+            f"Expected xlim[0] > 181 > 14 > xlim[1] (carbonyl left of aliphatic CH3), got {xlim}"
+        )
+
+    def test_select_experiment_excludes_2d_and_dept(
+        self, synthetic_bruker_dir: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """_select_experiment never calls read_1d on an acqu2s dir; excludes DEPT (Pitfalls 1/2)."""
+        try:
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+        except ImportError:
+            pytest.skip("webview extra or spectra router not yet available")
+
+        from lucy_ng.readers.bruker import BrukerReader
+
+        called_dirs: list[Path] = []
+        original_read_1d = BrukerReader.read_1d
+
+        def _spy_read_1d(experiment_dir: str | Path) -> object:
+            called_dirs.append(Path(experiment_dir))
+            return original_read_1d(experiment_dir)
+
+        monkeypatch.setattr(BrukerReader, "read_1d", staticmethod(_spy_read_1d))
+
+        spectra._select_experiment(synthetic_bruker_dir, "1H")
+
+        acqu2s_dir = synthetic_bruker_dir / "5"
+        assert acqu2s_dir not in called_dirs, (
+            f"Expected the acqu2s-bearing dir {acqu2s_dir} to be excluded BEFORE read_1d, "
+            f"but read_1d was called on: {called_dirs}"
+        )
+
+        if not CASE1_ROOT.is_dir():
+            pytest.skip(f"Real CASE1 dataset not found at {CASE1_ROOT}")
+
+        spectrum = spectra._select_experiment(CASE1_ROOT, "13C")
+        assert spectrum is not None, "Expected a 13C Spectrum1D from the real CASE1 dataset"
+        pulse_program = str(spectrum.metadata.get("pulse_program", "")).lower()
+        assert "dept" not in pulse_program, (
+            f"Expected the standard (non-DEPT) 13C experiment, got pulse_program={pulse_program!r}"
+        )
+
+    def test_proton_present_and_carbon_independent(
+        self, empty_analysis_dir: Path, tmp_path: Path
+    ) -> None:
+        """Per-nucleus routes are independently expressible; never-500 holds regardless (SP-02)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+        except ImportError:
+            pytest.skip("webview extra or spectra router not yet available")
+
+        # Unconditional: absent manifest -> BOTH nucleus routes independently return
+        # valid PNG bytes, HTTP 200 (SP-02 never-500), regardless of CASE1 availability.
+        app_empty = FastAPI()
+        app_empty.include_router(spectra.make_router(empty_analysis_dir))
+        with TestClient(app_empty) as client:
+            r_carbon = client.get("/api/spectra/1d/carbon")
+            r_proton = client.get("/api/spectra/1d/proton")
+
+        for label, r in (("carbon", r_carbon), ("proton", r_proton)):
+            assert r.status_code == 200, (
+                f"Expected 200 for {label}, got {r.status_code}: {r.text[:200]}"
+            )
+            assert r.headers["content-type"] == "image/png", (
+                f"Expected image/png for {label}, got {r.headers.get('content-type')}"
+            )
+            assert len(r.content) > 0, f"Expected non-empty PNG bytes for {label}"
+
+        # Skippable: with real CASE1 data present, both nuclei should render as "present".
+        if not CASE1_ROOT.is_dir():
+            pytest.skip(f"Real CASE1 dataset not found at {CASE1_ROOT} — skipping present-check")
+
+        import json as _json
+
+        manifest_dir = tmp_path / "case1_manifest"
+        manifest_dir.mkdir()
+        (manifest_dir / ".run_manifest.json").write_text(
+            _json.dumps({"bruker_data_dir": str(CASE1_ROOT), "formula": "C13H18O2"}),
+            encoding="utf-8",
+        )
+        app_case1 = FastAPI()
+        app_case1.include_router(spectra.make_router(manifest_dir))
+        with TestClient(app_case1) as client:
+            r_carbon2 = client.get("/api/spectra/1d/carbon")
+            r_proton2 = client.get("/api/spectra/1d/proton")
+
+        assert r_carbon2.status_code == 200, (
+            f"Expected 200 for carbon, got {r_carbon2.status_code}: {r_carbon2.text[:200]}"
+        )
+        assert r_carbon2.headers["content-type"] == "image/png"
+        assert r_proton2.status_code == 200, (
+            f"Expected 200 for proton, got {r_proton2.status_code}: {r_proton2.text[:200]}"
+        )
+        assert r_proton2.headers["content-type"] == "image/png"
+
+    def test_peak_overlay_positions(self, tmp_path: Path) -> None:
+        """PNG bytes differ between an overlay render and a bare-trace render (SP1-01 overlay)."""
+        if not CASE1_ROOT.is_dir():
+            pytest.skip(f"Real CASE1 dataset not found at {CASE1_ROOT}")
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+        except ImportError:
+            pytest.skip("webview extra or spectra router not yet available")
+
+        import json as _json
+
+        def _make_manifest_dir(with_peaks: bool) -> Path:
+            d = tmp_path / ("with_peaks" if with_peaks else "without_peaks")
+            d.mkdir()
+            (d / ".run_manifest.json").write_text(
+                _json.dumps({"bruker_data_dir": str(CASE1_ROOT), "formula": "C13H18O2"}),
+                encoding="utf-8",
+            )
+            if with_peaks:
+                peaks_dir = d / "peaks"
+                peaks_dir.mkdir()
+                (peaks_dir / "carbon_signals.json").write_text(
+                    _json.dumps(
+                        {
+                            "signals": [
+                                {
+                                    "atom": 1,
+                                    "ppm": 180.9,
+                                    "mult": "s",
+                                    "nC": 1,
+                                    "assignment": "C=O",
+                                    "confidence": "high",
+                                }
+                            ]
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+            return d
+
+        dir_with = _make_manifest_dir(True)
+        dir_without = _make_manifest_dir(False)
+
+        app_with = FastAPI()
+        app_with.include_router(spectra.make_router(dir_with))
+        app_without = FastAPI()
+        app_without.include_router(spectra.make_router(dir_without))
+
+        with TestClient(app_with) as client:
+            r_with = client.get("/api/spectra/1d/carbon")
+        with TestClient(app_without) as client:
+            r_without = client.get("/api/spectra/1d/carbon")
+
+        assert r_with.status_code == 200, (
+            f"Expected 200, got {r_with.status_code}: {r_with.text[:200]}"
+        )
+        assert r_without.status_code == 200, (
+            f"Expected 200, got {r_without.status_code}: {r_without.text[:200]}"
+        )
+        assert r_with.content != r_without.content, (
+            "Expected the overlay render to differ from the bare-trace render "
+            "(peak markers/labels should change the rendered PNG bytes)"
+        )
+
+    def test_missing_manifest_returns_placeholder(self, empty_analysis_dir: Path) -> None:
+        """Absent .run_manifest.json -> HTTP 200, placeholder PNG, never 500 (D-01)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+
+            app = FastAPI()
+            app.include_router(spectra.make_router(empty_analysis_dir))
+        except ImportError:
+            pytest.skip("webview extra or spectra router not yet available")
+
+        with TestClient(app) as client:
+            r = client.get("/api/spectra/1d/carbon")
+
+        assert r.status_code == 200, (
+            f"Expected 200 (never 500), got {r.status_code}: {r.text[:200]}"
+        )
+        assert r.headers["content-type"] == "image/png", (
+            f"Expected image/png, got {r.headers.get('content-type')}"
+        )
+        assert len(r.content) > 0, "Expected non-empty placeholder PNG bytes"
+
+    def test_stale_bruker_path_returns_placeholder(
+        self, spectra_stale_manifest_dir: Path
+    ) -> None:
+        """Manifest present but bruker_data_dir missing/stale -> HTTP 200 placeholder (D-05)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+
+            app = FastAPI()
+            app.include_router(spectra.make_router(spectra_stale_manifest_dir))
+        except ImportError:
+            pytest.skip("webview extra or spectra router not yet available")
+
+        with TestClient(app) as client:
+            r = client.get("/api/spectra/1d/carbon")
+
+        assert r.status_code == 200, (
+            f"Expected 200 (never 500), got {r.status_code}: {r.text[:200]}"
+        )
+        assert r.headers["content-type"] == "image/png", (
+            f"Expected image/png, got {r.headers.get('content-type')}"
+        )
+        assert len(r.content) > 0, "Expected non-empty placeholder PNG bytes"
+
+    def test_missing_peaks_json_renders_bare_trace(self, tmp_path: Path) -> None:
+        """Manifest+raw present, no peaks/carbon_signals.json -> trace still renders (SP-02)."""
+        if not CASE1_ROOT.is_dir():
+            pytest.skip(f"Real CASE1 dataset not found at {CASE1_ROOT}")
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+        except ImportError:
+            pytest.skip("webview extra or spectra router not yet available")
+
+        import json as _json
+
+        (tmp_path / ".run_manifest.json").write_text(
+            _json.dumps({"bruker_data_dir": str(CASE1_ROOT), "formula": "C13H18O2"}),
+            encoding="utf-8",
+        )
+        # Deliberately no peaks/carbon_signals.json — SP-02 partial degradation.
+
+        app = FastAPI()
+        app.include_router(spectra.make_router(tmp_path))
+
+        with TestClient(app) as client:
+            r = client.get("/api/spectra/1d/carbon")
+
+        assert r.status_code == 200, (
+            f"Expected 200 (never 500), got {r.status_code}: {r.text[:200]}"
+        )
+        assert r.headers["content-type"] == "image/png", (
+            f"Expected image/png, got {r.headers.get('content-type')}"
+        )
+        assert len(r.content) > 0, "Expected non-empty PNG bytes (bare trace, no overlay)"
+
+    def test_no_module_level_matplotlib_import(self) -> None:
+        """matplotlib is imported only inside make_router() — never at module level (WV-08/D-04)."""
+        spectra_path = (
+            Path(__file__).parent.parent
+            / "src" / "lucy_ng" / "webview" / "routers" / "spectra.py"
+        )
+        if not spectra_path.is_file():
+            pytest.skip("src/lucy_ng/webview/routers/spectra.py does not exist yet")
+
+        lines = spectra_path.read_text(encoding="utf-8").splitlines()
+        make_router_line: int | None = None
+        for i, line in enumerate(lines):
+            if line.lstrip().startswith("def make_router"):
+                make_router_line = i
+                break
+        assert make_router_line is not None, "Expected a 'def make_router' line in spectra.py"
+
+        for line in lines[:make_router_line]:
+            stripped = line.lstrip()
+            if stripped.startswith("#"):
+                continue
+            assert not (
+                stripped.startswith("import matplotlib") or stripped.startswith("from matplotlib")
+            ), f"Found a matplotlib import before 'def make_router': {line!r}"
+
+    def test_cli_imports_without_matplotlib(self) -> None:
+        """from lucy_ng.cli import cli succeeds on a base install (SC3 — standing guard)."""
+        from lucy_ng.cli import cli  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+
+        assert cli is not None
