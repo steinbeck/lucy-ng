@@ -1,8 +1,8 @@
 ---
 phase: 95
 slug: 1d-real-spectra-peak-overlay
-status: draft
-nyquist_compliant: false
+status: approved
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-07-09
 ---
@@ -47,15 +47,20 @@ Notes:
 
 ## Per-Task Verification Map
 
-*Filled per plan during planning/execution. Each task must carry an `<automated>`
-verify command or a Wave 0 test dependency.*
+*Derived from the 4 finalized plans. Each implementation task carries an
+`<automated>` verify command; Wave 0 (95-01) ships the RED-by-skip scaffold.*
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | — | — | SP1-01 | — | never-500 image degradation | unit | `pytest tests/test_webview_api.py -q` | ❌ W0 | ⬜ pending |
-| TBD | — | — | SP-02 | — | HTTP 200 "unavailable" on missing manifest/peaks/raw | unit | `pytest tests/test_webview_api.py -q` | ❌ W0 | ⬜ pending |
+| 95-01-01 | 01 | 0 | SP1-01 | — | matplotlib confined to `[webview]` extra (base install imports without it) | unit | `python -c "import tomllib,sys;d=tomllib.load(open('pyproject.toml','rb'))" && pytest tests/test_webview_api.py -q` | ✅ | ⬜ pending |
+| 95-01-02 | 01 | 0 | SP1-01, SP-02 | T-95-02-01 | RED-by-skip scaffold: reversed-axis assertion + never-500 + base-import guard | unit | `pytest tests/test_webview_api.py::TestSpectraEndpoint -q` | ✅ | ⬜ pending |
+| 95-02-01 | 02 | 1 | SP1-01, SP-02 | — | `_apply_nmr_axes` set_xlim-only (no invert_xaxis); `_select_experiment` excludes 2D/DEPT | unit (tdd) | `pytest tests/test_webview_api.py::TestSpectraEndpoint -q` | ✅ W0 | ⬜ pending |
+| 95-02-02 | 02 | 1 | SP1-01, SP-02 | T-95-02-01 | never-500 PNG routes; placeholder image bytes, no JSON on image route | unit (tdd) | `pytest tests/test_webview_api.py::TestSpectraEndpoint -q` | ✅ W0 | ⬜ pending |
+| 95-03-01..03 | 03 | 2 | SP1-01, SP-02 | — | 1D Spectra tab `<img>` + poll; `case.md` `.run_manifest.json` write | unit | `pytest tests/test_webview_api.py -q` | ✅ W0 | ⬜ pending |
+| 95-04-01 | 04 | 3 | SP1-01, SP-02 | — | manual browser QC: real trace, carbonyl-left, overlay alignment, unavailable states | manual | (checkpoint:human-verify) | n/a | ⬜ pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky. "File Exists" = the test file the
+verify command targets already exists (✅) or is created in Wave 0 (✅ W0).*
 
 ---
 
@@ -80,11 +85,11 @@ verify command or a Wave 0 test dependency.*
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 5s (webview slice)
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (95-01 ships `TestSpectraEndpoint` scaffold)
+- [x] No watch-mode flags
+- [x] Feedback latency < 5s (webview slice)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-07-09 (plans finalized; per-task map derived from 95-01..95-04)

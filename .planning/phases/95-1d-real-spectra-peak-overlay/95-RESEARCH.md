@@ -562,9 +562,17 @@ CONTEXT.md D-04 (not sourced from this research session's training/websearch), a
 registry presence, and functional behavior were all independently verified via `pip index
 versions`, `slopcheck`, and direct code execution in this session — see Standard Stack.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Does the "lowest experiment number" tiebreak hold for the other 7 CASE datasets?**
+> Both questions were carried into planning and resolved in `95-02-PLAN.md`
+> (`_select_experiment`): the DEPT-substring filter is the primary discriminator,
+> "lowest experiment number" is only a secondary tiebreak, and the same helper
+> applies uniformly to both nuclei. Documented here for audit-trail hygiene.
+
+1. **RESOLVED — Does the "lowest experiment number" tiebreak hold for the other 7 CASE datasets?**
+   RESOLVED: numbering-order is used only as a secondary tiebreak; the DEPT-substring filter
+   (numbering-independent) is the primary discriminator, so the assumption is low-risk even
+   where unverified.
    - What we know: Confirmed correct for CASE1 and CASE6 (both have the standard ¹³C experiment
      numbered lower than its DEPT siblings).
    - What's unclear: CASE2-5, CASE7-9 were not individually inspected in this research session
@@ -576,8 +584,10 @@ versions`, `slopcheck`, and direct code execution in this session — see Standa
      other datasets, since DEPT filtering alone already resolves the CASE1/CASE6 cases correctly
      without relying on numbering at all.
 
-2. **Should the ¹H "always render when present" rule (D-02) also apply the acqu2s/DEPT-style
+2. **RESOLVED — Should the ¹H "always render when present" rule (D-02) also apply the acqu2s/DEPT-style
    filtering, or is a bare nucleus-match sufficient once 2D dirs are excluded?**
+   RESOLVED: the same `_select_experiment()` helper runs uniformly for both nuclei (the DEPT
+   filter is a harmless no-op for ¹H candidates); no nucleus-specific branching.
    - What we know: CASE1/CASE6's ¹H 1D experiment (`zg30`) is unambiguous once 2D dirs
      (`acqu2s` present) are excluded — no "DEPT-equivalent" edited ¹H experiment variant exists
      in either dataset.
