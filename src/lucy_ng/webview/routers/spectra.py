@@ -189,15 +189,19 @@ def _render_1d_png(
     canvas_cls: Any,
     spectrum: Spectrum1D,
     peaks: list[dict[str, Any]],
+    *,
+    annotate_missing_peaks: bool = True,
 ) -> bytes:
     """Render a real 1D trace + peak overlay to PNG bytes (D-03).
 
     Draws a continuous line trace on a reversed ppm axis, with each peak in
     `peaks` overlaid as a thin vertical marker at its ppm (~70% axis
     height), labelled with its ppm value and, when present, its
-    `assignment`. When `peaks` is empty, a small "peak positions
-    unavailable" note is drawn top-right (SP-02 partial degradation --
-    95-UI-SPEC.md).
+    `assignment`. When `peaks` is empty AND `annotate_missing_peaks` is
+    True, a small "peak positions unavailable" note is drawn top-right
+    (SP-02 partial degradation -- 95-UI-SPEC.md); the caller passes False
+    for nuclei with no peak-JSON source (e.g. the 1H route), where an empty
+    overlay is expected rather than a degraded state.
     """
     fig = figure_cls(figsize=_FIGSIZE, dpi=_DPI)
     canvas = canvas_cls(fig)
@@ -209,7 +213,7 @@ def _render_1d_png(
         y_min, y_max = ax.get_ylim()
         marker_top = y_min + 0.7 * (y_max - y_min)
 
-        if not peaks:
+        if not peaks and annotate_missing_peaks:
             ax.text(
                 0.98,
                 0.95,
@@ -294,3 +298,80 @@ def _render_placeholder_png(figure_cls: Any, canvas_cls: Any, message: str) -> b
     finally:
         del canvas
         del fig
+
+
+# ---------------------------------------------------------------------------
+# Router factory -- matplotlib is imported ONLY here (WV-08/D-04).
+# ---------------------------------------------------------------------------
+
+
+def make_router(analysis_dir: Path) -> APIRouter:
+    """Return an APIRouter(prefix='/api') with the two 1D spectra routes.
+
+    Imports matplotlib's Figure/FigureCanvasAgg inside this factory so
+    matplotlib is never pulled in at webview package import time (WV-08).
+
+    Args:
+        analysis_dir: Path to the CASE analysis directory (already resolved
+            by create_app; do NOT call .resolve() here again).
+
+    Returns:
+        An APIRouter with:
+        - GET /spectra/1d/carbon -> real 13C trace + peak overlay, or a
+          placeholder PNG on any failure (never 500, SP-02).
+        - GET /spectra/1d/proton -> real 1H trace (no peak overlay -- this
+          schema has no 1H peak-JSON source), or an independent placeholder
+          PNG when no 1H experiment is found.
+    """
+    # Lazy matplotlib import -- only reached via create_app() (WV-08/D-04)
+    from matplotlib.backends.backend_agg import FigureCanvasAgg  # noqa: PLC0415
+    from matplotlib.figure import Figure  # noqa: PLC0415
+
+    router = APIRouter(prefix="/api")
+
+    def _render_nucleus(nucleus: str, no_experiment_message: str) -> bytes:
+        """Render one nucleus's route body; degrade to a placeholder on ANY failure.
+
+        Wraps the whole body in the broad never-500 guard (T-95-02-01):
+        absent manifest, stale/unreadable bruker path, no matching
+        experiment, or any unexpected rendering error all collapse to the
+        same `no_experiment_message` placeholder -- HTTP 200, never a raise
+        that would surface as a 500 at the route level.
+        """
+        try:
+            manifest = _read_manifest(analysis_dir)
+            if manifest is None:
+                return _render_placeholder_png(Figure, FigureCanvasAgg, _MSG_NO_MANIFEST)
+
+            bruker_dir = Path(manifest["bruker_data_dir"])
+            if not bruker_dir.is_dir():
+                return _render_placeholder_png(Figure, FigureCanvasAgg, _MSG_STALE_PATH)
+
+            spectrum = _select_experiment(bruker_dir, nucleus)
+            if spectrum is None:
+                return _render_placeholder_png(Figure, FigureCanvasAgg, no_experiment_message)
+
+            if nucleus == "13C":
+                peaks = _read_peaks(analysis_dir)
+                return _render_1d_png(Figure, FigureCanvasAgg, spectrum, peaks)
+
+            # 1H route: no peak-JSON source in this schema -- render a bare
+            # trace, no "peak positions unavailable" annotation (discretion,
+            # documented in make_router's docstring).
+            return _render_1d_png(
+                Figure, FigureCanvasAgg, spectrum, [], annotate_missing_peaks=False
+            )
+        except Exception:  # noqa: BLE001 -- never-500 guard (SP-02/T-95-02-01)
+            return _render_placeholder_png(Figure, FigureCanvasAgg, no_experiment_message)
+
+    @router.get("/spectra/1d/carbon")
+    def get_carbon_1d() -> Response:
+        png_bytes = _render_nucleus("13C", _MSG_NO_CARBON)
+        return Response(content=png_bytes, media_type="image/png")
+
+    @router.get("/spectra/1d/proton")
+    def get_proton_1d() -> Response:
+        png_bytes = _render_nucleus("1H", _MSG_NO_PROTON)
+        return Response(content=png_bytes, media_type="image/png")
+
+    return router

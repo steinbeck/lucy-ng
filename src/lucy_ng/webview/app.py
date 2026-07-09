@@ -34,6 +34,8 @@ def create_app(analysis_dir: Path) -> FastAPI:
         - ``GET /api/tables/hmbc`` → HMBC correlation table (TBL-02, Phase 94)
         - ``GET /api/tables/cosy`` → COSY correlation table (TBL-02, Phase 94)
         - ``GET /api/tables/constraints`` → LSD constraint inventory (TBL-03, Phase 94)
+        - ``GET /api/spectra/1d/carbon`` → real 13C 1D trace + peak overlay (SP1-01, Phase 95)
+        - ``GET /api/spectra/1d/proton`` → real 1H 1D trace, when present (SP1-01, Phase 95)
         - ``GET /`` → single-file dashboard (index.html, WV-06)
         - ``GET /webview.js`` → extracted dashboard script (Phase 93)
         - Swagger/ReDoc UI suppressed (``docs_url=None``, ``redoc_url=None``)
@@ -52,6 +54,7 @@ def create_app(analysis_dir: Path) -> FastAPI:
     # Phase 91: lazy imports — these modules import fastapi/RDKit and must only
     # be reached via create_app(), never at package import time (WV-08).
     from lucy_ng.webview.routers import log as _log  # noqa: PLC0415
+    from lucy_ng.webview.routers import spectra as _spectra  # noqa: PLC0415
     from lucy_ng.webview.routers import status as _status  # noqa: PLC0415
     from lucy_ng.webview.routers import structures as _structures  # noqa: PLC0415
     from lucy_ng.webview.routers import tables as _tables  # noqa: PLC0415
@@ -60,6 +63,7 @@ def create_app(analysis_dir: Path) -> FastAPI:
     app.include_router(_structures.make_router(analysis_dir))
     app.include_router(_log.make_router(analysis_dir))
     app.include_router(_tables.make_router(analysis_dir))
+    app.include_router(_spectra.make_router(analysis_dir))
 
     # Serve the single-page frontend at GET / and its extracted script at GET /webview.js
     from fastapi.responses import FileResponse  # noqa: PLC0415
