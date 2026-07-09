@@ -235,6 +235,20 @@ Immediately after spawning, the coordinator MUST push the first directive. The f
 
 **First, stamp timing** (see the timing step): take the `run_start` stamp (this one also does `mkdir -p <compound_path>/analysis`), then a `phase_start` stamp for `peak-picking` — both BEFORE the push below.
 
+<!-- Phase 95 (SP1-01/SP-02): write the run manifest so the webview's
+     spectra.py router can locate the raw Bruker dataset. analysis/
+     already exists (created by the run_start stamp above); this write
+     must land BEFORE the webview launch below so the dashboard's first
+     poll tick can read it. -->
+
+**Write the run manifest (trusted-local absolute path, D-07):**
+
+```bash
+cat > "<compound_path>/analysis/.run_manifest.json" <<JSON
+{"bruker_data_dir": "<compound_path (absolute)>", "formula": "<formula>"}
+JSON
+```
+
 <!-- WV-07: Launch webview dashboard before the first [BEGIN] push.
      analysis/ was just created by the run_start timing stamp above.
      lucy webview serve is non-blocking (~0.5 s startup probe) — it does NOT
