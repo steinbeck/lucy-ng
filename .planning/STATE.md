@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v9.3
 milestone_name: CASE Web-View Stage 2
-status: Phase 94 shipped; Tables tab renders ¹³C/HSQC/HMBC/COSY + LSD inventory; 94-04 human browser checkpoint APPROVED
+status: executing
 stopped_at: Phase 95 context gathered
-last_updated: "2026-07-09T12:26:23.489Z"
-last_activity: 2026-07-09 -- Phase 94 complete; tables.py router + frontend + Nyquist tests, verification passed
+last_updated: "2026-07-09T13:13:50.159Z"
+last_activity: 2026-07-09 -- Phase 95 planning complete
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 7
+  total_plans: 11
   completed_plans: 7
   percent: 50
 ---
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 
 Phase: 94 (Data Tables) — COMPLETE (4/4 plans, VERIFICATION passed SC1-SC4)
 Next: Phase 95 (1D Real Spectra + Peak Overlay) — introduces Bruker-path wiring + matplotlib Agg
-Status: Phase 94 shipped; Tables tab renders ¹³C/HSQC/HMBC/COSY + LSD inventory; 94-04 human browser checkpoint APPROVED
-Last activity: 2026-07-09 -- Phase 94 complete; tables.py router + frontend + Nyquist tests, verification passed
+Status: Ready to execute
+Last activity: 2026-07-09 -- Phase 95 planning complete
 
 ```
 Progress: [██████████░░░░░░░░░░] 50% (2/4 phases)
