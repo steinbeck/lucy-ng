@@ -95,7 +95,11 @@ all organized in tabs. Builds on the v9.2 architecture where "tabs dock in witho
   3. A clean `pip install lucy-ng[webview]` can serve the 1D Spectra tab (matplotlib declared in the `[webview]` extra); `from lucy_ng.cli import cli` on a base install without the extra does not raise ImportError; all matplotlib imports are lazy inside `make_router()` per WV-08.
   4. When `.run_manifest.json` is absent (no live CASE run) or the peak JSON is missing, the 1D Spectra tab shows a "unavailable / waiting for data" message — HTTP 200, never a 500 error.
 
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] 95-01-PLAN.md — Wave 0: matplotlib in [webview] extra + TestSpectraEndpoint (RED-by-skip)
+- [ ] 95-02-PLAN.md — Backend: spectra.py router (real ¹³C/¹H trace + overlay, reversed axis, never-500 PNG) + app.py docking
+- [ ] 95-03-PLAN.md — Frontend: 1D Spectra tab img mounts + refreshSpectra1D + case.md .run_manifest.json write
+- [ ] 95-04-PLAN.md — Manual browser checkpoint: real trace, reversed axis, peak overlay, unavailable states
 
 **UI hint**: yes
 
@@ -124,5 +128,5 @@ all organized in tabs. Builds on the v9.2 architecture where "tabs dock in witho
 |-------|----------------|--------|-----------|
 | 93. Formatted Log + Tab Framework | 3/3 | Complete   | 2026-07-08 |
 | 94. Data Tables | 4/4 | Complete   | 2026-07-09 |
-| 95. 1D Real Spectra + Peak Overlay | 0/TBD | Not started | - |
+| 95. 1D Real Spectra + Peak Overlay | 0/4 | Planned | - |
 | 96. 2D Real Spectra + Peak Overlay | 0/TBD | Not started | - |
