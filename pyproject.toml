@@ -61,6 +61,7 @@ prediction = [
 webview = [
     "fastapi>=0.100",
     "uvicorn>=0.20",
+    "matplotlib>=3.7",
 ]
 
 [tool.hatch.metadata]
