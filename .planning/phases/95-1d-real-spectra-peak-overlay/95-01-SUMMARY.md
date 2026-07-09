@@ -128,3 +128,12 @@ None - no external service configuration required. matplotlib installs via the e
 ---
 *Phase: 95-1d-real-spectra-peak-overlay*
 *Completed: 2026-07-09*
+
+## Self-Check: PASSED
+
+- FOUND: pyproject.toml
+- FOUND: tests/test_webview_api.py
+- FOUND: .planning/phases/95-1d-real-spectra-peak-overlay/95-01-SUMMARY.md
+- FOUND commit: ce36945 (Task 1)
+- FOUND commit: a553b43 (Task 2)
+- FOUND commit: 5197e5d (SUMMARY.md)
