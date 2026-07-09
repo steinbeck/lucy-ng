@@ -713,6 +713,21 @@
   }
 
   // ------------------------------------------------------------------
+  // refreshSpectra1D — 1D Spectra tab (Phase 95: SP1-01/SP-02).
+  // The PNG endpoint is never-500 (placeholder chart baked into the
+  // pixels on failure), so no fetch/catch is needed — the browser's
+  // native <img> loading handles the binary payload directly. Cache-bust
+  // unconditionally every tick (D-06: no SMILES-diff dedupe needed here).
+  // ------------------------------------------------------------------
+  function refreshSpectra1D() {
+    var t = Date.now();
+    var carbonImg = document.getElementById('img-spectrum-carbon');
+    if (carbonImg) { carbonImg.src = '/api/spectra/1d/carbon?t=' + t; }
+    var protonImg = document.getElementById('img-spectrum-proton');
+    if (protonImg) { protonImg.src = '/api/spectra/1d/proton?t=' + t; }
+  }
+
+  // ------------------------------------------------------------------
   // initTabs — plain class/display toggling, no fetch triggered (D-01)
   // ------------------------------------------------------------------
   function initTabs() {
@@ -757,6 +772,7 @@
     refreshHsqc();
     refreshHmbc();
     refreshCosy();
+    refreshSpectra1D();
     refreshConstraints();
     flashDot();
   }
