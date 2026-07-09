@@ -1460,6 +1460,84 @@ class TestSpectraEndpoint:
             "(peak markers/labels should change the rendered PNG bytes)"
         )
 
+    def test_single_combined_rotated_label_per_peak(self, tmp_path: Path) -> None:
+        """95-05: one rotated ppm+assignment label per peak, no separate horizontal one.
+
+        Gap closure for the Wave-3 checkpoint defect (dense-region assignment-label
+        collision): assert the source no longer draws a separate horizontal
+        assignment-only `ax.text(...)` call anchored at `y_max`, and that the
+        combined label folds the assignment into the rotated ppm label. Also
+        confirms the endpoint still returns a real, non-empty PNG for two
+        near-collinear peaks that both carry assignments (aromatic-region style
+        collision case).
+        """
+        import inspect
+
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+        except ImportError:
+            pytest.skip("webview extra or spectra router not yet available")
+
+        source = inspect.getsource(spectra._render_1d_png)
+        # The peak loop must call ax.text(...) exactly once per peak now --
+        # previously it called it twice (rotated ppm label + separate
+        # horizontal assignment label anchored at y_max, the collision
+        # source). Count ax.text( occurrences inside the peak loop body
+        # (after the "for peak in peaks:" line) as a proxy for "one call".
+        loop_start = source.index("for peak in peaks:")
+        loop_body = source[loop_start:]
+        assert loop_body.count("ax.text(") == 1, (
+            f"Expected exactly one ax.text(...) call per peak in the loop body, "
+            f"found {loop_body.count('ax.text(')} -- the separate horizontal "
+            f"assignment label (anchored at y_max) must be removed"
+        )
+        assert ", y_max," not in loop_body, (
+            "Expected no ax.text(...) call anchored at y_max inside the peak loop "
+            "(that was the separate horizontal assignment label -- the collision source)"
+        )
+        assert "assignment" in loop_body and "f\"{ppm:" in loop_body, (
+            "Expected the combined label to be built from an f-string joining ppm and assignment"
+        )
+
+        if not CASE1_ROOT.is_dir():
+            pytest.skip(f"Real CASE1 dataset not found at {CASE1_ROOT}")
+
+        import json as _json
+
+        d = tmp_path / "collision_case"
+        d.mkdir()
+        (d / ".run_manifest.json").write_text(
+            _json.dumps({"bruker_data_dir": str(CASE1_ROOT), "formula": "C13H18O2"}),
+            encoding="utf-8",
+        )
+        peaks_dir = d / "peaks"
+        peaks_dir.mkdir()
+        (peaks_dir / "carbon_signals.json").write_text(
+            _json.dumps(
+                {
+                    "signals": [
+                        {"atom": 1, "ppm": 22.4, "mult": "q", "nC": 1, "assignment": "2xCH3"},
+                        {"atom": 2, "ppm": 18.1, "mult": "q", "nC": 1, "assignment": "CH3"},
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        app = FastAPI()
+        app.include_router(spectra.make_router(d))
+        with TestClient(app) as client:
+            r = client.get("/api/spectra/1d/carbon")
+
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.text[:200]}"
+        assert r.headers["content-type"] == "image/png"
+        assert len(r.content) > 0, "Expected non-empty PNG bytes"
+
     def test_missing_manifest_returns_placeholder(self, empty_analysis_dir: Path) -> None:
         """Absent .run_manifest.json -> HTTP 200, placeholder PNG, never 500 (D-01)."""
         try:

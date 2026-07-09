@@ -196,12 +196,16 @@ def _render_1d_png(
 
     Draws a continuous line trace on a reversed ppm axis, with each peak in
     `peaks` overlaid as a thin vertical marker at its ppm (~70% axis
-    height), labelled with its ppm value and, when present, its
-    `assignment`. When `peaks` is empty AND `annotate_missing_peaks` is
-    True, a small "peak positions unavailable" note is drawn top-right
-    (SP-02 partial degradation -- 95-UI-SPEC.md); the caller passes False
-    for nuclei with no peak-JSON source (e.g. the 1H route), where an empty
-    overlay is expected rather than a degraded state.
+    height), labelled with a SINGLE combined rotated label carrying its ppm
+    value and, when present, its `assignment` (95-05 gap closure -- a
+    separate horizontal assignment label collided in dense-peak regions;
+    folding both into one rotated label eliminates that collision while
+    keeping both values visible). When `peaks` is empty AND
+    `annotate_missing_peaks` is True, a small "peak positions unavailable"
+    note is drawn top-right (SP-02 partial degradation -- 95-UI-SPEC.md);
+    the caller passes False for nuclei with no peak-JSON source (e.g. the
+    1H route), where an empty overlay is expected rather than a degraded
+    state.
     """
     fig = figure_cls(figsize=_FIGSIZE, dpi=_DPI)
     canvas = canvas_cls(fig)
@@ -239,27 +243,18 @@ def _render_1d_png(
                 color=_ACCENT_COLOR,
                 linewidth=0.75,
             )
+            assignment = peak.get("assignment")
+            label = f"{ppm:.1f}  {assignment}" if assignment else f"{ppm:.1f}"
             ax.text(
                 ppm,
                 marker_top,
-                f"{ppm:.1f}",
+                label,
                 color=_ACCENT_COLOR,
                 fontsize=7,
                 rotation=90,
                 ha="center",
                 va="bottom",
             )
-            assignment = peak.get("assignment")
-            if assignment:
-                ax.text(
-                    ppm,
-                    y_max,
-                    str(assignment),
-                    color=_ACCENT_COLOR,
-                    fontsize=7,
-                    ha="center",
-                    va="bottom",
-                )
 
         buf = io.BytesIO()
         canvas.print_png(buf)
