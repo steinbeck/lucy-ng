@@ -368,6 +368,16 @@
     line-height: 1.6;
   }
 
+  /* ---- 1D Spectra tab (Phase 95: SP1-01/SP-02) ---- */
+  .spectrum-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+  }
+
   /* ---- Responsive: narrow windows collapse to stacked ---- */
   @media (max-width: 700px) {
     #main { flex-direction: column; }
@@ -408,7 +418,20 @@
       <button data-tab="tables">Tables</button>
     </div>
     <div id="log-panel" data-panel="log">Waiting for log data...</div>
-    <div class="placeholder" data-panel="spectra-1d">1D Spectra — coming in Phase 95</div>
+    <div data-panel="spectra-1d">
+    <section class="tables-section" id="spectrum-carbon">
+      <h2 class="tables-heading">&sup1;&sup3;C Spectrum</h2>
+      <img id="img-spectrum-carbon" class="spectrum-img"
+           alt="13C 1D spectrum with peak overlay"
+           src="/api/spectra/1d/carbon">
+    </section>
+    <section class="tables-section" id="spectrum-proton">
+      <h2 class="tables-heading">&sup1;H Spectrum</h2>
+      <img id="img-spectrum-proton" class="spectrum-img"
+           alt="1H 1D spectrum with peak overlay"
+           src="/api/spectra/1d/proton">
+    </section>
+    </div>
     <div class="placeholder" data-panel="spectra-2d">2D Spectra — coming in Phase 96</div>
     <div data-panel="tables">
     <section class="tables-section" id="table-carbon">
