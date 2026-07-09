@@ -21,9 +21,9 @@
 
 ### Spectra (real trace + peak overlay)
 
-- [ ] **SP1-01**: User sees the real 1D spectrum (¹³C, plus ¹H if present) rendered as a line plot with a **reversed ppm axis**, with the picked peaks overlaid (markers/labels at their positions from the peak JSON) so the peak-picking can be visually validated against the data.
+- [x] **SP1-01**: User sees the real 1D spectrum (¹³C, plus ¹H if present) rendered as a line plot with a **reversed ppm axis**, with the picked peaks overlaid (markers/labels at their positions from the peak JSON) so the peak-picking can be visually validated against the data.
 - [ ] **SP2-01**: User sees the real 2D spectra (HSQC, HMBC, COSY) rendered as contour plots with **reversed ppm axes on both dimensions**, with the picked cross-peaks overlaid.
-- [ ] **SP-02**: When a spectrum or its peak data is missing, partial, or the raw experiment data cannot be located, the corresponding tab shows a well-formed "unavailable / waiting for data" state (HTTP 200, never 500) — consistent with v9.2 graceful degradation.
+- [x] **SP-02**: When a spectrum or its peak data is missing, partial, or the raw experiment data cannot be located, the corresponding tab shows a well-formed "unavailable / waiting for data" state (HTTP 200, never 500) — consistent with v9.2 graceful degradation.
 
 ---
 
@@ -51,6 +51,6 @@
 | TBL-01 | Phase 94 | Complete |
 | TBL-02 | Phase 94 | Complete |
 | TBL-03 | Phase 94 | Complete |
-| SP1-01 | Phase 95 | Pending |
-| SP-02  | Phase 95 | Pending |
+| SP1-01 | Phase 95 | Complete |
+| SP-02  | Phase 95 | Complete |
 | SP2-01 | Phase 96 | Pending |

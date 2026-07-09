@@ -128,5 +128,5 @@ all organized in tabs. Builds on the v9.2 architecture where "tabs dock in witho
 |-------|----------------|--------|-----------|
 | 93. Formatted Log + Tab Framework | 3/3 | Complete   | 2026-07-08 |
 | 94. Data Tables | 4/4 | Complete   | 2026-07-09 |
-| 95. 1D Real Spectra + Peak Overlay | 5/5 | Complete   | 2026-07-09 |
+| 95. 1D Real Spectra + Peak Overlay | 5/5 | Complete    | 2026-07-09 |
 | 96. 2D Real Spectra + Peak Overlay | 0/TBD | Not started | - |
