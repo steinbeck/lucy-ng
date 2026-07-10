@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v9.3
 milestone_name: CASE Web-View Stage 2
-status: ready_to_plan
-stopped_at: Phase 95 complete (5/5) — ready to discuss Phase 96
-last_updated: 2026-07-09T14:57:53.060Z
-last_activity: 2026-07-09 -- Phase 95 execution started
+status: planning
+stopped_at: Phase 96 context gathered
+last_updated: "2026-07-10T12:40:09.520Z"
+last_activity: 2026-07-09
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 11
+  completed_phases: 3
+  total_plans: 12
   completed_plans: 12
-  percent: 50
+  percent: 75
 ---
 
 # lucy-ng State
@@ -139,8 +139,8 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-09T12:26:23.481Z
-Stopped at: Phase 95 context gathered
+Last session: 2026-07-10T12:40:09.515Z
+Stopped at: Phase 96 context gathered
 Resume with: `/gsd-execute-phase 94` (continue with Plan 94-03 — frontend Tables tab)
 
 ---
