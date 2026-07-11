@@ -109,3 +109,12 @@ None - no external service configuration required.
 ---
 *Phase: 96-2d-real-spectra-peak-overlay*
 *Completed: 2026-07-11*
+
+## Self-Check: PASSED
+
+- FOUND: src/lucy_ng/webview/routers/spectra.py
+- FOUND: src/lucy_ng/webview/app.py
+- FOUND: .planning/phases/96-2d-real-spectra-peak-overlay/96-02-SUMMARY.md
+- FOUND commit: feceecd (Task 1)
+- FOUND commit: 63f899b (Task 2)
+- FOUND commit: f971224 (SUMMARY)
