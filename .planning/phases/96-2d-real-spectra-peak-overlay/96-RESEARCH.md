@@ -771,7 +771,7 @@ project code and real Bruker datasets in this session** — data orientation, pa
 hex values, dependency presence, ruff rule selection, and render timing are not
 training-data assumptions.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should the mtime cache be a plain module-level dict (as prototyped) or
    `functools.lru_cache`?**
@@ -779,7 +779,7 @@ training-data assumptions.
      Claude's discretion.
    - What's unclear: Whether the planner/team has a stylistic preference for one over
      the other within this codebase.
-   - Recommendation: Plain dict (as shown in Pattern 5) — simpler to reason about for
+   - **RESOLVED:** Recommendation: Plain dict (as shown in Pattern 5) — simpler to reason about for
      "keep only latest mtime per plot" eviction and easier to unit-test
      (`spectra._png_cache` is directly inspectable), whereas `lru_cache` would require
      wrapping the render function itself and complicates testing cache-hit-vs-miss
@@ -790,7 +790,7 @@ training-data assumptions.
      are typically closer to square/landscape since both axes carry meaningful ppm
      range.
    - What's unclear: No locked value; purely a visual-polish decision.
-   - Recommendation: `(9.0, 6.0)` at `DPI=100` (used in this research's timing
+   - **RESOLVED:** Recommendation: `(9.0, 6.0)` at `DPI=100` (used in this research's timing
      prototype, produced legible 512×512-decimated contours) — taller than the 1D
      plots to give the y-axis (F1) room, same width for visual column alignment in the
      stacked layout (D-09).
