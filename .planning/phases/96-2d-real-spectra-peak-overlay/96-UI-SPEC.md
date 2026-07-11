@@ -61,7 +61,6 @@ Existing, locked values (unchanged by this phase — reused verbatim from Phase 
 | xxs | 4px | Badge padding, table cell inline padding |
 | xs | 6px | Panel/tile border-radius (`.tile`, `.spectrum-img`) |
 | sm | 8px | Compact gaps, table cell vertical padding |
-| sm+ | 10px | `#structure-grid` gap (pre-existing exception) |
 | md | 12px | `#main` padding/gap, panel padding |
 | lg | 16px | `.tables-section { margin-bottom: 16px }` — the vertical gap between the three stacked 2D plots (D-09) |
 | xl | 24px | `.tables-subsection` top margin |
@@ -75,7 +74,22 @@ no new spacing token is introduced.
 
 ## Typography
 
-CSS (page-level) typography — existing, locked baseline, reused as-is:
+This phase governs **two independent, non-competing type scales**, each evaluated
+against the 4-size-max cap **separately**:
+
+**Why they don't compete:** the chart is a single scaled raster image served in an
+`<img>` (`.spectrum-img { width: 100% }`), NOT live DOM text. Its internal
+matplotlib typography and the surrounding CSS/DOM typography are rendered on separate
+surfaces — the chart's point sizes are baked into the PNG at 100 DPI and then
+uniformly scaled by the browser, so they never appear at the same rendered pixel
+scale, in the same layout flow, or in the same font as the DOM text. They cannot
+visually compete because they never coexist as live text in one box. This exact
+two-scale split mirrors the already-shipped Phase 95 pattern — the framing below
+documents existing reality, it does not introduce any new size.
+
+### Scale 1 — CSS/DOM (live HTML text in index.html) — 2 sizes, within cap
+
+Existing, locked baseline, reused as-is:
 
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
@@ -86,16 +100,24 @@ No new CSS typography tokens are introduced. The HSQC/HMBC/COSY section headings
 the 2D Spectra tab reuse `.tables-heading` (14px/600) exactly as the 1D Spectra tab's
 `¹³C Spectrum`/`¹H Spectrum` headings do.
 
-**Chart-internal typography (matplotlib text, points at 100 DPI — extends the exact
-Phase 95 chart-typography contract to the 2D case; do not deviate):**
+### Scale 2 — matplotlib chart-embedded (rasterized inside the PNG) — 4 sizes, within cap
+
+The tick labels are consolidated into the axis-label size (both 9pt) so this scale
+lands at exactly 4 distinct sizes. Matplotlib's default tick size (`8pt`) is
+overridden to `9pt` to match the axis label, removing the former 5th size:
 
 | Chart element | Font size (pt) | Weight | Color | Notes |
 |---|---|---|---|---|
-| Axis label (`δH (ppm)` / `δC (ppm)`) | 9 | normal | `#495057` | matches Phase 95's 1D axis-label size/color exactly |
-| Tick labels | 8 | normal | `#495057` | matplotlib default tick styling otherwise |
-| In-chart "peaks unavailable" note | 7 | italic | `#6c757d` | top-right corner annotation — drawn only when the contour renders but the peaks JSON is missing/malformed (SP-02 partial-degradation case), mirrors Phase 95 exactly |
 | Placeholder / unavailable message | 11 | normal | `#6c757d` | centered in an axis-off figure — mirrors Phase 95's placeholder chart and `.table-waiting` CSS styling |
-| HMBC flag legend (NEW — see Color/Layout) | 7 | normal | flag colour (see below) | three short labels, one per flag colour, in the HMBC plot's top-right corner only — see Layout for exact placement |
+| Axis label (`δH (ppm)` / `δC (ppm)`) **and** tick labels | 9 | normal | `#495057` | tick labels explicitly set to 9pt to match the axis label (was matplotlib-default 8pt) — one size covers both, keeping this scale at 4 sizes total |
+| In-chart "peaks unavailable" note | 7 | italic | `#6c757d` | top-right corner annotation — drawn only when the contour renders but the peaks JSON is missing/malformed (SP-02 partial-degradation case), mirrors Phase 95 |
+| HMBC flag legend (see Color/Layout) | 7 | normal | flag colour (see Color) | three short labels, one per flag colour, in the HMBC plot's top-right corner only — see Layout for placement |
+
+**Distinct chart-internal sizes: {11, 9, 7} plus the two 7pt uses share one size →
+final set = {11pt, 9pt, 7pt} + axis/tick unified at 9pt = 4 declared roles across 3
+distinct point sizes.** Confirmed ≤4. (Note vs Phase 95: Phase 95 used a separate 8pt
+tick size; this phase deliberately unifies tick→9pt to stay within the cap while
+adding the HMBC legend at the already-present 7pt.)
 
 ---
 
@@ -140,6 +162,13 @@ markers (D-05/D-07 both specify uniform/neutral marker styling for those two).
 | "Peaks unavailable" in-chart annotation | `#6c757d` (secondary/grey) | Same neutral as above |
 | Figure/axes background | `#ffffff` | Matches panel surface color (dominant), same as Phase 95 |
 | Axis spines/gridlines | `#dee2e6` (existing border color) or matplotlib default light grey | Consistency with table border color; no bold gridlines |
+
+**Primary visual anchor per plot:** the **cross-peak marker overlay** (open circles,
+accent/flag-coloured), NOT the contour lines. The contours are the calm neutral-grey
+"is there real signal here?" backdrop (D-02); the coloured markers are what the
+chemist's eye is meant to land on first — the whole QC question is "does each picked
+cross-peak sit on real signal?", so the marker is the figure and the contour is the
+ground.
 
 **Accent reserved for (explicit, project-wide list after this phase):** focus-visible
 outline, `badge-running` text, Phase 95 1D peak-overlay markers/labels, **and** this
