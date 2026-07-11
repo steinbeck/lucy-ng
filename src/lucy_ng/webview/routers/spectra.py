@@ -419,15 +419,20 @@ def _apply_nmr_axes_2d(
 
     F2 (direct dimension, always 1H) is the x-axis; F1 (indirect dimension,
     13C for HSQC/HMBC or 1H for COSY) is the y-axis -- this positional
-    mapping holds regardless of nucleus (96-RESEARCH.md Pitfall 3). Do NOT
-    call any axis-flip/inversion method and do NOT reverse either array --
-    both scales are ALREADY descending (mirrors the 1D helper's Pitfall 3);
-    set_xlim/set_ylim alone with the descending endpoints already produce
-    the reversed (high-ppm-left / high-ppm-top) axes. xlabel is always
-    "δH (ppm)"; the caller sets the per-plot-type ylabel.
+    mapping holds regardless of nucleus (96-RESEARCH.md Pitfall 3).
+
+    Both scales arrive ALREADY descending (index 0 = highest ppm). The two
+    axes need OPPOSITE endpoint orders to place downfield at the top-left
+    corner (SC1: aromatic region top-left, F2 ~7 ppm / F1 ~130 ppm):
+      - x-axis: set_xlim(high, low) -> high ppm on the LEFT (like the 1D helper).
+      - y-axis: set_ylim(low, high) -> high ppm at the TOP. matplotlib places
+        the SECOND set_ylim argument at the top spine, so the high endpoint
+        (f1_ppm_scale[0]) must be passed LAST; passing it first would put
+        downfield carbons at the BOTTOM (upside-down vs NMR convention).
+    xlabel is always "δH (ppm)"; the caller sets the per-plot-type ylabel.
     """
     ax.set_xlim(float(f2_ppm_scale[0]), float(f2_ppm_scale[-1]))
-    ax.set_ylim(float(f1_ppm_scale[0]), float(f1_ppm_scale[-1]))
+    ax.set_ylim(float(f1_ppm_scale[-1]), float(f1_ppm_scale[0]))
     ax.set_xlabel("δH (ppm)")
 
 

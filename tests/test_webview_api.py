@@ -1804,7 +1804,15 @@ class TestSpectraEndpoint2D:
     """SP2-01/SC1/SC2/SC3/SC4/SP-02: GET /api/spectra/2d/{hsqc,hmbc,cosy}."""
 
     def test_spectra_2d_apply_nmr_axes_2d_reverses_both_scales(self) -> None:
-        """_apply_nmr_axes_2d(ax, f1_scale, f2_scale) reverses BOTH ppm axes (SC1)."""
+        """_apply_nmr_axes_2d places downfield at the top-left corner (SC1).
+
+        F2 (1H, x): high ppm on the LEFT -> xlim[0] > xlim[1].
+        F1 (13C, y): high ppm at the TOP -> matplotlib get_ylim() returns
+        (bottom, top), so the top endpoint must be the MAX -> ylim[1] > ylim[0].
+        The aromatic region (F2 ~7 ppm, F1 ~130 ppm) must land top-left; an
+        inverted y (high ppm at the bottom) would put aromatic carbons at the
+        bottom, violating SC1.
+        """
         try:
             from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
                 _apply_nmr_axes_2d,
@@ -1824,8 +1832,11 @@ class TestSpectraEndpoint2D:
 
         xlim = ax.get_xlim()
         ylim = ax.get_ylim()
-        assert xlim[0] > xlim[1], f"Expected reversed x-axis (xlim[0] > xlim[1]), got {xlim}"
-        assert ylim[0] > ylim[1], f"Expected reversed y-axis (ylim[0] > ylim[1]), got {ylim}"
+        # x: high ppm on the left.
+        assert xlim[0] > xlim[1], f"Expected high-ppm-left x-axis (xlim[0] > xlim[1]), got {xlim}"
+        # y: high ppm at the top (aromatic F1 ~130 top-left, SC1).
+        assert ylim[1] > ylim[0], f"Expected high-ppm-top y-axis (ylim[1] > ylim[0]), got {ylim}"
+        assert ylim[1] == 160.0, f"Expected downfield endpoint (160) at the top, got top={ylim[1]}"
 
     def test_spectra_2d_hsqc_returns_png_on_case1_real(
         self, spectra_case1_manifest_dir_2d: Path
