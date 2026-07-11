@@ -692,7 +692,7 @@ def _render_placeholder_png(figure_cls: Any, canvas_cls: Any, message: str) -> b
 
 
 def make_router(analysis_dir: Path) -> APIRouter:
-    """Return an APIRouter(prefix='/api') with the two 1D spectra routes.
+    """Return an APIRouter(prefix='/api') with the 1D and 2D spectra routes.
 
     Imports matplotlib's Figure/FigureCanvasAgg inside this factory so
     matplotlib is never pulled in at webview package import time (WV-08).
@@ -708,6 +708,18 @@ def make_router(analysis_dir: Path) -> APIRouter:
         - GET /spectra/1d/proton -> real 1H trace (no peak overlay -- this
           schema has no 1H peak-JSON source), or an independent placeholder
           PNG when no 1H experiment is found.
+        - GET /spectra/2d/hsqc -> real HSQC contour + cross-peak overlay
+          (uniform accent markers, D-05), or a placeholder PNG on any
+          failure (never 500, SP-02, Phase 96).
+        - GET /spectra/2d/hmbc -> real HMBC contour + cross-peak overlay
+          colour-coded by flag (D-06) + a top-right flag legend, or an
+          independent placeholder PNG (Phase 96).
+        - GET /spectra/2d/cosy -> real COSY contour + diagonal + cross-peak
+          overlay (D-07), or an independent placeholder PNG (Phase 96).
+        Each 2D route's rendered PNG is cached in the module-level
+        `_png_cache`, keyed on the selected experiment's source mtime, so
+        repeated polls with an unchanged mtime return the cached bytes
+        without re-rendering (SC3/SC4).
     """
     # Lazy matplotlib import -- only reached via create_app() (WV-08/D-04)
     from matplotlib.backends.backend_agg import FigureCanvasAgg  # noqa: PLC0415
@@ -758,6 +770,65 @@ def make_router(analysis_dir: Path) -> APIRouter:
     @router.get("/spectra/1d/proton")
     def get_proton_1d() -> Response:
         png_bytes = _render_nucleus("1H", _MSG_NO_PROTON)
+        return Response(content=png_bytes, media_type="image/png")
+
+    def _render_2d(experiment_type: str, no_experiment_message: str) -> bytes:
+        """Render one 2D route's body; degrade to a placeholder on ANY failure.
+
+        Same broad never-500 guard shape as `_render_nucleus` (T-95-02-01):
+        absent manifest, stale/unreadable bruker path, no matching 2D
+        experiment, or any unexpected rendering/mtime-lookup error all
+        collapse to the same `no_experiment_message` placeholder -- HTTP
+        200, never a raise that would surface as a 500 (SP-02). The
+        `_source_mtime` lookup sits INSIDE this guard (96-RESEARCH.md
+        Pitfall 5). Cache key is independent of the frontend's `?t=`
+        cache-buster -- keyed on `(kind, source_mtime)` only (Pitfall 4).
+        """
+        try:
+            manifest = _read_manifest(analysis_dir)
+            if manifest is None:
+                return _render_placeholder_png(Figure, FigureCanvasAgg, _MSG_NO_MANIFEST)
+
+            bruker_dir = Path(manifest["bruker_data_dir"])
+            if not bruker_dir.is_dir():
+                return _render_placeholder_png(Figure, FigureCanvasAgg, _MSG_STALE_PATH)
+
+            spectrum = _select_experiment_2d(bruker_dir, experiment_type)
+            if spectrum is None:
+                return _render_placeholder_png(Figure, FigureCanvasAgg, no_experiment_message)
+
+            kind = experiment_type.lower()
+            peaks_path = analysis_dir / "peaks" / f"{kind}.json"
+            pdata_path = _selected_2d_pdata_path(bruker_dir, experiment_type)
+            source_mtime = _source_mtime(pdata_path or bruker_dir, peaks_path)
+
+            return _cached_or_render(
+                kind,
+                source_mtime,
+                lambda: _render_2d_png(
+                    Figure,
+                    FigureCanvasAgg,
+                    spectrum,
+                    _read_peaks_2d(analysis_dir, kind),
+                    experiment_type,
+                ),
+            )
+        except Exception:  # noqa: BLE001 -- never-500 guard (SP-02/T-95-02-01)
+            return _render_placeholder_png(Figure, FigureCanvasAgg, no_experiment_message)
+
+    @router.get("/spectra/2d/hsqc")
+    def get_hsqc_2d() -> Response:
+        png_bytes = _render_2d("HSQC", _MSG_NO_HSQC)
+        return Response(content=png_bytes, media_type="image/png")
+
+    @router.get("/spectra/2d/hmbc")
+    def get_hmbc_2d() -> Response:
+        png_bytes = _render_2d("HMBC", _MSG_NO_HMBC)
+        return Response(content=png_bytes, media_type="image/png")
+
+    @router.get("/spectra/2d/cosy")
+    def get_cosy_2d() -> Response:
+        png_bytes = _render_2d("COSY", _MSG_NO_COSY)
         return Response(content=png_bytes, media_type="image/png")
 
     return router
