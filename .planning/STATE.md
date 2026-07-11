@@ -4,8 +4,8 @@ milestone: v9.3
 milestone_name: CASE Web-View Stage 2
 status: executing
 stopped_at: Phase 96 context gathered
-last_updated: "2026-07-11T12:03:46.468Z"
-last_activity: 2026-07-11 -- Phase 96 planning complete
+last_updated: "2026-07-11T12:05:19.738Z"
+last_activity: 2026-07-11 -- Phase 96 execution started
 progress:
   total_phases: 4
   completed_phases: 3
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 96 — 2d real spectra + peak overlay
+**Current focus:** Phase 96 — 2d-real-spectra-peak-overlay
 
 ## Current Position
 
-Phase: 96
-Plan: Not started
+Phase: 96 (2d-real-spectra-peak-overlay) — EXECUTING
+Plan: 1 of 4
 Next: Phase 95 (1D Real Spectra + Peak Overlay) — introduces Bruker-path wiring + matplotlib Agg
-Status: Ready to execute
-Last activity: 2026-07-11 -- Phase 96 planning complete
+Status: Executing Phase 96
+Last activity: 2026-07-11 -- Phase 96 execution started
 
 ```
 Progress: [██████████░░░░░░░░░░] 50% (2/4 phases)

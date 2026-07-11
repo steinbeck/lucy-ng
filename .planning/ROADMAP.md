@@ -117,7 +117,7 @@ all organized in tabs. Builds on the v9.2 architecture where "tabs dock in witho
   4. Repeated browser polling does not cause memory growth — figures are closed after each render (`try/finally`) and the mtime cache prevents unbounded Figure allocation.
 
 **Plans**: 4 plans
-- [ ] 96-01-PLAN.md — Wave 0: hand-authored 2D peak fixtures + TestSpectraEndpoint2D (RED-by-skip)
+- [x] 96-01-PLAN.md — Wave 0: hand-authored 2D peak fixtures + TestSpectraEndpoint2D (RED-by-skip)
 - [ ] 96-02-PLAN.md — Backend: spectra.py 2D routes (HSQC/HMBC/COSY contour + overlay, reversed axes, mtime cache, never-500) + app.py docstring
 - [ ] 96-03-PLAN.md — Frontend: three stacked 2D img sections + refreshSpectra2D wired into tick()
 - [ ] 96-04-PLAN.md — Manual browser checkpoint: real contours, reversed axes, HMBC flag colours, COSY diagonal, unavailable states
@@ -133,4 +133,4 @@ all organized in tabs. Builds on the v9.2 architecture where "tabs dock in witho
 | 93. Formatted Log + Tab Framework | 3/3 | Complete   | 2026-07-08 |
 | 94. Data Tables | 4/4 | Complete   | 2026-07-09 |
 | 95. 1D Real Spectra + Peak Overlay | 5/5 | Complete    | 2026-07-09 |
-| 96. 2D Real Spectra + Peak Overlay | 0/4 | Not started | - |
+| 96. 2D Real Spectra + Peak Overlay | 1/4 | In Progress|  |
