@@ -1658,3 +1658,125 @@ class TestSpectraEndpoint:
         from lucy_ng.cli import cli  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
 
         assert cli is not None
+
+
+# ---------------------------------------------------------------------------
+# Phase 96 fixtures — hand-authored to the LOCKED Phase-94 2D peaks-JSON
+# schema (96-CONTEXT.md canonical_refs "Cross-peak JSON schemas").
+#
+# CASE1_ROOT (defined above, Phase 95) already contains real HSQC (exp 6),
+# HMBC (exp 7), and COSY (exp 5) 2D experiments (96-RESEARCH.md Pattern 2,
+# empirically verified) — no new raw-data fixture is needed, only the
+# picked-peaks JSON overlay, which this plan hand-authors per the Wave-0
+# gap note (do NOT hand-author a fake 2D pdata/1/2rr).
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def spectra_case1_manifest_dir_2d(tmp_path: Path) -> Path:
+    """analysis_dir with a manifest pointing at the REAL CASE1 dataset (2D exps)
+    plus hand-authored analysis/peaks/{hsqc,hmbc,cosy}.json fixtures to the
+    LOCKED Phase-94 schema (96-CONTEXT.md canonical_refs).
+
+    Skips (not fails) when the local CASE1 Dropbox path is absent on this
+    machine — do not hard-fail CI on a missing local dataset (mirrors
+    `spectra_case1_manifest_dir`, Phase 95). CASE1 exp 6 = HSQC, exp 7 =
+    HMBC, exp 5 = COSY (96-RESEARCH.md Pattern 2, verified via live
+    `BrukerReader.read_2d()` execution against the real dataset).
+    """
+    if not CASE1_ROOT.is_dir():
+        pytest.skip(f"Real CASE1 dataset not found at {CASE1_ROOT}")
+
+    import json as _json
+
+    (tmp_path / ".run_manifest.json").write_text(
+        _json.dumps({"bruker_data_dir": str(CASE1_ROOT), "formula": "C13H18O2"}),
+        encoding="utf-8",
+    )
+
+    peaks_dir = tmp_path / "peaks"
+    peaks_dir.mkdir()
+
+    (peaks_dir / "hsqc.json").write_text(
+        _json.dumps(
+            {
+                "experiment": "hsqcedetgp",
+                "count": 2,
+                "note": "hand-authored 2D overlay fixture (96-01 Wave 0) — "
+                "one aromatic, one aliphatic one-bond C-H correlation",
+                "peaks": [
+                    {
+                        "carbon_ppm": 127.8,
+                        "proton_ppm": 7.24,
+                        "intensity": 5200000,
+                        "matched_real_carbon": True,
+                        "one_bond": True,
+                    },
+                    {
+                        "carbon_ppm": 22.1,
+                        "proton_ppm": 1.22,
+                        "intensity": 1800000,
+                        "matched_real_carbon": True,
+                        "one_bond": True,
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    (peaks_dir / "hmbc.json").write_text(
+        _json.dumps(
+            {
+                "experiment": "hmbcgplpndqf",
+                "raw_count": 40,
+                "kept_count": 3,
+                "flag_rules": "1J_artifact = matches an HSQC one-bond pair; "
+                "potential_4J = 4-bond aromatic candidate",
+                "note": "hand-authored 2D overlay fixture (96-01 Wave 0) — "
+                "covers all three flag values for the SC2 palette assertion",
+                "peaks": [
+                    {
+                        "carbon_ppm": 180.9,
+                        "carbon_ppm_observed": 180.8,
+                        "proton_ppm": 2.35,
+                        "intensity": 445210,
+                        "flag": "ok",
+                    },
+                    {
+                        "carbon_ppm": 127.8,
+                        "carbon_ppm_observed": 127.7,
+                        "proton_ppm": 1.22,
+                        "intensity": 210330,
+                        "flag": "potential_4J",
+                    },
+                    {
+                        "carbon_ppm": 22.1,
+                        "carbon_ppm_observed": 22.0,
+                        "proton_ppm": 1.22,
+                        "intensity": 1800000,
+                        "flag": "1J_artifact",
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    (peaks_dir / "cosy.json").write_text(
+        _json.dumps(
+            {
+                "experiment": "cosygpqf",
+                "count": 2,
+                "note": "hand-authored 2D overlay fixture (96-01 Wave 0) — "
+                "two vicinal proton-proton correlations",
+                "peaks": [
+                    {"proton_a_ppm": 7.24, "proton_b_ppm": 7.21, "intensity": 335120},
+                    {"proton_a_ppm": 1.22, "proton_b_ppm": 0.88, "intensity": 118400},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    return tmp_path
