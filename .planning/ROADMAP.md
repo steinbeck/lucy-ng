@@ -116,7 +116,11 @@ all organized in tabs. Builds on the v9.2 architecture where "tabs dock in witho
   3. Render time is under 1 s per request: 2D data is decimated to at most 512×512 before contouring, contour levels are threshold-based (MAD-derived noise floor), and rendered PNGs are cached keyed by source file mtime — the 3 s browser polling loop does not trigger re-renders on a cache hit.
   4. Repeated browser polling does not cause memory growth — figures are closed after each render (`try/finally`) and the mtime cache prevents unbounded Figure allocation.
 
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] 96-01-PLAN.md — Wave 0: hand-authored 2D peak fixtures + TestSpectraEndpoint2D (RED-by-skip)
+- [ ] 96-02-PLAN.md — Backend: spectra.py 2D routes (HSQC/HMBC/COSY contour + overlay, reversed axes, mtime cache, never-500) + app.py docstring
+- [ ] 96-03-PLAN.md — Frontend: three stacked 2D img sections + refreshSpectra2D wired into tick()
+- [ ] 96-04-PLAN.md — Manual browser checkpoint: real contours, reversed axes, HMBC flag colours, COSY diagonal, unavailable states
 
 **UI hint**: yes
 
@@ -129,4 +133,4 @@ all organized in tabs. Builds on the v9.2 architecture where "tabs dock in witho
 | 93. Formatted Log + Tab Framework | 3/3 | Complete   | 2026-07-08 |
 | 94. Data Tables | 4/4 | Complete   | 2026-07-09 |
 | 95. 1D Real Spectra + Peak Overlay | 5/5 | Complete    | 2026-07-09 |
-| 96. 2D Real Spectra + Peak Overlay | 0/TBD | Not started | - |
+| 96. 2D Real Spectra + Peak Overlay | 0/4 | Not started | - |
