@@ -1780,3 +1780,443 @@ def spectra_case1_manifest_dir_2d(tmp_path: Path) -> Path:
     )
 
     return tmp_path
+
+
+# ---------------------------------------------------------------------------
+# TestSpectraEndpoint2D [→ Plan 02]
+#
+# RED-by-skip until src/lucy_ng/webview/routers/spectra.py grows the three
+# 2D routes + 2D helpers (WV-08). Every 2D-route-dependent method probes for
+# a Plan-02-only symbol (e.g. `_select_experiment_2d`, `_render_2d_png`,
+# `_plot_hmbc_overlay`, `_apply_nmr_axes_2d`) via a specific-name import
+# INSIDE the same try/except ImportError guard used to detect the fastapi
+# [webview] extra — since that symbol does not exist yet, the import raises
+# ImportError (not the module import itself), so the method SKIPS cleanly
+# rather than failing on a 404 from the not-yet-registered route. Covers all
+# 9 96-RESEARCH.md/96-VALIDATION.md Test-Map rows: SP2-01 (real PNG,
+# both-axes-reversed, HMBC flag palette), SC3 (render<1s, cache-hit-no-
+# rerender), SC4 (cache bounded <=3), SP-02 (never-500 on absent manifest /
+# stale path / no matching 2D experiment).
+# ---------------------------------------------------------------------------
+
+
+class TestSpectraEndpoint2D:
+    """SP2-01/SC1/SC2/SC3/SC4/SP-02: GET /api/spectra/2d/{hsqc,hmbc,cosy}."""
+
+    def test_spectra_2d_apply_nmr_axes_2d_reverses_both_scales(self) -> None:
+        """_apply_nmr_axes_2d(ax, f1_scale, f2_scale) reverses BOTH ppm axes (SC1)."""
+        try:
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
+                _apply_nmr_axes_2d,
+            )
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        import numpy as np
+        from matplotlib.figure import Figure  # pyright: ignore[reportMissingModuleSource]
+
+        fig = Figure()
+        ax = fig.add_subplot(111)
+        f1_ppm_scale = np.array([160.0, 120.0, 40.0, 0.0])  # 13C, descending
+        f2_ppm_scale = np.array([9.0, 6.0, 3.0, 0.0])  # 1H, descending
+
+        _apply_nmr_axes_2d(ax, f1_ppm_scale, f2_ppm_scale)
+
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        assert xlim[0] > xlim[1], f"Expected reversed x-axis (xlim[0] > xlim[1]), got {xlim}"
+        assert ylim[0] > ylim[1], f"Expected reversed y-axis (ylim[0] > ylim[1]), got {ylim}"
+
+    def test_spectra_2d_hsqc_returns_png_on_case1_real(
+        self, spectra_case1_manifest_dir_2d: Path
+    ) -> None:
+        """/api/spectra/2d/hsqc on the real CASE1 dataset -> 200 image/png bytes (SP2-01)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+                _select_experiment_2d,
+            )
+
+            app = FastAPI()
+            app.include_router(spectra.make_router(spectra_case1_manifest_dir_2d))
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        with TestClient(app) as client:
+            r = client.get("/api/spectra/2d/hsqc")
+
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.text[:200]}"
+        assert r.headers["content-type"] == "image/png", (
+            f"Expected image/png, got {r.headers.get('content-type')}"
+        )
+        assert len(r.content) > 0, "Expected non-empty PNG bytes"
+
+    def test_spectra_2d_hmbc_returns_png_on_case1_real(
+        self, spectra_case1_manifest_dir_2d: Path
+    ) -> None:
+        """/api/spectra/2d/hmbc on the real CASE1 dataset -> 200 image/png bytes (SP2-01)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+                _select_experiment_2d,
+            )
+
+            app = FastAPI()
+            app.include_router(spectra.make_router(spectra_case1_manifest_dir_2d))
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        with TestClient(app) as client:
+            r = client.get("/api/spectra/2d/hmbc")
+
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.text[:200]}"
+        assert r.headers["content-type"] == "image/png", (
+            f"Expected image/png, got {r.headers.get('content-type')}"
+        )
+        assert len(r.content) > 0, "Expected non-empty PNG bytes"
+
+    def test_spectra_2d_cosy_returns_png_on_case1_real(
+        self, spectra_case1_manifest_dir_2d: Path
+    ) -> None:
+        """/api/spectra/2d/cosy on the real CASE1 dataset -> 200 image/png bytes (SP2-01)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+                _select_experiment_2d,
+            )
+
+            app = FastAPI()
+            app.include_router(spectra.make_router(spectra_case1_manifest_dir_2d))
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        with TestClient(app) as client:
+            r = client.get("/api/spectra/2d/cosy")
+
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.text[:200]}"
+        assert r.headers["content-type"] == "image/png", (
+            f"Expected image/png, got {r.headers.get('content-type')}"
+        )
+        assert len(r.content) > 0, "Expected non-empty PNG bytes"
+
+    def test_spectra_2d_hmbc_flag_color_palette(self) -> None:
+        """HMBC overlay colours match the LOCKED flag palette verbatim (SC2/D-06)."""
+        import inspect
+
+        try:
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+                _plot_hmbc_overlay,
+            )
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        # The LOCKED hex palette may live in a module-level dict
+        # (_HMBC_FLAG_COLORS) referenced by _plot_hmbc_overlay's source, or be
+        # inlined directly in the function body -- inspect both possible
+        # locations (96-CONTEXT.md D-06).
+        haystack = inspect.getsource(spectra._plot_hmbc_overlay)
+        flag_colors = getattr(spectra, "_HMBC_FLAG_COLORS", None)
+        if flag_colors is not None:
+            haystack += repr(flag_colors)
+
+        for flag, hexcode in (
+            ("ok", "#28a745"),
+            ("potential_4J", "#ffc107"),
+            ("1J_artifact", "#adb5bd"),
+        ):
+            assert hexcode in haystack, (
+                f"Expected LOCKED HMBC hex {hexcode!r} for flag {flag!r} in "
+                f"_plot_hmbc_overlay source or _HMBC_FLAG_COLORS, got:\n{haystack}"
+            )
+
+    def test_spectra_2d_select_experiment_2d_keeps_only_acqu2s(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """_select_experiment_2d never calls read_2d on a non-acqu2s dir; returns matching type."""
+        if not CASE1_ROOT.is_dir():
+            pytest.skip(f"Real CASE1 dataset not found at {CASE1_ROOT}")
+        try:
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+                _select_experiment_2d,
+            )
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        from lucy_ng.readers.bruker import BrukerReader
+
+        called_dirs: list[Path] = []
+        original_read_2d = BrukerReader.read_2d
+
+        def _spy_read_2d(experiment_dir: str | Path) -> object:
+            called_dirs.append(Path(experiment_dir))
+            return original_read_2d(experiment_dir)
+
+        monkeypatch.setattr(BrukerReader, "read_2d", staticmethod(_spy_read_2d))
+
+        hsqc = spectra._select_experiment_2d(CASE1_ROOT, "HSQC")
+        assert hsqc is not None, "Expected a Spectrum2D HSQC from the real CASE1 dataset"
+        assert hsqc.experiment_type == "HSQC", (
+            f"Expected experiment_type == 'HSQC', got {hsqc.experiment_type!r}"
+        )
+
+        cosy = spectra._select_experiment_2d(CASE1_ROOT, "COSY")
+        assert cosy is not None, "Expected a Spectrum2D COSY from the real CASE1 dataset"
+        assert cosy.experiment_type == "COSY", (
+            f"Expected experiment_type == 'COSY', got {cosy.experiment_type!r}"
+        )
+
+        for exp_dir in sorted(p for p in CASE1_ROOT.iterdir() if p.is_dir()):
+            if not (exp_dir / "acqu2s").exists():
+                assert exp_dir not in called_dirs, (
+                    f"Expected the non-acqu2s dir {exp_dir} to be excluded BEFORE "
+                    f"read_2d, but read_2d was called on: {called_dirs}"
+                )
+
+    def test_spectra_2d_render_under_budget(
+        self, spectra_case1_manifest_dir_2d: Path
+    ) -> None:
+        """A single real 2D render completes in < 1.0s (SC3 perf)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+                _select_experiment_2d,
+            )
+
+            app = FastAPI()
+            app.include_router(spectra.make_router(spectra_case1_manifest_dir_2d))
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        import time
+
+        with TestClient(app) as client:
+            start = time.time()
+            r = client.get("/api/spectra/2d/hsqc")
+            elapsed = time.time() - start
+
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.text[:200]}"
+        assert elapsed < 1.0, f"Expected a single 2D render < 1.0s, took {elapsed:.3f}s"
+
+    def test_spectra_2d_cache_hit_no_rerender(
+        self, spectra_case1_manifest_dir_2d: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Two identical GETs (unchanged source mtime) call the render fn exactly once (SC3)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
+                _render_2d_png as _original_render,
+            )
+
+            app = FastAPI()
+            app.include_router(spectra.make_router(spectra_case1_manifest_dir_2d))
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        spectra._png_cache.clear()
+
+        call_count = {"n": 0}
+
+        def _spy_render(*args: object, **kwargs: object) -> bytes:
+            call_count["n"] += 1
+            return _original_render(*args, **kwargs)
+
+        monkeypatch.setattr(spectra, "_render_2d_png", _spy_render)
+
+        with TestClient(app) as client:
+            r1 = client.get("/api/spectra/2d/hsqc")
+            r2 = client.get("/api/spectra/2d/hsqc")
+
+        assert r1.status_code == 200, f"Expected 200, got {r1.status_code}: {r1.text[:200]}"
+        assert r2.status_code == 200, f"Expected 200, got {r2.status_code}: {r2.text[:200]}"
+        assert call_count["n"] == 1, (
+            f"Expected the render function to be called exactly once across two "
+            f"unchanged-mtime requests (cache hit on the 2nd), got {call_count['n']} calls"
+        )
+
+    def test_spectra_2d_cache_bounded(self, spectra_case1_manifest_dir_2d: Path) -> None:
+        """Repeated polling across all three 2D routes keeps _png_cache <= 3 entries (SC4)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+                _select_experiment_2d,
+            )
+
+            app = FastAPI()
+            app.include_router(spectra.make_router(spectra_case1_manifest_dir_2d))
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        spectra._png_cache.clear()
+
+        with TestClient(app) as client:
+            for _ in range(2):
+                client.get("/api/spectra/2d/hsqc")
+                client.get("/api/spectra/2d/hmbc")
+                client.get("/api/spectra/2d/cosy")
+
+        assert len(spectra._png_cache) <= 3, (
+            f"Expected _png_cache bounded to <= 3 entries after repeated polling "
+            f"across all three routes, got {len(spectra._png_cache)}: "
+            f"{list(spectra._png_cache.keys())}"
+        )
+
+    def test_spectra_2d_missing_manifest_placeholder(self, empty_analysis_dir: Path) -> None:
+        """Absent .run_manifest.json -> /api/spectra/2d/hsqc -> HTTP 200 placeholder PNG (SP-02)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+                _select_experiment_2d,
+            )
+
+            app = FastAPI()
+            app.include_router(spectra.make_router(empty_analysis_dir))
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        with TestClient(app) as client:
+            r = client.get("/api/spectra/2d/hsqc")
+
+        assert r.status_code == 200, (
+            f"Expected 200 (never 500), got {r.status_code}: {r.text[:200]}"
+        )
+        assert r.headers["content-type"] == "image/png", (
+            f"Expected image/png, got {r.headers.get('content-type')}"
+        )
+        assert len(r.content) > 0, "Expected non-empty placeholder PNG bytes"
+
+    def test_spectra_2d_stale_path_placeholder(
+        self, spectra_stale_manifest_dir: Path
+    ) -> None:
+        """Manifest present but bruker_data_dir missing/stale -> HTTP 200 placeholder (SP-02)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+                _select_experiment_2d,
+            )
+
+            app = FastAPI()
+            app.include_router(spectra.make_router(spectra_stale_manifest_dir))
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        with TestClient(app) as client:
+            r = client.get("/api/spectra/2d/hmbc")
+
+        assert r.status_code == 200, (
+            f"Expected 200 (never 500), got {r.status_code}: {r.text[:200]}"
+        )
+        assert r.headers["content-type"] == "image/png", (
+            f"Expected image/png, got {r.headers.get('content-type')}"
+        )
+        assert len(r.content) > 0, "Expected non-empty placeholder PNG bytes"
+
+    def test_spectra_2d_no_matching_experiment_placeholder(self, tmp_path: Path) -> None:
+        """Manifest points at a real but empty dir (no 2D experiment) -> placeholder PNG (SP-02)."""
+        try:
+            from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
+            from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
+
+            from lucy_ng.webview.routers import (
+                spectra,  # pyright: ignore[reportMissingModuleSource]
+            )
+            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+                _select_experiment_2d,
+            )
+        except ImportError:
+            pytest.skip("webview extra or spectra 2D routes not yet available")
+
+        import json as _json
+
+        manifest_dir = tmp_path / "analysis"
+        manifest_dir.mkdir()
+        bruker_dir = tmp_path / "empty_bruker_root"
+        bruker_dir.mkdir()  # real, empty -- no numbered experiment dirs at all
+        (manifest_dir / ".run_manifest.json").write_text(
+            _json.dumps({"bruker_data_dir": str(bruker_dir), "formula": "C13H18O2"}),
+            encoding="utf-8",
+        )
+
+        app = FastAPI()
+        app.include_router(spectra.make_router(manifest_dir))
+
+        with TestClient(app) as client:
+            r = client.get("/api/spectra/2d/cosy")
+
+        assert r.status_code == 200, (
+            f"Expected 200 (never 500), got {r.status_code}: {r.text[:200]}"
+        )
+        assert r.headers["content-type"] == "image/png", (
+            f"Expected image/png, got {r.headers.get('content-type')}"
+        )
+        assert len(r.content) > 0, "Expected non-empty placeholder PNG bytes"
+
+    def test_spectra_2d_no_module_level_matplotlib_import(self) -> None:
+        """2D helpers/imports (matplotlib-free) added by this phase respect WV-08/D-04."""
+        spectra_path = (
+            Path(__file__).parent.parent
+            / "src" / "lucy_ng" / "webview" / "routers" / "spectra.py"
+        )
+        if not spectra_path.is_file():
+            pytest.skip("src/lucy_ng/webview/routers/spectra.py does not exist yet")
+
+        lines = spectra_path.read_text(encoding="utf-8").splitlines()
+        make_router_line: int | None = None
+        for i, line in enumerate(lines):
+            if line.lstrip().startswith("def make_router"):
+                make_router_line = i
+                break
+        assert make_router_line is not None, "Expected a 'def make_router' line in spectra.py"
+
+        for line in lines[:make_router_line]:
+            stripped = line.lstrip()
+            if stripped.startswith("#"):
+                continue
+            assert not (
+                stripped.startswith("import matplotlib") or stripped.startswith("from matplotlib")
+            ), f"Found a matplotlib import before 'def make_router': {line!r}"
