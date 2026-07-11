@@ -432,7 +432,26 @@
            src="/api/spectra/1d/proton">
     </section>
     </div>
-    <div class="placeholder" data-panel="spectra-2d">2D Spectra — coming in Phase 96</div>
+    <div data-panel="spectra-2d">
+    <section class="tables-section" id="spectrum-hsqc">
+      <h2 class="tables-heading">HSQC</h2>
+      <img id="img-spectrum-hsqc" class="spectrum-img"
+           alt="HSQC contour plot with cross-peak overlay"
+           src="/api/spectra/2d/hsqc">
+    </section>
+    <section class="tables-section" id="spectrum-hmbc">
+      <h2 class="tables-heading">HMBC</h2>
+      <img id="img-spectrum-hmbc" class="spectrum-img"
+           alt="HMBC contour plot with cross-peak overlay, colour-coded by flag"
+           src="/api/spectra/2d/hmbc">
+    </section>
+    <section class="tables-section" id="spectrum-cosy">
+      <h2 class="tables-heading">COSY</h2>
+      <img id="img-spectrum-cosy" class="spectrum-img"
+           alt="COSY contour plot with cross-peak overlay and diagonal"
+           src="/api/spectra/2d/cosy">
+    </section>
+    </div>
     <div data-panel="tables">
     <section class="tables-section" id="table-carbon">
       <h2 class="tables-heading">&sup1;&sup3;C Signals</h2>
