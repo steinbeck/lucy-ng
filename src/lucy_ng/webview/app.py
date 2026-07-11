@@ -36,6 +36,10 @@ def create_app(analysis_dir: Path) -> FastAPI:
         - ``GET /api/tables/constraints`` → LSD constraint inventory (TBL-03, Phase 94)
         - ``GET /api/spectra/1d/carbon`` → real 13C 1D trace + peak overlay (SP1-01, Phase 95)
         - ``GET /api/spectra/1d/proton`` → real 1H 1D trace, when present (SP1-01, Phase 95)
+        - ``GET /api/spectra/2d/hsqc`` → real HSQC contour + cross-peak overlay (SP2-01, Phase 96)
+        - ``GET /api/spectra/2d/hmbc`` → real HMBC contour + flag-coloured overlay
+          (SP2-01, Phase 96)
+        - ``GET /api/spectra/2d/cosy`` → real COSY contour + diagonal + overlay (SP2-01, Phase 96)
         - ``GET /`` → single-file dashboard (index.html, WV-06)
         - ``GET /webview.js`` → extracted dashboard script (Phase 93)
         - Swagger/ReDoc UI suppressed (``docs_url=None``, ``redoc_url=None``)
