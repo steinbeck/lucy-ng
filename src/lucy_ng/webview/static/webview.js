@@ -728,6 +728,25 @@
   }
 
   // ------------------------------------------------------------------
+  // refreshSpectra2D — 2D Spectra tab (Phase 96: SP2-01/SP-02).
+  // Mirrors refreshSpectra1D exactly: the PNG endpoint is never-500
+  // (placeholder chart baked into the pixels on failure), so no
+  // fetch/catch is needed — the browser's native <img> loading handles
+  // the binary payload directly. Cache-bust unconditionally every tick
+  // (the ?t= query string defeats only the browser's <img> HTTP cache;
+  // the server-side mtime cache ignores it, so cache hits still work).
+  // ------------------------------------------------------------------
+  function refreshSpectra2D() {
+    var t = Date.now();
+    var hsqcImg = document.getElementById('img-spectrum-hsqc');
+    if (hsqcImg) { hsqcImg.src = '/api/spectra/2d/hsqc?t=' + t; }
+    var hmbcImg = document.getElementById('img-spectrum-hmbc');
+    if (hmbcImg) { hmbcImg.src = '/api/spectra/2d/hmbc?t=' + t; }
+    var cosyImg = document.getElementById('img-spectrum-cosy');
+    if (cosyImg) { cosyImg.src = '/api/spectra/2d/cosy?t=' + t; }
+  }
+
+  // ------------------------------------------------------------------
   // initTabs — plain class/display toggling, no fetch triggered (D-01)
   // ------------------------------------------------------------------
   function initTabs() {
@@ -773,6 +792,7 @@
     refreshHmbc();
     refreshCosy();
     refreshSpectra1D();
+    refreshSpectra2D();
     refreshConstraints();
     flashDot();
   }
