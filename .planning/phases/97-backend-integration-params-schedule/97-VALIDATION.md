@@ -2,7 +2,7 @@
 phase: 97
 slug: backend-integration-params-schedule
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-07-12
 ---
@@ -83,4 +83,4 @@ created: 2026-07-12
 - [ ] Feedback latency < 15s
 - [ ] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** planner (2026-07-12) — 5 plans, every task carries an <automated> verify or a wave-0/fixture dependency; no 3 consecutive tasks without automated verification.
