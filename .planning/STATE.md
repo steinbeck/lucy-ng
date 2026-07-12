@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
 status: executing
-stopped_at: Phase 97 Plan 03 complete
-last_updated: "2026-07-12T14:22:44.452Z"
+stopped_at: Phase 97 Plan 04 complete (nus/backends/nmrpipe_smile.py, NUS-01)
+last_updated: "2026-07-12T14:36:17.230Z"
 last_activity: 2026-07-12
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-12)
 ## Current Position
 
 Phase: 97 (backend-integration-params-schedule) — EXECUTING
-Plan: 4 of 5
-Status: Plan 03 complete (nus/schedule.py, NUS-03); ready to execute Plan 04
-Last activity: 2026-07-12 -- Plan 97-03 complete (read_nus_schedule, FnMODE hard-fail assertion verified across all 3 real fixtures)
+Plan: 5 of 5
+Status: Plan 04 complete (nus/backends/nmrpipe_smile.py + registry, NUS-01); ready to execute Plan 05
+Last activity: 2026-07-12 -- Plan 97-04 complete (NmrPipeSmileBackend detection + SMILE capability probe + NusBackend registry, 20 tests green)
 
-Progress: [██████░░░░] 60%
+Progress: [████████░░] 80%
 
 ## Milestone v10.0 Phases
 
@@ -98,7 +98,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
 - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
-- v10.0: 4 phases planned (97-100); 3 plans complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close; Phase 97 Plan 03 (nus/schedule.py, NUS-03), 12 min, 1 task, 2 files, tests 1269 passing at close
+- v10.0: 4 phases planned (97-100); 4 plans complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close; Phase 97 Plan 03 (nus/schedule.py, NUS-03), 12 min, 1 task, 2 files, tests 1269 passing at close; Phase 97 Plan 04 (nus/backends/nmrpipe_smile.py + registry, NUS-01), 6 min, 2 tasks, 3 files, tests 1289 passing at close
 
 ## Accumulated Context
 
@@ -116,6 +116,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 - [Phase 97 Plan 01]: Fixture set expanded beyond D-03's original acqus/acqu2s/nuslist trio to also copy `pdata/1/procs`+`pdata/1/proc2s` per RESEARCH.md's SF/OFFSET-live-in-procs correction — otherwise SF/OFFSET fields would have zero fixture coverage.
 - [Phase 97 Plan 02]: `read_nus_params` uses nmrglue's low-level `read_acqus_file()`/`read_procs_file()` instead of the monolithic `ng.bruker.read()` — the latter unconditionally requires a `fid`/`ser` binary to determine data shape, which the D-03 test fixtures deliberately omit (metadata-only). The low-level readers parse the identical `acqus`/`acqu2s`/`procs`/`proc2s` files with zero binary dependency, correct for both the fixtures and real not-yet-reconstructed NUS directories.
 - [Phase 97 Plan 03]: `read_nus_schedule` uses `ng.bruker.read_nuslist(expdir)` instead of `ng.bruker.read(expdir)["nuslist"]` — same rationale as Plan 02: the latter requires a `fid`/`ser` binary the D-03 fixtures omit. `read_nuslist()` reads the identical file in identical acquisition (never sorted) order with zero binary dependency; FnMODE/TD/NusTD are sourced from `read_nus_params` (Plan 02), keeping exactly one acquisition-parameter parse path.
+- [Phase 97 Plan 04]: `NmrPipeSmileBackend.REQUIRED_TOOLS = [nmrPipe, bruk2pipe, nusExpand.tcl]` via `shutil.which`, plus a distinct SMILE-plugin capability probe (`nmrPipe -fn SMILE -help`, fixed arg list, no `shell=True`) — research verified SMILE is an nmrPipe plugin dispatched internally, never a standalone `which()`-able binary (the milestone architecture research's `smileNus` tool name was wrong and is not used anywhere, including comments). `diagnose()` gives 4 distinct states (available/smile_plugin_missing/installed_not_sourced/not_installed) with install-URL hints. `NusBackend` (repo's first `typing.Protocol`) + `get_backend()`/`list_available_backends()` registry expose backends generically for Phase 97-05's CLI and Phase 98's reconstruction pipeline.
 
 ### Key Design Decisions for v9.3
 
@@ -154,13 +155,13 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-12T14:22:44.452Z
-Stopped at: Phase 97 Plan 03 complete
-Resume with: `/gsd-execute-phase 97` (continues with Plan 04 — nus/backends/nmrpipe_smile.py, NUS-01)
+Last session: 2026-07-12T14:36:17.225Z
+Stopped at: Phase 97 Plan 04 complete (nus/backends/nmrpipe_smile.py, NUS-01)
+Resume with: `/gsd-execute-phase 97` (continues with Plan 05 — final Phase 97 plan)
 
 ---
-*Last updated: 2026-07-12 — Phase 97 Plan 03 complete (read_nus_schedule, NUS-03)*
+*Last updated: 2026-07-12 — Phase 97 Plan 04 complete (nus/backends/nmrpipe_smile.py + registry, NUS-01)*
 
 ## Operator Next Steps
 
-- Continue Phase 97 with Plan 04 (`nus/backends/nmrpipe_smile.py`) via `/gsd-execute-phase 97`
+- Continue Phase 97 with Plan 05 (final plan of Phase 97) via `/gsd-execute-phase 97`
