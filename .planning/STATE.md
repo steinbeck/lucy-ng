@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
 status: executing
-stopped_at: Phase 97 Plan 01 complete
-last_updated: "2026-07-12T13:48:10.427Z"
+stopped_at: Phase 97 Plan 02 complete
+last_updated: "2026-07-12T14:07:02.737Z"
 last_activity: 2026-07-12
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-12)
 ## Current Position
 
 Phase: 97 (backend-integration-params-schedule) — EXECUTING
-Plan: 2 of 5
-Status: Plan 01 complete (fixtures + NUS models); ready to execute Plan 02
-Last activity: 2026-07-12 -- Plan 97-01 complete (fixtures + NusAcquisitionParams/NusSchedule models)
+Plan: 3 of 5
+Status: Plan 02 complete (nus/params.py, NUS-02); ready to execute Plan 03
+Last activity: 2026-07-12 -- Plan 97-02 complete (read_nus_params, all 3 real fixtures verified)
 
-Progress: [██░░░░░░░░] 20%
+Progress: [████░░░░░░] 40%
 
 ## Milestone v10.0 Phases
 
@@ -98,7 +98,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
 - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
-- v10.0: 4 phases planned (97-100); 1 plan complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close
+- v10.0: 4 phases planned (97-100); 2 plans complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close
 
 ## Accumulated Context
 
@@ -114,6 +114,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 - [v10.0-roadmap]: **QC gate is its own phase deliverable (Phase 99), not folded into peak-picking** — it is the mandatory automated defense against fabricated cross-peaks silently becoming hard LSD constraints (the milestone's crux risk per research).
 - [Phase 97 Plan 01]: `NusAcquisitionParams.fnmode_f1` validator shares the `REAL_FNMODES`/`COMPLEX_FNMODES`/`VALID_FNMODES` module constants with `nus/schedule.py` (plan 03) so the two never maintain divergent FnMODE allowlists.
 - [Phase 97 Plan 01]: Fixture set expanded beyond D-03's original acqus/acqu2s/nuslist trio to also copy `pdata/1/procs`+`pdata/1/proc2s` per RESEARCH.md's SF/OFFSET-live-in-procs correction — otherwise SF/OFFSET fields would have zero fixture coverage.
+- [Phase 97 Plan 02]: `read_nus_params` uses nmrglue's low-level `read_acqus_file()`/`read_procs_file()` instead of the monolithic `ng.bruker.read()` — the latter unconditionally requires a `fid`/`ser` binary to determine data shape, which the D-03 test fixtures deliberately omit (metadata-only). The low-level readers parse the identical `acqus`/`acqu2s`/`procs`/`proc2s` files with zero binary dependency, correct for both the fixtures and real not-yet-reconstructed NUS directories.
 
 ### Key Design Decisions for v9.3
 
@@ -152,13 +153,13 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-12T13:48:10.423Z
-Stopped at: Phase 97 Plan 01 complete
-Resume with: `/gsd-plan-phase 97`
+Last session: 2026-07-12T14:07:02.737Z
+Stopped at: Phase 97 Plan 02 complete
+Resume with: `/gsd-execute-phase 97` (continues with Plan 03 — nus/schedule.py, NUS-03)
 
 ---
-*Last updated: 2026-07-12 — v10.0 roadmap created (4 phases, 20 requirements mapped)*
+*Last updated: 2026-07-12 — Phase 97 Plan 02 complete (read_nus_params, NUS-02)*
 
 ## Operator Next Steps
 
-- Plan the first phase with `/gsd-plan-phase 97`
+- Continue Phase 97 with Plan 03 (`nus/schedule.py`) via `/gsd-execute-phase 97`
