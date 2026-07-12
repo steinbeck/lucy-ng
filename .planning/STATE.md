@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v9.3
-milestone_name: CASE Web-View Stage 2
-status: Awaiting next milestone
-stopped_at: Phase 96 context gathered
-last_updated: "2026-07-12T10:13:47.803Z"
-last_activity: 2026-07-12 — Milestone v9.3 completed and archived
+milestone: v10.0
+milestone_name: Automatic NUS 2D Reconstruction
+status: planning
+last_updated: "2026-07-12T10:45:59.070Z"
+last_activity: 2026-07-12
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 16
-  completed_plans: 16
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # lucy-ng State
@@ -25,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 
 ## Current Position
 
-Phase: Milestone v9.3 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-07-12 — Milestone v9.3 completed and archived
+Status: Defining requirements
+Last activity: 2026-07-12 — Milestone v10.0 started
 
 ## Milestone v9.3 Phases
 

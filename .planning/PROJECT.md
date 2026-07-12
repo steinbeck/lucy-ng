@@ -10,6 +10,24 @@ Lucy-ng is an AI-agent skill for Computer-Assisted Structure Elucidation (CASE) 
 
 An AI agent can autonomously determine the structure of an unknown organic compound from its NMR spectra, with a multi-agent architecture that prevents unproductive loops and keeps the elucidation on track.
 
+## Current Milestone: v10.0 Automatic NUS 2D Reconstruction — IN PROGRESS 🚧
+
+**Goal:** Lucy-ng reconstructs non-uniformly-sampled (NUS) 2D NMR spectra fully automatically and without any GUI step — from Bruker `ser`+`nuslist` through a real compressed-sensing / IST / SMILE reconstruction to clean JSON peak lists — so that CASE runs on NUS data get reliable HSQC/HMBC/COSY connectivity.
+
+**Target features:**
+- **NUS reconstruction backend** (research-selected: NMRPipe+SMILE vs. hmsIST/mddnmr vs. Python-native CS/IST) — scriptable, no manual TopSpin GUI. TopSpin acceptable only if headless-drivable via API/CLI.
+- **Automatic Bruker→backend conversion** — read `ser`, `nuslist`, `acqus`/`acqu2s`; build the sampling schedule and handle FnMODE (echo-antiecho HSQC/HMBC, QF COSY) with no manual step.
+- **Fully automated reconstruction + processing pipeline** — NUS expansion, apodization, ZF, FT, phasing, baseline → 2D spectrum.
+- **Peak picking → JSON peak lists** in the existing schema (HSQC edited-sign, HMBC, COSY) into `analysis/nmr_peaks/`.
+- **Reusable `lucy` step/CLI** — usable by any NUS CASE run, not just C20H32O2.
+- **Cross-platform portability** — backend + pipeline brought up as broadly as possible on macOS/Linux/Windows; unavoidable platform gaps are carefully investigated and documented in a portability matrix (what runs where, why not, workaround) rather than silently accepted. Primary dev/test platform stays local macOS Apple Silicon.
+- **End-to-end validation** — C20H32O2 exp2/3/4 reconstructed, §8 quality gate passed, `/lucy-ng:case C20H32O2` converges on a small rankable solution set.
+
+**Key context:**
+- Full automation is a hard constraint; the first CASE run (2026-07-09, 5.5 h) failed on data quality, not method — the NUS 2D spectra were only approximated by an ad-hoc per-column IST in `nmrglue`, leaving HMBC/COSY too artefact-ridden (t1 ridges) to pin ring connectivity, so LSD could not prune the ~10⁶-candidate space for a tetracyclic C20 diterpene.
+- Backend chosen by research with a recommendation; target environment as broad as possible (macOS/Linux/Windows), documented limitations allowed.
+- Test case: `C20H32O2` (tetracyclic C20 diterpene, DBE 5) at `~/Dropbox/develop/data/nmrdata/active-lucy-ng-testprojects/C20H32O2/`. Task brief: `analysis/NUS-RECONSTRUCTION-GUIDE.md`.
+
 ## v9.3 CASE Web-View Stage 2 — SHIPPED ✅ (2026-07-12)
 
 **Outcome:** All four target features shipped and verified (each phase VERIFICATION passed): formatted markdown run log + 4-tab framework (Phase 93), data tables (Phase 94), 1D real spectra + peak overlay (Phase 95), 2D real spectra + peak overlay (Phase 96). New `tables.py` + `spectra.py` routers on the v9.2 "tabs dock in without a rewrite" architecture; `.run_manifest.json` raw-Bruker-path wiring; matplotlib in the `[webview]` extra (OO-API/lazy, WV-08). Full archive: `milestones/v9.3-ROADMAP.md`, tagged `v9.3`. Two defects caught & fixed at Phase 96 verification (2D F1-axis inversion via the manual browser checkpoint; placeholder-figsize layout-jump via code review).
@@ -293,4 +311,6 @@ Minimum viable spectral data for v1:
 | `CLAUDE_CODE_SUBAGENT_MODEL=inherit` | A stale `=sonnet` override silently forced all subagents to Sonnet 4.6 and drove earlier CASE failures | Good — Opus 4.8 then solved both cases |
 
 ---
-*Last updated: 2026-07-12 after the v9.3 CASE Web-View Stage 2 milestone (phases 93–96, LOG-01/TAB-01/TBL-01..03/SP1-01/SP2-01/SP-02) — archived to `milestones/v9.3-ROADMAP.md` + `milestones/v9.3-REQUIREMENTS.md`, tagged `v9.3`. Delivered the full spectral-inspection suite: formatted run log + tab framework, data tables, and real rendered 1D + 2D NMR spectra with picked peaks overlaid. Next: `/gsd-new-milestone` to scope the next cycle.*
+*Last updated: 2026-07-12 — started milestone v10.0 Automatic NUS 2D Reconstruction (added Current Milestone section). Reusable, fully-automatic NUS reconstruction of Bruker NUS 2D spectra (CS/IST/SMILE) → clean peak lists; cross-platform (macOS/Linux/Windows, documented gaps allowed); validated end-to-end on C20H32O2 through CASE convergence. Requirements + roadmap next.*
+
+*Prior: 2026-07-12 shipped v9.3 CASE Web-View Stage 2 (phases 93–96, LOG-01/TAB-01/TBL-01..03/SP1-01/SP2-01/SP-02) — archived to `milestones/v9.3-ROADMAP.md` + `milestones/v9.3-REQUIREMENTS.md`, tagged `v9.3`. Delivered the full spectral-inspection suite: formatted run log + tab framework, data tables, and real rendered 1D + 2D NMR spectra with picked peaks overlaid.*
