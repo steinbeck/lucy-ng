@@ -172,6 +172,10 @@ An AI agent can autonomously determine the structure of an unknown organic compo
 - 1D real spectra + peak overlay: `spectra.py` router renders real ¹³C/¹H Bruker traces (BrukerReader/nmrglue + matplotlib Agg) on a reversed ppm axis with picked peaks overlaid; `.run_manifest.json` raw-data path wiring; matplotlib in `[webview]` extra, lazy imports (SP1-01, SP-02, WV-08) — v9.3
 - 2D real spectra + peak overlay: three `/api/spectra/2d/{hsqc,hmbc,cosy}` routes render real HSQC/HMBC/COSY contour plots with cross-peak overlays (open circles; HMBC flag colours; COSY diagonal; reversed axes both dims), block-max decimation ≤512×512, MAD-threshold geometric levels, mtime PNG cache, never-500 degradation (SP2-01, SP-02) — v9.3
 
+### Validated (v10.0 — Automatic NUS 2D Reconstruction)
+
+- NUS backend detection + params/schedule parsing (Phase 97): `lucy nus check` detects the NMRPipe+SMILE toolchain (`nmrPipe`/`bruk2pipe`/`nusExpand.tcl` on PATH + `nmrPipe -fn SMILE -help` capability probe, NOT a `smileNus` binary), separates `not_installed` from `installed_not_sourced`, fails loud exit 1; `lucy nus params/schedule <expdir> --format json` parse validated `NusAcquisitionParams`/`NusSchedule` per-experiment (FnMODE read from `acqu2s` F1, SF/OFFSET from `pdata/1/procs`, nuslist never sorted, hard `n_sampled==len(nuslist)` assertion), verified against real C20H32O2 exp2/3/4 fixtures; core CLI stays dependency-free behind an empty `[nus]` extra (NUS-01..05) — v10.0
+
 ### Deferred
 - [ ] CASE4 azulene-regiochemistry-enumeration gap — exact chamazulene regiochemistry not reachable (di-methyl-ethyl class is searched). 4th defect class surfaced by v9.1 UAT-01. (todo `2026-06-25-case4-azulene-regiochemistry-enumeration-gap`)
 - [ ] 4J HMBC coupling handling via pyLSD (Priority 1 — v7.0 statistical approach failed, pyLSD solver-based approach next)
@@ -311,6 +315,6 @@ Minimum viable spectral data for v1:
 | `CLAUDE_CODE_SUBAGENT_MODEL=inherit` | A stale `=sonnet` override silently forced all subagents to Sonnet 4.6 and drove earlier CASE failures | Good — Opus 4.8 then solved both cases |
 
 ---
-*Last updated: 2026-07-12 — started milestone v10.0 Automatic NUS 2D Reconstruction (added Current Milestone section). Reusable, fully-automatic NUS reconstruction of Bruker NUS 2D spectra (CS/IST/SMILE) → clean peak lists; cross-platform (macOS/Linux/Windows, documented gaps allowed); validated end-to-end on C20H32O2 through CASE convergence. Requirements + roadmap next.*
+*Last updated: 2026-07-12 — Phase 97 (Backend Integration + Params/Schedule) COMPLETE & verified (VERIFICATION passed, 9/9 must-haves, NUS-01..05 validated). Shipped `lucy nus check/params/schedule`, `NusAcquisitionParams`/`NusSchedule` models, and `NmrPipeSmileBackend` detection; core CLI dependency-free behind an empty `[nus]` extra; validated against real C20H32O2 exp2/3/4 fixtures. Next: Phase 98 (reconstruction + processing).*
 
 *Prior: 2026-07-12 shipped v9.3 CASE Web-View Stage 2 (phases 93–96, LOG-01/TAB-01/TBL-01..03/SP1-01/SP2-01/SP-02) — archived to `milestones/v9.3-ROADMAP.md` + `milestones/v9.3-REQUIREMENTS.md`, tagged `v9.3`. Delivered the full spectral-inspection suite: formatted run log + tab framework, data tables, and real rendered 1D + 2D NMR spectra with picked peaks overlaid.*
