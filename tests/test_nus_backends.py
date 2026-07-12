@@ -7,6 +7,7 @@ path. The positive/sourced path is manual-only (see 97-VALIDATION.md).
 
 import subprocess
 
+from lucy_ng.nus.backends import get_backend, list_available_backends
 from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
 
 
@@ -157,3 +158,39 @@ class TestNusBackendSubprocessSafety:
         assert captured["args"][0] == ["nmrPipe", "-fn", "SMILE", "-help"]
         assert "shell" not in captured["kwargs"]
         assert captured["kwargs"]["timeout"] == 10
+
+
+class TestNusBackendRegistry:
+    """Tests for the NusBackend protocol + get_backend/list_available_backends
+    registry."""
+
+    def test_get_backend_default_returns_nmrpipe_smile(self) -> None:
+        """get_backend() with no args returns NmrPipeSmileBackend."""
+        backend = get_backend()
+        assert backend is NmrPipeSmileBackend
+
+    def test_get_backend_by_name(self) -> None:
+        """get_backend('nmrpipe_smile') returns an object exposing
+        is_available()."""
+        backend = get_backend("nmrpipe_smile")
+        assert hasattr(backend, "is_available")
+        assert isinstance(backend.is_available(), bool)
+
+    def test_get_backend_unknown_name_raises(self) -> None:
+        """get_backend() with an unregistered name raises a clear error."""
+        try:
+            get_backend("does_not_exist")
+        except (KeyError, ValueError) as exc:
+            assert "does_not_exist" in str(exc)
+        else:
+            raise AssertionError("Expected KeyError or ValueError")
+
+    def test_list_available_backends_returns_list(self) -> None:
+        """list_available_backends() returns a list."""
+        result = list_available_backends()
+        assert isinstance(result, list)
+
+    def test_list_available_backends_empty_on_this_machine(self) -> None:
+        """On this dev machine (no NMRPipe), list_available_backends() is
+        empty."""
+        assert list_available_backends() == []
