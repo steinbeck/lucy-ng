@@ -100,7 +100,10 @@ def params(expdir: str, output_format: str) -> None:
             f"F1 ({model.f1_nucleus}): SFO1={model.f1_sfo1} SW_h={model.f1_sw_h} "
             f"O1={model.f1_o1} TD={model.f1_td} FnMODE={model.fnmode_f1}"
         )
-        click.echo(f"NUS: amount={model.nus_amount_pct}% seed={model.nus_seed} NusTD={model.nus_td}")
+        click.echo(
+            f"NUS: amount={model.nus_amount_pct}% seed={model.nus_seed} "
+            f"NusTD={model.nus_td}"
+        )
         click.echo(
             f"Calibration: F2 SF={model.f2_sf} OFFSET={model.f2_offset}; "
             f"F1 SF={model.f1_sf} OFFSET={model.f1_offset}"
