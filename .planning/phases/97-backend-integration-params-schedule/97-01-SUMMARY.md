@@ -108,3 +108,9 @@ None - no external service configuration required.
 ---
 *Phase: 97-backend-integration-params-schedule*
 *Completed: 2026-07-12*
+
+## Self-Check: PASSED
+
+All claimed files exist on disk (models/nus.py, nus/__init__.py, nus/backends/__init__.py,
+test_nus_models.py, all three fixture trees, this SUMMARY.md); all claimed commit hashes
+(0ea9535, 20d6ba8, a94327d, a468137) verified present in `git log`.

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
 status: executing
-stopped_at: Phase 97 context gathered
-last_updated: "2026-07-12T13:30:54.755Z"
-last_activity: 2026-07-12 -- Phase 97 planning complete
+stopped_at: Phase 97 Plan 01 complete
+last_updated: "2026-07-12T13:48:10.427Z"
+last_activity: 2026-07-12
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 5
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-12)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 97 — Backend Integration + Params/Schedule
+**Current focus:** Phase 97 — backend-integration-params-schedule
 
 ## Current Position
 
-Phase: 97 of 100 (Backend Integration + Params/Schedule)
-Plan: — (not yet planned)
-Status: Ready to execute
-Last activity: 2026-07-12 -- Phase 97 planning complete
+Phase: 97 (backend-integration-params-schedule) — EXECUTING
+Plan: 2 of 5
+Status: Plan 01 complete (fixtures + NUS models); ready to execute Plan 02
+Last activity: 2026-07-12 -- Plan 97-01 complete (fixtures + NusAcquisitionParams/NusSchedule models)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 20%
 
 ## Milestone v10.0 Phases
 
@@ -98,7 +98,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
 - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
-- v10.0: 4 phases planned (97-100); 0 plans complete (roadmap just created)
+- v10.0: 4 phases planned (97-100); 1 plan complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close
 
 ## Accumulated Context
 
@@ -112,6 +112,8 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 - [v10.0-roadmap]: **Backend = NMRPipe+SMILE, runtime-detected external binary** — never a core `pyproject.toml` dependency, mirrors the `LSDRunner`/`lucy lsd check` precedent exactly. Windows is an accepted, documented WSL2/VM gap (Phase 100), not a blocker.
 - [v10.0-roadmap]: **New `nus/` package, sibling of `lsd/`/`webview/`** — pre-CASE "dumb tool"; zero changes to `case.md` or the 5-agent team; the diff to `detection/`, `fragments/`, `lsd/`, `ranking/`, `cli/pick.py` must stay empty (enforceable-by-inspection constraint carried into Phase 97's success criteria).
 - [v10.0-roadmap]: **QC gate is its own phase deliverable (Phase 99), not folded into peak-picking** — it is the mandatory automated defense against fabricated cross-peaks silently becoming hard LSD constraints (the milestone's crux risk per research).
+- [Phase 97 Plan 01]: `NusAcquisitionParams.fnmode_f1` validator shares the `REAL_FNMODES`/`COMPLEX_FNMODES`/`VALID_FNMODES` module constants with `nus/schedule.py` (plan 03) so the two never maintain divergent FnMODE allowlists.
+- [Phase 97 Plan 01]: Fixture set expanded beyond D-03's original acqus/acqu2s/nuslist trio to also copy `pdata/1/procs`+`pdata/1/proc2s` per RESEARCH.md's SF/OFFSET-live-in-procs correction — otherwise SF/OFFSET fields would have zero fixture coverage.
 
 ### Key Design Decisions for v9.3
 
@@ -150,8 +152,8 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-12T12:47:36.749Z
-Stopped at: Phase 97 context gathered
+Last session: 2026-07-12T13:48:10.423Z
+Stopped at: Phase 97 Plan 01 complete
 Resume with: `/gsd-plan-phase 97`
 
 ---
