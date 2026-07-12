@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v9.3
 milestone_name: CASE Web-View Stage 2
-status: executing
-stopped_at: Phase 96 context gathered
-last_updated: "2026-07-11T12:05:19.738Z"
+status: milestone_complete
+stopped_at: Milestone complete (Phase 96 was final phase)
+last_updated: 2026-07-12T08:42:23.851Z
 last_activity: 2026-07-11 -- Phase 96 execution started
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 16
-  completed_plans: 12
+  completed_plans: 16
   percent: 75
 ---
 
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 96 — 2d-real-spectra-peak-overlay
+**Current focus:** Milestone complete
 
 ## Current Position
 
-Phase: 96 (2d-real-spectra-peak-overlay) — EXECUTING
-Plan: 1 of 4
+Phase: 96
+Plan: Not started
 Next: Phase 95 (1D Real Spectra + Peak Overlay) — introduces Bruker-path wiring + matplotlib Agg
-Status: Executing Phase 96
-Last activity: 2026-07-11 -- Phase 96 execution started
+Status: Milestone complete
+Last activity: 2026-07-12
 
 ```
 Progress: [██████████░░░░░░░░░░] 50% (2/4 phases)
@@ -89,7 +89,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 
 **Velocity:**
 
-- Total plans completed: 188 across 12 milestones (11 shipped + 1 abandoned) at v9.2 close
+- Total plans completed: 192 across 12 milestones (11 shipped + 1 abandoned) at v9.2 close
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
 - v9.3: 4 phases planned (93-96); 5 plans complete (Phase 93: 3/3, Phase 94: 2/4)
