@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
 status: planning
-last_updated: "2026-07-12T10:45:59.070Z"
+last_updated: "2026-07-12T12:00:00.000Z"
 last_activity: 2026-07-12
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,28 +17,30 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-07)
+See: .planning/PROJECT.md (updated 2026-07-12)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Milestone complete
+**Current focus:** Phase 97 — Backend Integration + Params/Schedule
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-07-12 — Milestone v10.0 started
+Phase: 97 of 100 (Backend Integration + Params/Schedule)
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-07-12 — ROADMAP.md created for v10.0 (4 phases, 97-100; 20/20 requirements mapped)
 
-## Milestone v9.3 Phases
+Progress: [░░░░░░░░░░] 0%
+
+## Milestone v10.0 Phases
 
 | Phase | Goal | Requirements | Depends on |
 |-------|------|--------------|------------|
-| 93. Formatted Log + Tab Framework | Tab navigation bar + hand-rolled markdown renderer; pure frontend | LOG-01, TAB-01 | — |
-| 94. Data Tables | `tables.py` router reading `analysis/peaks/*.json` + `compound.lsd`; ¹³C signals, correlations, LSD constraints | TBL-01, TBL-02, TBL-03 | 93 |
-| 95. 1D Real Spectra + Peak Overlay | `spectra.py` router; real Bruker 1D traces + peak overlay; matplotlib in `[webview]` extra; `.run_manifest.json` path wiring | SP1-01, SP-02 | 93, 94 |
-| 96. 2D Real Spectra + Peak Overlay | Extends `spectra.py` with HSQC/HMBC/COSY contour + cross-peak overlay; decimation + cache | SP2-01 | 95 |
+| 97. Backend Integration + Params/Schedule | `lucy nus check` backend detection (LSD precedent) + `nus/params.py`/`nus/schedule.py` Bruker parsing, fixture-tested against real C20H32O2 data | NUS-01..05 | — |
+| 98. Reconstruction + Processing | Real NMRPipe+SMILE subprocess chain (bruk2pipe → nusExpand.tcl → SMILE → FT/phase/baseline), FnMODE-aware, fail-loud wrapper | RECON-01..05 | 97 |
+| 99. Peak-Pick Bridge + QC Gate + CLI | `nus/bridge.py` → existing `PeakPicker2D`; mandatory automated QC gate (PASS/PARTIAL/FAIL) blocking CASE handoff on FAIL; full `lucy nus` CLI group | PICK-01..03, QC-01..03 | 98 |
+| 100. Cross-Platform Hardening + End-to-End Validation | Portability matrix (macOS/Linux native, Windows WSL2 gap documented); C20H32O2 exp2/3/4 reconstruction passing §8 gate; `/lucy-ng:case C20H32O2` convergence | PORT-01..02, VAL-01..02 | 99 |
 
-**Sequencing:** Phase 93 (tab framework + markdown log) ships first as a pure frontend change — it establishes the tab dock-in that all later phases populate and carries zero backend risk. Phase 94 (data tables) comes next, establishing the `analysis/`-only router pattern without matplotlib. Phase 95 (1D spectra) introduces the Bruker-path wiring (`.run_manifest.json` written by `case.md`) and the matplotlib Agg pipeline — two cross-cutting concerns that Phase 96 inherits. Phase 96 (2D spectra) is purely additive to Phase 95: same router, same manifest, same matplotlib backend, only adds 2D contour logic + caching.
+**Sequencing:** Phase 97 (backend detection + pure-Python params/schedule parsing) ships first — zero external-binary dependency, fixture-testable from day one, and front-loads the FnMODE/nuslist bookkeeping correctness (a single hard-coded divisor would silently corrupt one of the three real C20H32O2 experiments). Phase 98 (reconstruction + processing) is the highest-uncertainty phase — needs the real NMRPipe+SMILE binary and answers the milestone's open empirical question (does SMILE clear the quality bar at 25-33% sampling). Phase 99 (peak-pick bridge + QC gate + CLI) is where the crux risk (fabricated cross-peaks becoming hard LSD constraints) gets its mandatory automated defense — the QC gate is its own deliverable, not folded into peak-picking. Phase 100 (cross-platform hardening + validation) is milestone-closing: portability documentation and the actual success criterion (`/lucy-ng:case C20H32O2` convergence) both depend on everything upstream being stable.
 
 ## Deferred Items
 
@@ -85,6 +87,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 | v9.0 CASE Reliability & Skill Consolidation | 72-85 | 2026-06-17 |
 | v9.1 CASE Final-Answer Correctness & Verification Gates | 86-89 | 2026-06-29 |
 | v9.2 CASE Web-View | 90-92 | 2026-07-07 |
+| v9.3 CASE Web-View Stage 2 | 93-96 | 2026-07-12 |
 
 ## Performance Metrics
 
@@ -93,15 +96,21 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 - Total plans completed: 192 across 12 milestones (11 shipped + 1 abandoned) at v9.2 close
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
-- v9.3: 4 phases planned (93-96); 5 plans complete (Phase 93: 3/3, Phase 94: 2/4)
-  - Phase 94 Plan 01 (Wave-0 test scaffold): 4 min, 2 tasks, 1 file (`tests/test_webview_api.py`, +542 lines)
-  - Phase 94 Plan 02 (tables.py router): 25 min, 2 tasks, 2 files (`webview/routers/tables.py` NEW, `webview/app.py` modified)
+- v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
+- v10.0: 4 phases planned (97-100); 0 plans complete (roadmap just created)
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
 - v9.3 roadmap created (2026-07-07): phases 93-96. Derived from 8 requirements (LOG-01, TAB-01, TBL-01..03, SP1-01, SP2-01, SP-02) with authoritative override: spectra = **real Bruker traces + peak overlay** (not peak-only sticks). Research HIGH confidence across all phases; no research gate needed for any phase.
+- v10.0 roadmap created (2026-07-12): phases 97-100, continuing numbering from the last shipped phase (96). Derived from 20 requirements (NUS-01..05, RECON-01..05, QC-01..03, PICK-01..03, PORT-01..02, VAL-01..02), following the research-converged build order (SUMMARY.md § Implications for Roadmap): backend+params/schedule → reconstruction+processing (highest-uncertainty) → peak-pick bridge+QC gate+CLI (crux-risk mitigation as its own deliverable) → cross-platform hardening+end-to-end validation. 20/20 requirements mapped, no orphans.
+
+### Key Design Decisions for v10.0
+
+- [v10.0-roadmap]: **Backend = NMRPipe+SMILE, runtime-detected external binary** — never a core `pyproject.toml` dependency, mirrors the `LSDRunner`/`lucy lsd check` precedent exactly. Windows is an accepted, documented WSL2/VM gap (Phase 100), not a blocker.
+- [v10.0-roadmap]: **New `nus/` package, sibling of `lsd/`/`webview/`** — pre-CASE "dumb tool"; zero changes to `case.md` or the 5-agent team; the diff to `detection/`, `fragments/`, `lsd/`, `ranking/`, `cli/pick.py` must stay empty (enforceable-by-inspection constraint carried into Phase 97's success criteria).
+- [v10.0-roadmap]: **QC gate is its own phase deliverable (Phase 99), not folded into peak-picking** — it is the mandatory automated defense against fabricated cross-peaks silently becoming hard LSD constraints (the milestone's crux risk per research).
 
 ### Key Design Decisions for v9.3
 
@@ -126,27 +135,27 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ### Pending Todos
 
-- **[2026-06-25] CASE4 azulene-regiochemistry-enumeration gap** — carried seed; not in v9.3 scope. See `.planning/todos/pending/2026-06-25-case4-azulene-regiochemistry-enumeration-gap.md`.
+- **[2026-06-25] CASE4 azulene-regiochemistry-enumeration gap** — carried seed; not in v10.0 scope. See `.planning/todos/pending/2026-06-25-case4-azulene-regiochemistry-enumeration-gap.md`.
 
 ### Blockers/Concerns
 
-None. Phase 93 may begin immediately (`/gsd-plan-phase 93`).
+None. Phase 97 may begin planning immediately (`/gsd-plan-phase 97`).
 
 ### Strategic Reference
 
-See `background/sherlock-analysis.md` for full Sherlock vs lucy-ng comparison. v9.0 closed the end-to-end mechanism gap; v9.1 closed the three "clean-but-wrong" defect classes. v9.2 adds live observability. v9.3 deepens the inspector with spectra and data tables.
+See `background/sherlock-analysis.md` for full Sherlock vs lucy-ng comparison. v9.0 closed the end-to-end mechanism gap; v9.1 closed the three "clean-but-wrong" defect classes. v9.2 adds live observability; v9.3 deepens the inspector with spectra and data tables. v10.0 closes the NUS 2D reconstruction gap that timed out the first C20H32O2 CASE run.
 
 Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions. Native LSD-3.4.9 commands are: MULT, LIST, PROP, BOND, COSY, HMBC, ELIM, DEFF, FEXP, HSQC, ELEM.
 
 ## Session Continuity
 
-Last session: 2026-07-10T12:40:09.515Z
-Stopped at: Phase 96 context gathered
-Resume with: `/gsd-execute-phase 94` (continue with Plan 94-03 — frontend Tables tab)
+Last session: 2026-07-12T12:00:00.000Z
+Stopped at: v10.0 ROADMAP.md created (phases 97-100, 20/20 requirements mapped)
+Resume with: `/gsd-plan-phase 97`
 
 ---
-*Last updated: 2026-07-07 — v9.3 roadmap created (4 phases, 8 requirements mapped)*
+*Last updated: 2026-07-12 — v10.0 roadmap created (4 phases, 20 requirements mapped)*
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Plan the first phase with `/gsd-plan-phase 97`

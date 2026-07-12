@@ -81,18 +81,18 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NUS-01..05 | TBD | Pending |
-| RECON-01..05 | TBD | Pending |
-| QC-01..03 | TBD | Pending |
-| PICK-01..03 | TBD | Pending |
-| PORT-01..02 | TBD | Pending |
-| VAL-01..02 | TBD | Pending |
+| NUS-01..05 | Phase 97 | Pending |
+| RECON-01..05 | Phase 98 | Pending |
+| QC-01..03 | Phase 99 | Pending |
+| PICK-01..03 | Phase 99 | Pending |
+| PORT-01..02 | Phase 100 | Pending |
+| VAL-01..02 | Phase 100 | Pending |
 
 **Coverage:**
 - v10.0 requirements: 20 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 20 ⚠️ (resolved by roadmapper)
+- Mapped to phases: 20/20 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-12*
-*Last updated: 2026-07-12 after initial definition (backend locked to NMRPipe+SMILE; cross-platform with documented Windows gap)*
+*Last updated: 2026-07-12 after roadmap creation — mapped to Phases 97-100 (100% coverage, no orphans).*
