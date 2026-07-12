@@ -2135,6 +2135,16 @@ class TestSpectraEndpoint2D:
             f"Expected image/png, got {r.headers.get('content-type')}"
         )
         assert len(r.content) > 0, "Expected non-empty placeholder PNG bytes"
+        # CR-01: the 2D "unavailable" placeholder MUST share the real 2D render's
+        # dimensions (900x600 = _FIGSIZE_2D (9.0, 6.0) x _DPI 100), NOT the 1D
+        # placeholder's 900x300 -- otherwise the panel jumps height when a plot
+        # flips between "unavailable" and real data (96-UI-SPEC.md: no layout jump).
+        import struct
+
+        width, height = struct.unpack(">II", r.content[16:24])
+        assert (width, height) == (900, 600), (
+            f"Expected 2D placeholder at 900x600 (matches real 2D render), got {width}x{height}"
+        )
 
     def test_spectra_2d_stale_path_placeholder(
         self, spectra_stale_manifest_dir: Path

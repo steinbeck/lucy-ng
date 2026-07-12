@@ -660,14 +660,26 @@ def _render_2d_png(
         del fig
 
 
-def _render_placeholder_png(figure_cls: Any, canvas_cls: Any, message: str) -> bytes:
+def _render_placeholder_png(
+    figure_cls: Any,
+    canvas_cls: Any,
+    message: str,
+    figsize: tuple[float, float] = _FIGSIZE,
+) -> bytes:
     """Render a well-formed "unavailable" placeholder chart to PNG bytes.
 
     Axis-off, centered message text -- the PNG analog of
     structures.py/depiction.py's `placeholder_svg()` precedent (never a
     JSON body on this route, Pitfall 5).
+
+    `figsize` MUST match the real-render figsize of the calling route so the
+    "unavailable" placeholder and the real chart share the same aspect ratio
+    -- the 2D routes pass `_FIGSIZE_2D`, the 1D routes accept the `_FIGSIZE`
+    default. Since `.spectrum-img` is `width:100%; height:auto`, a mismatched
+    placeholder height would make the panel jump when a plot flips between
+    "unavailable" and real data (96-UI-SPEC.md: layout never jumps).
     """
-    fig = figure_cls(figsize=_FIGSIZE, dpi=_DPI)
+    fig = figure_cls(figsize=figsize, dpi=_DPI)
     canvas = canvas_cls(fig)
     try:
         ax = fig.add_subplot(111)
@@ -792,23 +804,33 @@ def make_router(analysis_dir: Path) -> APIRouter:
         try:
             manifest = _read_manifest(analysis_dir)
             if manifest is None:
-                return _render_placeholder_png(Figure, FigureCanvasAgg, _MSG_NO_MANIFEST)
+                return _render_placeholder_png(
+                    Figure, FigureCanvasAgg, _MSG_NO_MANIFEST, _FIGSIZE_2D
+                )
 
             bruker_dir = Path(manifest["bruker_data_dir"])
             if not bruker_dir.is_dir():
-                return _render_placeholder_png(Figure, FigureCanvasAgg, _MSG_STALE_PATH)
+                return _render_placeholder_png(
+                    Figure, FigureCanvasAgg, _MSG_STALE_PATH, _FIGSIZE_2D
+                )
 
             spectrum = _select_experiment_2d(bruker_dir, experiment_type)
             if spectrum is None:
-                return _render_placeholder_png(Figure, FigureCanvasAgg, no_experiment_message)
+                return _render_placeholder_png(
+                    Figure, FigureCanvasAgg, no_experiment_message, _FIGSIZE_2D
+                )
 
             kind = experiment_type.lower()
             peaks_path = analysis_dir / "peaks" / f"{kind}.json"
             pdata_path = _selected_2d_pdata_path(bruker_dir, experiment_type)
             source_mtime = _source_mtime(pdata_path or bruker_dir, peaks_path)
 
+            # Cache key scoped by analysis_dir so a shared module-level
+            # `_png_cache` can never return one analysis dir's PNG for another
+            # (WR-01) -- the mtime guard alone could alias across dirs whose
+            # source files happen to share an mtime.
             return _cached_or_render(
-                kind,
+                f"{analysis_dir}:{kind}",
                 source_mtime,
                 lambda: _render_2d_png(
                     Figure,
@@ -819,7 +841,9 @@ def make_router(analysis_dir: Path) -> APIRouter:
                 ),
             )
         except Exception:  # noqa: BLE001 -- never-500 guard (SP-02/T-95-02-01)
-            return _render_placeholder_png(Figure, FigureCanvasAgg, no_experiment_message)
+            return _render_placeholder_png(
+                Figure, FigureCanvasAgg, no_experiment_message, _FIGSIZE_2D
+            )
 
     @router.get("/spectra/2d/hsqc")
     def get_hsqc_2d() -> Response:
