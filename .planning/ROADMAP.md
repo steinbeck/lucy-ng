@@ -71,7 +71,7 @@ the 5-agent team.
 **Plans**: 5 plans (3 waves)
 - [x] 97-01-PLAN.md — Fixtures + NusAcquisitionParams/NusSchedule Pydantic contracts + package skeleton (wave 1)
 - [x] 97-02-PLAN.md — nus/params.py acqus/acqu2s/procs/proc2s extraction (NUS-02, wave 2)
-- [ ] 97-03-PLAN.md — nus/schedule.py FnMODE-derived hard-fail assertion (NUS-03, wave 2)
+- [x] 97-03-PLAN.md — nus/schedule.py FnMODE-derived hard-fail assertion (NUS-03, wave 2)
 - [ ] 97-04-PLAN.md — NmrPipeSmileBackend detection + SMILE capability probe + registry (NUS-01, wave 2)
 - [ ] 97-05-PLAN.md — lucy nus CLI group + registration + [nus] extra + import-safety (NUS-01/04/05, wave 3)
 
@@ -117,7 +117,7 @@ the 5-agent team.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 97. Backend Integration + Params/Schedule | 2/5 | In Progress|  |
+| 97. Backend Integration + Params/Schedule | 3/5 | In Progress|  |
 | 98. Reconstruction + Processing | 0/TBD | Not started | - |
 | 99. Peak-Pick Bridge + QC Gate + CLI | 0/TBD | Not started | - |
 | 100. Cross-Platform Hardening + End-to-End Validation | 0/TBD | Not started | - |

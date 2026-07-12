@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
 status: executing
-stopped_at: Phase 97 Plan 02 complete
-last_updated: "2026-07-12T14:07:02.737Z"
+stopped_at: Phase 97 Plan 03 complete
+last_updated: "2026-07-12T14:22:44.452Z"
 last_activity: 2026-07-12
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 5
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-12)
 ## Current Position
 
 Phase: 97 (backend-integration-params-schedule) — EXECUTING
-Plan: 3 of 5
-Status: Plan 02 complete (nus/params.py, NUS-02); ready to execute Plan 03
-Last activity: 2026-07-12 -- Plan 97-02 complete (read_nus_params, all 3 real fixtures verified)
+Plan: 4 of 5
+Status: Plan 03 complete (nus/schedule.py, NUS-03); ready to execute Plan 04
+Last activity: 2026-07-12 -- Plan 97-03 complete (read_nus_schedule, FnMODE hard-fail assertion verified across all 3 real fixtures)
 
-Progress: [████░░░░░░] 40%
+Progress: [██████░░░░] 60%
 
 ## Milestone v10.0 Phases
 
@@ -98,7 +98,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
 - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
-- v10.0: 4 phases planned (97-100); 2 plans complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close
+- v10.0: 4 phases planned (97-100); 3 plans complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close; Phase 97 Plan 03 (nus/schedule.py, NUS-03), 12 min, 1 task, 2 files, tests 1269 passing at close
 
 ## Accumulated Context
 
@@ -115,6 +115,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 - [Phase 97 Plan 01]: `NusAcquisitionParams.fnmode_f1` validator shares the `REAL_FNMODES`/`COMPLEX_FNMODES`/`VALID_FNMODES` module constants with `nus/schedule.py` (plan 03) so the two never maintain divergent FnMODE allowlists.
 - [Phase 97 Plan 01]: Fixture set expanded beyond D-03's original acqus/acqu2s/nuslist trio to also copy `pdata/1/procs`+`pdata/1/proc2s` per RESEARCH.md's SF/OFFSET-live-in-procs correction — otherwise SF/OFFSET fields would have zero fixture coverage.
 - [Phase 97 Plan 02]: `read_nus_params` uses nmrglue's low-level `read_acqus_file()`/`read_procs_file()` instead of the monolithic `ng.bruker.read()` — the latter unconditionally requires a `fid`/`ser` binary to determine data shape, which the D-03 test fixtures deliberately omit (metadata-only). The low-level readers parse the identical `acqus`/`acqu2s`/`procs`/`proc2s` files with zero binary dependency, correct for both the fixtures and real not-yet-reconstructed NUS directories.
+- [Phase 97 Plan 03]: `read_nus_schedule` uses `ng.bruker.read_nuslist(expdir)` instead of `ng.bruker.read(expdir)["nuslist"]` — same rationale as Plan 02: the latter requires a `fid`/`ser` binary the D-03 fixtures omit. `read_nuslist()` reads the identical file in identical acquisition (never sorted) order with zero binary dependency; FnMODE/TD/NusTD are sourced from `read_nus_params` (Plan 02), keeping exactly one acquisition-parameter parse path.
 
 ### Key Design Decisions for v9.3
 
@@ -153,13 +154,13 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-12T14:07:02.737Z
-Stopped at: Phase 97 Plan 02 complete
-Resume with: `/gsd-execute-phase 97` (continues with Plan 03 — nus/schedule.py, NUS-03)
+Last session: 2026-07-12T14:22:44.452Z
+Stopped at: Phase 97 Plan 03 complete
+Resume with: `/gsd-execute-phase 97` (continues with Plan 04 — nus/backends/nmrpipe_smile.py, NUS-01)
 
 ---
-*Last updated: 2026-07-12 — Phase 97 Plan 02 complete (read_nus_params, NUS-02)*
+*Last updated: 2026-07-12 — Phase 97 Plan 03 complete (read_nus_schedule, NUS-03)*
 
 ## Operator Next Steps
 
-- Continue Phase 97 with Plan 03 (`nus/schedule.py`) via `/gsd-execute-phase 97`
+- Continue Phase 97 with Plan 04 (`nus/backends/nmrpipe_smile.py`) via `/gsd-execute-phase 97`
