@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
-status: executing
-stopped_at: Phase 97 Plan 04 complete (nus/backends/nmrpipe_smile.py, NUS-01)
-last_updated: "2026-07-12T14:36:17.230Z"
+status: ready_to_plan
+stopped_at: Phase 97 complete (5/5) — ready to discuss Phase 98
+last_updated: 2026-07-12T15:11:51.070Z
 last_activity: 2026-07-12
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-12)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 97 — backend-integration-params-schedule
+**Current focus:** Phase 98 — reconstruction + processing
 
 ## Current Position
 
-Phase: 97 (backend-integration-params-schedule) — EXECUTING
-Plan: 5 of 5
-Status: Plan 04 complete (nus/backends/nmrpipe_smile.py + registry, NUS-01); ready to execute Plan 05
-Last activity: 2026-07-12 -- Plan 97-04 complete (NmrPipeSmileBackend detection + SMILE capability probe + NusBackend registry, 20 tests green)
+Phase: 98
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-12
 
 Progress: [████████░░] 80%
 
@@ -94,7 +94,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 
 **Velocity:**
 
-- Total plans completed: 192 across 12 milestones (11 shipped + 1 abandoned) at v9.2 close
+- Total plans completed: 197 across 12 milestones (11 shipped + 1 abandoned) at v9.2 close
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
 - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
