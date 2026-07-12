@@ -1,0 +1,23 @@
+##TITLE= Parameter file, TopSpin 3.5 pl 6
+##JCAMPDX= 5.0
+##DATATYPE= Parameter Values
+##NPOINTS= 190	$$ modification sequence number
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= nmrsu
+$$ 2020-12-28 22:27:08.213 +0100  nmrsu@av499
+$$ /opt/topspin3.5pl6/data/nmrsu/nmr/Parr_Epietio20aOH/2/acqu2s
+$$ process /opt/topspin3.5pl6/prog/mod/go4
+##$ACQT0= 0
+##$BF1= 499.92
+##$FnMODE= 1
+##$NUC1= <1H>
+##$NusJSP= 0
+##$NusT2= 1
+##$NusTD= 750
+##$O1= 1649.74000000484
+##$ProjAngle= 0
+##$SFO1= 499.92164974
+##$SW= 7.50305120089198
+##$SW_h= 3750.93773443361
+##$TD= 188
+##END=
