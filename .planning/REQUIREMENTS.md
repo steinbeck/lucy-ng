@@ -14,8 +14,8 @@ Requirements for this milestone. Each maps to exactly one roadmap phase (see Tra
 - [x] **NUS-01**: `lucy nus check` detects the reconstruction backend (NMRPipe + SMILE) on PATH and fails loud with install guidance when it is missing — mirroring `lucy lsd check`; the backend is a runtime-detected external tool, never a core `pyproject.toml` dependency.
 - [x] **NUS-02**: Bruker acquisition parameters needed for conversion (SFO1, SW_h, TD per dimension, FnMODE, GRPDLY/DECIM, byte order/dtype) are extracted from `acqus`/`acqu2s` into a validated Pydantic model, read per-experiment and never hard-coded.
 - [x] **NUS-03**: The reconstruction sampling schedule is built from the Bruker `nuslist` with correct 0-based indexing and acquisition-order preservation (never sorted/regenerated); a hard-fail assertion `n_sampled == len(nuslist)` is derived from FnMODE (QF == TD vs echo-antiecho == TD/2) before any conversion runs.
-- [ ] **NUS-04**: `lucy nus params` and `lucy nus schedule` expose the parsed parameters and schedule as JSON (`--format json`), validated against the real C20H32O2 exp2/exp3/exp4 fixtures.
-- [ ] **NUS-05**: Core `lucy` CLI stays dependency-free; any genuinely pip-installable pieces (e.g. QC-plot deps) live behind an optional `[nus]` extra with lazy imports, following the `[webview]` precedent.
+- [x] **NUS-04**: `lucy nus params` and `lucy nus schedule` expose the parsed parameters and schedule as JSON (`--format json`), validated against the real C20H32O2 exp2/exp3/exp4 fixtures.
+- [x] **NUS-05**: Core `lucy` CLI stays dependency-free; any genuinely pip-installable pieces (e.g. QC-plot deps) live behind an optional `[nus]` extra with lazy imports, following the `[webview]` precedent.
 
 ### Reconstruction & processing (RECON)
 

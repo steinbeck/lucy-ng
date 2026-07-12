@@ -51,7 +51,7 @@ the 5-agent team.
 
 ### Phases
 
-- [ ] **Phase 97: Backend Integration + Params/Schedule** — `lucy nus check` backend detection (LSD precedent) + pure-Python `NusAcquisitionParams`/`NusSchedule` parsing, fixture-tested against real C20H32O2 data
+- [x] **Phase 97: Backend Integration + Params/Schedule** — `lucy nus check` backend detection (LSD precedent) + pure-Python `NusAcquisitionParams`/`NusSchedule` parsing, fixture-tested against real C20H32O2 data (completed 2026-07-12)
 - [ ] **Phase 98: Reconstruction + Processing** — real NMRPipe+SMILE subprocess chain (bruk2pipe → nusExpand.tcl → SMILE → FT/phase/baseline), FnMODE-aware, fail-loud wrapper
 - [ ] **Phase 99: Peak-Pick Bridge + QC Gate + CLI** — bridge to existing `PeakPicker2D`, mandatory automated QC gate (PASS/PARTIAL/FAIL) blocking CASE handoff on FAIL, full `lucy nus` CLI group
 - [ ] **Phase 100: Cross-Platform Hardening + End-to-End Validation** — portability matrix, C20H32O2 exp2/3/4 reconstruction passing the §8 gate, `/lucy-ng:case C20H32O2` convergence
@@ -73,7 +73,7 @@ the 5-agent team.
 - [x] 97-02-PLAN.md — nus/params.py acqus/acqu2s/procs/proc2s extraction (NUS-02, wave 2)
 - [x] 97-03-PLAN.md — nus/schedule.py FnMODE-derived hard-fail assertion (NUS-03, wave 2)
 - [x] 97-04-PLAN.md — NmrPipeSmileBackend detection + SMILE capability probe + registry (NUS-01, wave 2)
-- [ ] 97-05-PLAN.md — lucy nus CLI group + registration + [nus] extra + import-safety (NUS-01/04/05, wave 3)
+- [x] 97-05-PLAN.md — lucy nus CLI group + registration + [nus] extra + import-safety (NUS-01/04/05, wave 3)
 
 #### Phase 98: Reconstruction + Processing
 
@@ -117,7 +117,7 @@ the 5-agent team.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 97. Backend Integration + Params/Schedule | 4/5 | In Progress|  |
+| 97. Backend Integration + Params/Schedule | 5/5 | Complete   | 2026-07-12 |
 | 98. Reconstruction + Processing | 0/TBD | Not started | - |
 | 99. Peak-Pick Bridge + QC Gate + CLI | 0/TBD | Not started | - |
 | 100. Cross-Platform Hardening + End-to-End Validation | 0/TBD | Not started | - |
