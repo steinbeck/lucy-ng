@@ -1,8 +1,12 @@
-# Architecture Research — v9.3 CASE Web-View Stage 2
+# Architecture Research — v10.0 Automatic NUS 2D Reconstruction
 
-**Domain:** FastAPI webview extension — rendered spectra, data tables, formatted log
-**Researched:** 2026-07-07
-**Confidence:** HIGH — all claims derived from direct inspection of the live codebase
+**Domain:** Integrating automatic NUS (non-uniform sampling) 2D NMR reconstruction into lucy-ng
+**Researched:** 2026-07-12
+**Confidence:** HIGH — module layout, CLI shape, and dependency-isolation decision are derived
+directly from inspecting the live codebase (`lsd/`, `webview/`, `readers/bruker.py`, `cli/*.py`,
+`pyproject.toml`) and the task brief. MEDIUM on data-flow artefact names (depends on the backend
+chosen by the parallel backend-selection research) and LOW on the exact Windows story (depends on
+whether the chosen backend ships Windows binaries — flagged explicitly below, not asserted).
 
 ---
 
@@ -11,469 +15,366 @@
 ### System Overview
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│  Browser (vanilla JS, no build step)                              │
-│  ┌──────────────────────────────────────────────────────────┐    │
-│  │ Tab bar: Candidates | Log | 1D Spectra | 2D Spectra | Tables │
-│  │ static/index.html  (HTML + CSS)                          │    │
-│  │ static/webview.js  (NEW — extracted + extended JS)       │    │
-│  └──────────────────────────────────────────────────────────┘    │
-│         3 s polling │ JSON / PNG responses                        │
-├──────────────────────────────────────────────────────────────────┤
-│  FastAPI app  (create_app(analysis_dir) — app.py)                 │
-│  ┌────────┐ ┌──────┐ ┌────────────┐ ┌───────────┐ ┌──────────┐  │
-│  │status  │ │log   │ │structures  │ │spectra.py │ │tables.py │  │
-│  │.py     │ │.py   │ │.py         │ │(NEW)      │ │(NEW)     │  │
-│  └────────┘ └──────┘ └────────────┘ └───────────┘ └──────────┘  │
-│  unchanged            unchanged     lazy imports inside           │
-│                                     make_router() — WV-08         │
-├──────────────────────────────────────────────────────────────────┤
-│  Data sources (read-only — server never writes or invokes CLI)    │
-│  ┌────────────────────────────┐  ┌──────────────────────────┐    │
-│  │ analysis/                  │  │ Bruker experiment dirs   │    │
-│  │  timing.json / .jsonl      │  │  <bruker_root>/<N>/      │    │
-│  │  CASE-PROGRESS.md          │  │  pdata/1/  (raw NMR)     │    │
-│  │  ranking_results.json      │  │                          │    │
-│  │  iteration_NN/compound.lsd │  │  Path discovered from:   │    │
-│  │  peaks_13c.json            │  │  analysis/.run_manifest  │    │
-│  │  peaks_1h.json             │  │  .json (written once by  │    │
-│  │  .run_manifest.json (NEW)  │  │  case.md at run_start)   │    │
-│  └────────────────────────────┘  └──────────────────────────┘    │
-└──────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│  Pre-CASE step (new, decoupled — "dumb tool", no agent reasoning)         │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐  ┌─────────────┐  │
+│  │ nus/params.py│→│nus/schedule.py│→│ nus/backends/* │→│nus/runner.py │  │
+│  │ acqus/acqu2s │  │ nuslist→      │  │ NMRPipe+SMILE  │  │ subprocess   │  │
+│  │ → NusAcq     │  │ backend sched │  │ (or hmsIST /   │  │ orchestration│  │
+│  │  Params      │  │               │  │ mddnmr / …)    │  │             │  │
+│  └──────────────┘  └──────────────┘  └───────────────┘  └──────┬──────┘  │
+│                                                                  │         │
+│                                                          ┌───────▼──────┐  │
+│                                                          │nus/          │  │
+│                                                          │postprocess.py│  │
+│                                                          │FT/phase/base │  │
+│                                                          └───────┬──────┘  │
+│                                                                  │         │
+│                                                          ┌───────▼──────┐  │
+│                                                          │ nus/bridge.py│  │
+│                                                          │ →Spectrum2D  │  │
+│                                                          │ →PeakPicker2D│  │
+│                                                          └───────┬──────┘  │
+├──────────────────────────────────────────────────────────────────┼────────┤
+│  EXISTING CASE pipeline (UNCHANGED — reads from here)             │        │
+│  analysis/nmr_peaks/{HSQC,HMBC,COSY}_expN.json ◄───────────────────┘        │
+│       ↓                                                                    │
+│  detection/ (statistical) → fragments/ (search) → lsd/ (generate+solve)   │
+│       ↓                                                                    │
+│  ranking/ → CASE-PROGRESS.md / final_results.md                           │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
----
+### Component Responsibilities
 
-## New vs Modified Components
-
-| Component | Status | Change |
-|-----------|--------|--------|
-| `webview/app.py` | MODIFIED | Include two new routers; add `/webview.js` static route |
-| `webview/routers/spectra.py` | NEW | `GET /api/spectra`, `GET /api/spectrum/{kind}.png` |
-| `webview/routers/tables.py` | NEW | `GET /api/tables`, `GET /api/tables/{name}` |
-| `webview/routers/log.py` | UNCHANGED | Raw markdown passthrough stays as-is |
-| `webview/routers/status.py` | UNCHANGED | |
-| `webview/routers/structures.py` | UNCHANGED | |
-| `webview/static/index.html` | MODIFIED | Tab layout, reference `/webview.js`; markdown via client-side renderer |
-| `webview/static/webview.js` | NEW | Extracted + extended JS (tab switching, spectrum/table rendering) |
-| `pyproject.toml` | MODIFIED | Add `matplotlib>=3.7` to `[webview]` extra |
-| `case.md` | MODIFIED | Write `analysis/.run_manifest.json` at `run_start` (one line added) |
-
----
+| Component | Responsibility | Typical Implementation |
+|-----------|-----------------|-------------------------|
+| `nus/params.py` | Extract acquisition parameters from `acqus`/`acqu2s` (SFO1, SW, TD, FnMODE, GRPDLY/DECIM, byte order, NusAMOUNT/NusSEED) | nmrglue's low-level Bruker param dict (`ng.bruker.read`), same pattern as `readers/bruker.py`'s `_get_param_2d`; wraps output in a new `models.NusAcquisitionParams` Pydantic model |
+| `nus/schedule.py` | Parse `nuslist` (measured t1 indices) and translate to whatever schedule format the selected backend expects | Pure Python, no external deps; one `to_<backend>()` writer per backend |
+| `nus/backends/*.py` | One module per reconstruction backend (`nmrpipe_smile.py`, later `hmsist.py`, `mddnmr.py`, optionally `python_native.py`); each exposes `is_available()`, `reconstruct(params, schedule, ser_path, output_dir) -> ReconstructionResult` | External-binary backends: `LSDRunner`-style `SEARCH_PATHS` + `shutil.which()` detection + `subprocess.run()`. A pure-Python backend (if selected) is plain library calls, no subprocess |
+| `nus/runner.py` | Orchestrates params → schedule → backend.reconstruct() → postprocess, writes intermediate artefacts, captures logs | Thin coordinator, mirrors `lsd/runner.py`'s `LSDRunner` — owns temp/output dir lifecycle, timeout handling, structured `NusResult` return type |
+| `nus/postprocess.py` | FT / apodization / zero-fill / phase / baseline of the reconstructed indirect dimension (and any direct-dimension steps not already done) | Delegates to the backend's own processing chain when possible (NMRPipe pipe scripts); falls back to nmrglue-based processing for a Python-native path |
+| `nus/bridge.py` | Converts the processed 2D spectrum into the SAME `Spectrum2D` Pydantic model the rest of lucy-ng uses, then calls the EXISTING `processing.PeakPicker2D` and writes `analysis/nmr_peaks/*.json` in the unchanged schema | Direct Python function calls (no subprocess to `lucy pick`) — same "extract shared logic into a directly-callable helper" pattern already used for `_perform_ranking` in `cli/lsd.py` |
+| `cli/nus.py` | `lucy nus` command group: check / params / schedule / reconstruct / pipeline | Click group, import-safe like `cli/webview.py` (no top-level import of anything nus-internal beyond stdlib+click) |
 
 ## Recommended Project Structure
 
 ```
-src/lucy_ng/webview/
-├── app.py                      # MODIFIED: +spectra/tables routers, +/webview.js route
-├── server.py                   # unchanged
-├── state.py                    # unchanged
-├── depiction.py                # unchanged
-├── routers/
-│   ├── __init__.py             # unchanged
-│   ├── status.py               # unchanged
-│   ├── log.py                  # unchanged (raw markdown passthrough)
-│   ├── structures.py           # unchanged
-│   ├── spectra.py              # NEW
-│   └── tables.py               # NEW
-└── static/
-    ├── index.html              # MODIFIED: tab layout, references /webview.js
-    └── webview.js              # NEW: extracted + extended JS
+src/lucy_ng/
+├── nus/                          # NEW top-level package (sibling of lsd/, webview/, readers/)
+│   ├── __init__.py                # re-exports NusRunner, NusResult for cli/nus.py
+│   ├── params.py                  # acqus/acqu2s -> NusAcquisitionParams
+│   ├── schedule.py                # nuslist -> NusSchedule (+ per-backend writers)
+│   ├── runner.py                  # NusRunner: orchestrates the pipeline, owns analysis/nus/<exp>/
+│   ├── postprocess.py             # FT/phase/baseline (backend-delegated or nmrglue fallback)
+│   ├── bridge.py                  # reconstructed spectrum -> Spectrum2D -> PeakPicker2D -> JSON
+│   └── backends/
+│       ├── __init__.py            # NusBackend Protocol/ABC, backend registry, get_backend()
+│       ├── nmrpipe_smile.py       # primary candidate per NUS-RECONSTRUCTION-GUIDE.md §5
+│       ├── hmsist.py              # fallback candidate (§7)
+│       ├── mddnmr.py              # fallback candidate (§7)
+│       └── python_native.py       # OPTIONAL — only if backend research selects a pip-installable CS/IST lib
+├── models/
+│   └── nus.py                     # NEW: NusAcquisitionParams, NusSchedule, ReconstructionResult (Pydantic v2)
+├── readers/
+│   └── bruker.py                  # MODIFIED (additive only): factor out the acqus/acqu2s param-dict
+│                                   # helpers (_get_param, _get_param_2d, _strip_brackets) into a
+│                                   # small shared module nus/params.py imports, OR nus/params.py
+│                                   # imports them directly from readers.bruker — no behavioural change
+│                                   # to BrukerReader.read_1d/read_2d
+├── processing/
+│   └── (UNCHANGED)                 # PeakPicker2D consumed as-is by nus/bridge.py
+├── cli/
+│   └── nus.py                     # NEW: `lucy nus` command group, registered in cli/main.py
+└── ...                            # everything else unchanged
 ```
 
----
+### Structure Rationale
+
+- **`nus/` as a new top-level package, not `processing/nus/`:** `processing/` today holds pure,
+  dependency-free signal-processing (peak picking) that operates on already-loaded `Spectrum1D`/
+  `Spectrum2D` objects. NUS reconstruction is a different kind of concern — it is an *external
+  tool integration* (subprocess orchestration, binary detection, multi-stage pipeline with
+  on-disk intermediate artefacts) that happens *before* a `Spectrum2D` object exists. That is
+  exactly the shape of `lsd/` (external solver integration) and `webview/` (external-process
+  lifecycle), both of which are their own top-level packages. Nesting NUS under `processing/`
+  would blur that boundary and make the "is this dependency-free or not" question — which matters
+  a lot here — harder to answer at a glance.
+- **`nus/backends/` subpackage:** mirrors the eventual need to support multiple interchangeable
+  reconstruction engines (the backend-selection research is running in parallel and may recommend
+  a primary + fallback). A `NusBackend` Protocol keeps `runner.py` and `cli/nus.py` backend-agnostic;
+  adding `hmsist.py` or `mddnmr.py` later is additive, not a rewrite.
+  Enum/Registry: `nus/backends/__init__.py` exposes `get_backend(name: str) -> NusBackend`, plus
+  `list_available_backends() -> list[str]` (used by `lucy nus check`).
+- **`models/nus.py`:** keeps Pydantic models colocated with the rest of the type-safe data model
+  layer (`Spectrum1D`, `Peak1D`, …), not buried inside `nus/`. Matches the existing separation of
+  "data model" (`models/`) from "logic that produces/consumes the model" (readers/, processing/, …).
+- **`nus/bridge.py` is the ONLY new module that touches the existing pipeline surface.** Everything
+  upstream of it (`params.py`, `schedule.py`, `backends/`, `runner.py`, `postprocess.py`) is pure
+  addition with zero coupling to `detection/`, `fragments/`, `lsd/`, `ranking/`. This is what makes
+  the milestone's "CASE pipeline unchanged" constraint enforceable by inspection: the diff to
+  `detection/`, `fragments/`, `lsd/`, `ranking/`, `cli/pick.py` should be **empty**.
 
 ## Architectural Patterns
 
-### Pattern 1: Lazy-import make_router factory (WV-08 — preserved exactly)
+### Pattern 1: External-binary detection with `SEARCH_PATHS` + `shutil.which()` + fail-loud `check`
 
-Every new router follows the same pattern as the existing ones: FastAPI imported at module level (permitted — only ever reached from inside `create_app()`), all heavy libraries (matplotlib, BrukerReader) imported INSIDE `make_router()` body.
+**What:** A backend module exposes a classmethod `is_available()` that first checks `PATH` via
+`shutil.which()`, then falls back to a list of common installation locations (mirrors
+`LSDRunner.SEARCH_PATHS` / `_find_lsd`). A `lucy nus check` command reports per-backend
+availability and exits 1 if none are usable, printing install guidance (URL + registration note).
+**When to use:** For any backend that is an external native binary not distributed on PyPI —
+NMRPipe (`nmrPipe`, `smileNus`, `nusExpand.tcl`, `bruk2pipe`), hmsIST, mddnmr, TopSpin CLI/AU-macro
+invocation. This is the LSD precedent (`LSDRunner`, `lucy lsd check`) applied verbatim.
+**Trade-offs:** No pip-installability, no version pinning via `pyproject.toml`; user must install
+outside the Python environment. In exchange: works regardless of Python packaging (these tools are
+Fortran/C/Tcl/csh, not Python-packageable), and matches an already-proven, already-documented
+pattern in this codebase (`CLAUDE.md` § Local prerequisites already documents the equivalent LSD
+step: "Download from http://eos.univ-reims.fr/LSD/, extract, add the `bin/` directory to PATH").
 
+**Example:**
 ```python
-# routers/spectra.py — module-level: fastapi only (WV-08 compliant)
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
+# nus/backends/nmrpipe_smile.py
+class NmrPipeSmileBackend:
+    REQUIRED_TOOLS = ["nmrPipe", "smileNus", "nusExpand.tcl", "bruk2pipe"]
 
-def make_router(analysis_dir: Path) -> APIRouter:
-    # Lazy heavy imports — only reached via create_app() (WV-08)
-    import matplotlib                               # noqa: PLC0415
-    matplotlib.use("Agg")                           # non-interactive backend
-    import matplotlib.pyplot as plt                 # noqa: PLC0415
-    from lucy_ng.readers.bruker import BrukerReader # noqa: PLC0415
+    @classmethod
+    def is_available(cls) -> bool:
+        return all(shutil.which(tool) is not None for tool in cls.REQUIRED_TOOLS)
 
-    router = APIRouter(prefix="/api")
-
-    @router.get("/spectra")
-    def get_spectra() -> dict: ...
-
-    @router.get("/spectrum/{kind}.png")
-    def get_spectrum(kind: str) -> Response: ...
-
-    return router
+    @classmethod
+    def missing_tools(cls) -> list[str]:
+        return [t for t in cls.REQUIRED_TOOLS if shutil.which(t) is None]
 ```
 
-The same pattern applies to `tables.py`: all non-fastapi imports inside `make_router()`.
+### Pattern 2: Optional pip extra for pip-installable heavy/optional deps
 
-### Pattern 2: Manifest file for cross-boundary path discovery
+**What:** A `[nus]` extra in `pyproject.toml` bundles any *pip-installable* dependency the NUS
+pipeline needs (e.g. a Python-native CS/IST fallback library, or matplotlib for QC contour plots),
+lazily imported inside command bodies with a `_require_nus()` guard that raises a friendly
+`click.ClickException` pointing at `pip install lucy-ng[nus]`. `cli/nus.py` stays import-safe at
+module load time — same doc-comment convention as `cli/webview.py` ("This module is import-safe:
+it does NOT import fastapi... at the top level").
+**When to use:** Only for genuinely pip-installable pieces. Do NOT use this pattern to paper over
+an external binary dependency — that is Pattern 1's job.
+**Trade-offs:** Keeps core `lucy` CLI dependency-free (matches the hard invariant already enforced
+for `[webview]`), but only applies if/when the backend research actually selects or falls back to
+a Python-native library. If the selected backend is NMRPipe+SMILE only, `[nus]` may end up empty
+or hold only QC-plotting deps — that is fine and expected, not a design smell.
 
-The webview server "knows" only `analysis_dir`. Rendering spectra requires the Bruker experiment root — a path the server cannot infer reliably (the `analysis_dir.parent` heuristic would break for any run where analysis/ is not a direct child of the compound root).
-
-The solution is a manifest file written once by the orchestrator at run start, read by the server on each spectra request:
-
-```
-analysis/.run_manifest.json
-{"bruker_data_dir": "/abs/path/to/compound", "formula": "C13H18O2"}
-```
-
-The `spectra.py` router reads this file inside each route handler. If absent (pre-v9.3 run, or manual `lucy webview serve` without a case.md launch), `GET /api/spectra` returns `{"available": [], "bruker_dir": null}` and `GET /api/spectrum/{kind}.png` returns HTTP 404. No 500, no crash.
-
-This preserves the "dumb server reads files only" boundary: the server reads a file; neither an environment variable nor a constructor argument changes.
-
-**case.md change (one line in the timing step).** The `run_start` block already does `mkdir -p <compound_path>/analysis`. Add immediately after:
-
-```bash
-printf '{"bruker_data_dir":"%s","formula":"%s"}\n' \
-  "$(cd "<compound_path>" && pwd)" "<formula>" \
-  > <compound_path>/analysis/.run_manifest.json
-```
-
-`$(cd ... && pwd)` gives the absolute path robustly (handles symlinks). No CLI signature change. No `WebviewState` model change.
-
-### Pattern 3: Render-on-demand PNG (matplotlib Agg)
-
-Plots are rendered per-request, not pre-rendered to disk. This keeps the server stateless and avoids adding a pre-render step to case.md.
-
-Rationale:
-- 1D spectra render in ~20–80 ms — negligible for a local dashboard
-- 2D contour plots render in ~150–400 ms — acceptable for human interaction rates (tabs clicked manually, not polled every 3 s)
-- Bruker data is immutable once acquired; the rendered image is deterministic per request
-
-Figure lifecycle — `try/finally` is mandatory to prevent matplotlib memory leaks:
-
+**Example:**
 ```python
-import io
-
-fig, ax = plt.subplots(figsize=(10, 3))
-try:
-    ax.plot(spectrum.ppm_scale[::-1], spectrum.data, lw=0.7, color="#2c5f8a")
-    ax.invert_xaxis()
-    ax.set_xlabel("Chemical shift (ppm)")
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
-    buf.seek(0)
-    return Response(buf.read(), media_type="image/png")
-finally:
-    plt.close(fig)   # ALWAYS close — even if an exception is raised above
+# cli/nus.py — mirrors cli/webview.py's _require_webview()
+def _require_nus_extra() -> None:
+    try:
+        import some_pure_python_ist_lib  # noqa: F401
+    except ImportError as exc:
+        raise click.ClickException(
+            "The nus extra is not installed.\nInstall with: pip install lucy-ng[nus]"
+        ) from exc
 ```
 
-A raised exception before `plt.close(fig)` leaks a figure. With many requests this accumulates silently. `try/finally` eliminates the risk.
+### Pattern 3: Direct-call bridge instead of subprocess-to-self
 
-### Pattern 4: Client-side markdown rendering (log tab)
-
-The v9.2 log endpoint (`D-13`) returns raw markdown and the frontend uses `textContent`. Stage 2 reverses D-13 by rendering markdown in the browser — no server change required, no new Python dependency added.
-
-The `/api/log` endpoint is unchanged. The frontend receives `{"state": "ok", "content": "<raw markdown>"}` and passes `content` through a JS markdown parser before setting `innerHTML` on the log panel.
-
-Recommended: bundle **marked.js** (MIT, ~5 KB minified+gzipped) as a vendored copy inside `webview.js` — avoids CDN dependency for a tool that runs locally. The content of CASE-PROGRESS.md is written entirely by the orchestrator (trusted, run-controlled), so `innerHTML` is acceptable.
-
-### Pattern 5: Tab UI without a build step
-
-The current `index.html` is 428 lines. With tabs, markdown rendering, spectra, and table logic it would grow to ~900–1200 lines. Extract JS to `webview.js` for maintainability — both files ship via the existing `artifacts = ["src/lucy_ng/webview/static/*"]` directive with no pyproject.toml change.
-
-To serve `webview.js`, add one explicit route in `create_app()`:
-
-```python
-_webview_js = Path(__file__).parent / "static" / "webview.js"
-
-@app.get("/webview.js")
-def webview_js_file() -> FileResponse:
-    return FileResponse(str(_webview_js), media_type="application/javascript")
-```
-
-Then `index.html` references it as `<script src="/webview.js"></script>`.
-
-Do NOT use `StaticFiles` mount. An explicit route keeps the app structure transparent and avoids an ASGI sub-mount.
-
-Tab switching is pure CSS toggling — no JS framework needed:
-
-```javascript
-function showTab(name) {
-  document.querySelectorAll('.tab-panel').forEach(function(p) {
-    p.style.display = (p.dataset.tab === name) ? '' : 'none';
-  });
-  document.querySelectorAll('.tab-btn').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.tab === name);
-  });
-}
-```
-
----
-
-## New Endpoint Specification
-
-All new endpoints use the same `prefix="/api"` convention. New routers use separate `APIRouter(prefix="/api")` instances; `app.include_router()` merges them without collision.
-
-### spectra.py router
-
-```
-GET /api/spectra
-    → {"available": ["13c", "1h", "dept", "hsqc", "hmbc", "cosy"], "bruker_dir": "<abs>"}
-    → {"available": [], "bruker_dir": null}    (manifest absent — graceful)
-
-GET /api/spectrum/{kind}.png
-    kind ∈ {"13c", "1h", "dept", "hsqc", "hmbc", "cosy"}
-    → 200 image/png      (rendered matplotlib plot)
-    → 404                (manifest absent, experiment not found, or unknown kind)
-```
-
-`GET /api/spectra` logic:
-1. Read `analysis/.run_manifest.json` for `bruker_data_dir`
-2. Scan numbered subdirs of `bruker_data_dir` for `acqus` files
-3. Use NUC1 + PULPROG parameter extraction (same logic as `BrukerReader._detect_experiment_type`) to identify experiment types
-4. Return available kinds
-
-Kind mapping — 1D experiments detected by NUC1, 2D by PULPROG keywords:
-- `"13c"` — 1D, NUC1=13C, PULPROG not containing "dept"
-- `"1h"` — 1D, NUC1=1H
-- `"dept"` — 1D, NUC1=13C, PULPROG containing "dept"
-- `"hsqc"` — 2D, HSQC (as per existing `_detect_experiment_type`)
-- `"hmbc"` — 2D, HMBC
-- `"cosy"` — 2D, COSY
-
-`GET /api/spectrum/{kind}.png` logic:
-1. Find experiment directory for `kind` (same scan)
-2. Call `BrukerReader.read_1d(exp_dir)` for 1D kinds, `BrukerReader.read_2d(exp_dir)` for 2D
-3. Render with matplotlib Agg inside `try/finally plt.close(fig)`
-4. Return PNG bytes
-
-### tables.py router
-
-```
-GET /api/tables
-    → {"available": ["peaks_13c", "peaks_1h", "constraints", "hmbc_usage"]}
-
-GET /api/tables/{name}
-    name ∈ {"peaks_13c", "peaks_1h", "constraints", "hmbc_usage"}
-    → {"state": "ok",      "columns": [...], "rows": [...]}
-    → {"state": "waiting", "columns": [],    "rows": []}
-```
-
-Data source per name:
-
-| Name | File | Format |
-|------|------|--------|
-| `peaks_13c` | `analysis/peaks_13c.json` | Lucy JSON from `lucy pick 13c --format json` |
-| `peaks_1h` | `analysis/peaks_1h.json` | Lucy JSON from `lucy pick 1h --format json` |
-| `constraints` | Newest `analysis/iteration_NN/compound.lsd` | JSON block in LSD header |
-| `hmbc_usage` | `analysis/CASE-PROGRESS.md` | Parsed HMBC table from Setup section |
-
-`GET /api/tables` scans for which source files exist and returns only available names.
-
-The `peaks_13c.json` and `peaks_1h.json` files require a small addition to the nmr-chemist workflow: redirect `lucy pick` JSON output to these files during peak-picking setup. This is a one-line `--format json` redirect per experiment in the nmr-chemist agent prompt; no Python code change.
-
----
+**What:** `nus/bridge.py` builds a `Spectrum2D` object in memory and calls
+`processing.PeakPicker2D` **as a Python function**, not by shelling out to `lucy pick hsqc`. It
+then serializes to the exact JSON schema `lucy pick hsqc --format json` already produces.
+**When to use:** Whenever a new pipeline stage needs to reuse existing CLI-adjacent logic. This
+mirrors an established precedent in this codebase: `cli/lsd.py`'s `_perform_ranking()` was
+explicitly "extracted... so that the pylsd run command... can call ranking logic as a direct Python
+function call without spawning a subprocess (D-14)".
+**Trade-offs:** Requires `nus/bridge.py` to import from `processing/` and `models/` (a real Python
+dependency, not just a CLI contract) — acceptable, since `processing/` and `models/` are already
+dependency-free, pure-Python modules with no external-binary requirements.
 
 ## Data Flow
 
-### Spectra request
+### Reconstruction Pipeline Flow
 
 ```
-Browser: GET /api/spectrum/hsqc.png
+Bruker ser + nuslist + acqus/acqu2s (per NUS experiment dir, e.g. expdir/2, expdir/3, expdir/4)
     ↓
-spectra.py get_spectrum(kind="hsqc")
+nus/params.py   → NusAcquisitionParams (SFO1, SW_h, TD, FnMODE, GRPDLY/DECIM, byte order,
+                    NusAMOUNT, NusSEED, pulse program, F1/F2 nuclei)
     ↓
-read analysis/.run_manifest.json → bruker_data_dir
+nus/schedule.py → NusSchedule (parsed nuslist indices + per-backend schedule file)
     ↓
-scan bruker_data_dir/*/acqus → find HSQC experiment dir
+nus/backends/<selected>.reconstruct(params, schedule, ser_path, output_dir)
+    → Bruker→backend conversion (e.g. bruk2pipe-generated fid.com)
+    → NUS expansion (zero-fill sparse FID to full grid on the schedule, e.g. nusExpand.tcl)
+    → CS/IST/SMILE reconstruction of the indirect dimension
     ↓
-BrukerReader.read_2d(exp_dir) → Spectrum2D(f1_ppm_scale, f2_ppm_scale, data)
+nus/postprocess.py → apodization, zero-fill, FT (both dims), phase (F2 from 1D reference,
+                       F1 per FnMODE — echo-antiecho for HSQC/HMBC, QF for COSY), baseline
+    ↓  (processed 2D spectrum, e.g. processed.ft2)
+nus/bridge.py    → Spectrum2D (f1/f2 ppm scales, data matrix, experiment_type, metadata)
+    → processing.PeakPicker2D.pick_2d(...)   [EXISTING, unmodified]
+    → JSON peaklist, SAME schema as the manual/GUI path:
+        {c13_ppm, h1_ppm, edited_sign/intensity, note}  for HSQC/HMBC
+        {h1a, h1b}                                        for COSY
     ↓
-matplotlib Agg: contour(f2_ppm, f1_ppm, data) → BytesIO → plt.close(fig)
+analysis/nmr_peaks/{HSQC_exp3,HMBC_exp4,COSY_exp2}.json   ← EXISTING CASE entry point, unchanged
     ↓
-Response(png_bytes, media_type="image/png")
-    ↓
-Browser: <img src="/api/spectrum/hsqc.png"> in 2D Spectra tab
+detection/ → fragments/ → lsd/ → ranking/                 ← EXISTING CASE pipeline, unchanged
 ```
 
-### Tables request
+### Intermediate Artefact Layout
 
 ```
-Browser: GET /api/tables/constraints
-    ↓
-tables.py get_table(name="constraints")
-    ↓
-find newest analysis/iteration_NN/compound.lsd
-    ↓
-parse LSD file: extract JSON block between constraint inventory markers
-    ↓
-{"state": "ok", "columns": ["type","atom1","atom2","note"], "rows": [...]}
-    ↓
-Browser: renders HTML <table> in Tables tab
+<compound_path>/
+├── 2/, 3/, 4/                       # raw Bruker NUS experiment dirs (ser, nuslist, acqus, acqu2s) — INPUT, untouched
+├── analysis/
+│   ├── nus/                         # NEW — all NUS-specific intermediates live here, nowhere else
+│   │   ├── exp2_COSY/
+│   │   │   ├── params.json           # nus/params.py output (lucy nus params --format json)
+│   │   │   ├── schedule.json         # nus/schedule.py output (lucy nus schedule --format json)
+│   │   │   ├── fid.com                # generated conversion script (backend-specific, kept for audit)
+│   │   │   ├── raw.fid / expanded.fid / reconstructed.fid / processed.ft2   # backend-named intermediates
+│   │   │   ├── reconstruct.log        # captured subprocess stdout+stderr (debugging, T-shaped for support)
+│   │   │   └── qc/                    # OPTIONAL contour/ridge-check PNGs (needs [nus] or [webview] matplotlib)
+│   │   ├── exp3_HSQC/  (same layout)
+│   │   └── exp4_HMBC/  (same layout)
+│   ├── nmr_peaks/                    # EXISTING, unchanged schema — nus/bridge.py writes here
+│   │   ├── HSQC_exp3.json
+│   │   ├── HMBC_exp4.json
+│   │   └── COSY_exp2.json
+│   └── CASE-PROGRESS.md, final_results.md, …   # EXISTING, untouched by this milestone
 ```
 
-### Log markdown rendering
+`analysis/nus/` is intentionally isolated from `analysis/nmr_peaks/` and everything downstream —
+it is scratch/audit space for the reconstruction step, disposable in principle (like `analysis/
+iteration_NN/` scratch for LSD), and never read by `detection/`, `fragments/`, `lsd/`, or `ranking/`.
 
-```
-Browser: GET /api/log  (3 s poll — endpoint unchanged)
-    ↓
-log.py → {"state": "ok", "content": "<raw markdown>"}
-    ↓
-webview.js: marked.parse(data.content) → HTML string
-    ↓
-logPanel.innerHTML = html   (replaces textContent from v9.2)
-```
+## Anti-Patterns
 
----
+### Anti-Pattern 1: Making the reconstruction backend a required core dependency
+
+**What people do:** Add `nmrpipe-python-bindings` (or similar) to `dependencies` in `pyproject.toml`
+so `pip install lucy-ng` "just works" for NUS.
+**Why it's wrong:** NMRPipe/hmsIST/mddnmr are not pip packages — they are large, sometimes
+registration-gated academic binary distributions. There is no PyPI artifact to depend on. Trying
+to fake this with a wrapper package would either vendor a huge non-redistributable binary or
+silently no-op. It would also make the core `lucy` CLI (which today has ZERO required system
+dependencies beyond Python packages) suddenly require a multi-hundred-MB external install just to
+import `lucy_ng.cli`.
+**Instead:** Runtime-detected external binary (Pattern 1), exactly like LSD. `lucy nus check` is
+the discovery command; core CLI import stays clean.
+
+### Anti-Pattern 2: Coupling `nus/bridge.py` output to a NUS-specific JSON schema
+
+**What people do:** Give the reconstructed-spectrum peaklists a slightly different JSON shape
+("because it came from a different pipeline") — e.g. adding a `reconstructed: true` flag nested
+differently, or renaming `c13_ppm`/`h1_ppm`.
+**Why it's wrong:** Breaks the milestone's hard constraint that "reconstructed 2D spectra must feed
+the EXISTING peak-picking → JSON peaklist path... so the downstream CASE run is unchanged." Any
+schema drift forces `detection/`, `case.md`, and the 5-agent team's expectations to special-case
+NUS-derived data — exactly the coupling this architecture is designed to avoid.
+**Instead:** `nus/bridge.py` must produce byte-for-byte the same JSON schema `lucy pick hsqc/hmbc/
+cosy --format json` produces today. Add provenance (which backend, params used) only as an
+*additional* file (e.g. `analysis/nus/exp3_HSQC/params.json`), never inside `analysis/nmr_peaks/*.json`.
+
+### Anti-Pattern 3: Folding reconstruction into the nmr-chemist agent's live reasoning
+
+**What people do:** Give the `lucy-nmr-chemist` agent a Bash-callable "reconstruct NUS data" step
+inside the CASE run itself, so the agent decides when/how to invoke the backend.
+**Why it's wrong:** Reconstruction is a deterministic, mechanical signal-processing pipeline with
+no domain judgement involved (no "is this an aromatic ring" reasoning) — it is exactly the kind of
+thing the project's own philosophy assigns to "thin tools", not the "intelligence layer". Making it
+agent-driven also breaks the milestone's explicit "decoupled ('dumb tool'), unit-testable from
+fixtures, no live agent-team run needed" requirement, and adds nondeterministic latency (minutes to
+tens of minutes for CS/IST reconstruction) inside an already-monitored, loop-detected team run.
+**Instead:** Run `lucy nus pipeline <expdir>` as a pre-CASE step (human-invoked, or invoked by a
+one-shot prep script / a `sanitise`-style pre-flight `/lucy-ng:*` sub-skill) that produces clean
+`analysis/nmr_peaks/*.json` BEFORE `/lucy-ng:case` starts. `case.md` and the 5-agent team need zero
+changes. See Integration Points below for the precise boundary.
 
 ## Integration Points
 
-### app.py changes
+### External Tools / Backends
 
-Add three blocks inside `create_app()`, after the existing `include_router` calls:
+| Backend | Integration Pattern | Notes |
+|---------|----------------------|-------|
+| NMRPipe + SMILE (`nmrPipe`, `smileNus`, `nusExpand.tcl`, `bruk2pipe`) | `nus/backends/nmrpipe_smile.py`, LSD-style PATH/SEARCH_PATHS detection, `subprocess.run()` per stage | Free but registration-gated (not pip-installable); `.cshrc`/env sourcing needed before PATH detection works — `lucy nus check` should surface a clear "installed but not on PATH, did you source your NMRPipe env?" hint, distinct from "not installed at all" |
+| hmsIST (fallback) | Same `NusBackend` interface, own `SEARCH_PATHS` | Also NMRPipe-pipeline-based; likely shares the `nmrPipe` binary detection with the SMILE backend — factor a shared `_nmrpipe_available()` helper in `nus/backends/__init__.py` to avoid duplicated detection logic |
+| mddnmr/qMDD (fallback) | Same `NusBackend` interface | Same NMRPipe-pipeline dependency as above |
+| TopSpin (headless, if research selects it) | Only viable if drivable via TopSpin's Python/AU-macro API non-interactively; otherwise explicitly OUT of scope for automatic reconstruction (guide §6 already flags this as GUI-only / human path) | Backend-selection research owns this decision; this architecture treats it as just another `NusBackend` if and only if a headless invocation path exists |
+| Python-native CS/IST (if research selects it as primary or fallback) | `nus/backends/python_native.py`, plain library import behind `[nus]` extra + `_require_nus_extra()` guard | No subprocess, no PATH detection — a normal pip dependency |
 
-```python
-# New routers — lazy imports (WV-08)
-from lucy_ng.webview.routers import spectra as _spectra  # noqa: PLC0415
-from lucy_ng.webview.routers import tables  as _tables   # noqa: PLC0415
+### Internal Boundaries
 
-app.include_router(_spectra.make_router(analysis_dir))
-app.include_router(_tables.make_router(analysis_dir))
+| Boundary | Communication | Notes |
+|----------|----------------|-------|
+| `nus/params.py` ↔ `readers/bruker.py` | Direct Python import of the existing `acqus`/`acqu2s` param-dict helpers (`_get_param`, `_get_param_2d`, `_strip_brackets`) — reused, not duplicated | If these helpers are currently module-private (leading underscore) in `readers/bruker.py`, either (a) promote them to a small shared `readers/_bruker_params.py` internal module both `bruker.py` and `nus/params.py` import, or (b) accept the underscore-import (acceptable within the same package) — a one-line decision for the roadmap phase, not an architectural blocker |
+| `nus/bridge.py` ↔ `processing/` (`PeakPicker2D`) | Direct Python function call, in-process | No subprocess; `PeakPicker2D` is unmodified — it only ever sees a `Spectrum2D`, and does not know or care whether that object came from `BrukerReader.read_2d()` or from NUS reconstruction |
+| `nus/bridge.py` → `analysis/nmr_peaks/*.json` | File write, schema-identical to `lucy pick hsqc/hmbc/cosy --format json` | This is the ONLY contract the rest of the CASE pipeline (`detection/`, `fragments/`, `lsd/`, `case.md`, the 5-agent team) needs to know about; everything upstream is invisible to them |
+| `cli/nus.py` ↔ `nus/` package | Thin Click wrapper, same shape as `cli/lsd.py` around `lsd/` and `cli/webview.py` around `webview/` | `cli/nus.py` stays import-safe (no top-level `nus.backends.*` imports that might pull in heavy/optional deps) — deferred imports inside command bodies, same convention as `cli/webview.py`'s doc comment |
+| `case.md` orchestrator ↔ NUS reconstruction | NONE at the team level — pre-CASE step only | No new `[BEGIN]` directive, no 6th agent, no CASE-PROGRESS.md section. If auto-detection of `nuslist` files becomes desirable later, it belongs in a thin pre-flight check the human/launching Claude instance runs — NOT inside the monitored 5-agent team loop |
 
-# Serve extracted frontend JS
-_webview_js_file = Path(__file__).parent / "static" / "webview.js"
+## Suggested Build Order (Phases)
 
-@app.get("/webview.js")
-def webview_js() -> FileResponse:
-    return FileResponse(str(_webview_js_file), media_type="application/javascript")
-```
+Ordering follows the dependency chain in the data-flow diagram: nothing downstream can be
+meaningfully tested until the thing upstream of it exists, and the riskiest external-binary
+integration work should happen early (fail fast on backend-availability unknowns) while pure-Python
+logic (params/schedule parsing, the peak-pick bridge) can be built and unit-tested against fixtures
+throughout without needing the real binary installed.
 
-No other changes to `app.py`, `server.py`, or `state.py`.
+1. **Phase A — Backend integration + params/schedule.**
+   `nus/backends/__init__.py` (`NusBackend` protocol/ABC), the chosen primary backend module
+   (`nmrpipe_smile.py` per the guide's recommendation, pending confirmation from the parallel
+   backend-selection research), `lucy nus check`. In parallel: `nus/params.py` (acqus/acqu2s
+   extraction, `NusAcquisitionParams` model) and `nus/schedule.py` (nuslist parsing,
+   `NusSchedule` model). These two halves are independent and can be built/tested concurrently —
+   params/schedule parsing needs zero external binaries and is fully unit-testable against the
+   C20H32O2 exp2/3/4 `acqus`/`acqu2s`/`nuslist` fixtures from day one.
+   *Exit criterion:* `lucy nus check` correctly reports backend availability; `lucy nus params` /
+   `lucy nus schedule` produce correct, schema-validated JSON for all three C20H32O2 NUS experiments.
 
-### case.md change
+2. **Phase B — Reconstruction + processing.**
+   `nus/runner.py` orchestration, the backend's actual `reconstruct()` implementation (Bruker→
+   backend conversion, NUS expansion, CS/IST/SMILE call), `nus/postprocess.py` (FT/phase/baseline).
+   This phase needs the real external binary installed locally (or a well-isolated integration-test
+   fixture) — expect this to be the highest-uncertainty phase (matches the milestone's explicit
+   research-flag pattern: reconstruction quality, not just plumbing, is the open question this
+   whole milestone exists to answer).
+   *Exit criterion:* `lucy nus reconstruct <expdir>` produces a processed 2D spectrum artefact for
+   all three C20H32O2 experiments that passes the guide's §8 qualitative checks (clean HSQC 1-bond
+   correlations, HMBC without t1-ridges, real COSY H-H network — manual/visual gate at this phase,
+   automated in Phase D).
 
-In the `timing` step, inside the `run_start` block, after `mkdir -p <compound_path>/analysis`:
+3. **Phase C — Peak-pick bridge + CLI surface.**
+   `nus/bridge.py` (Spectrum2D construction + `PeakPicker2D` call + JSON serialization matching the
+   existing schema exactly), full `cli/nus.py` command group (`check`/`params`/`schedule`/
+   `reconstruct`/`pipeline`, all with `--format json`), registration in `cli/main.py`.
+   *Exit criterion:* `lucy nus pipeline <expdir>` end-to-end produces `analysis/nmr_peaks/*.json`
+   that is schema-identical to (and a drop-in replacement for) files produced by the existing
+   manual/GUI-derived path; a diff test against a known-good fixture peaklist schema passes.
 
-```bash
-printf '{"bruker_data_dir":"%s","formula":"%s"}\n' \
-  "$(cd "<compound_path>" && pwd)" "<formula>" \
-  > <compound_path>/analysis/.run_manifest.json
-```
+4. **Phase D — Cross-platform hardening + C20H32O2 end-to-end validation.**
+   Portability matrix (macOS/Linux native support status; Windows — likely WSL-mediated for NMRPipe-
+   family backends, to be confirmed by the backend research, not assumed here); path/line-ending
+   robustness in generated csh/tcl scripts; documented gaps. Final validation: reconstruct C20H32O2
+   exp2/exp3/exp4, confirm §8 quality gate, then run `/lucy-ng:case C20H32O2` and confirm convergence
+   on a small rankable solution set (the milestone's actual success criterion).
+   *Exit criterion:* the milestone's target features are all met — this is the milestone-closing phase.
 
-One line. No other changes to case.md.
-
-### pyproject.toml change
-
-```toml
-webview = [
-    "fastapi>=0.100",
-    "uvicorn>=0.20",
-    "matplotlib>=3.7",     # new: spectrum rendering (Agg backend)
-]
-```
-
-`nmrglue` and `numpy` are already core dependencies — present on all installs.
-
----
-
-## Build Order for Phases
-
-The four Stage-2 features form a dependency chain. Each phase docks into the frontend established by the previous one.
-
-### Phase A: Formatted Log
-
-**Changes:** `static/index.html` (tab skeleton, reference `/webview.js`), `static/webview.js` (new file — extracted JS + tab switching + bundled marked.js for log panel)
-
-**Dependencies:** none — uses existing `/api/log` endpoint unchanged
-
-**Why first:** self-contained, frontend-only. Introduces the tab framework that all subsequent phases add tabs into. Zero risk of breaking any existing backend behaviour. The JS extraction also pays a maintainability dividend immediately.
-
-### Phase B: Data Tables
-
-**Changes:** new `routers/tables.py`, `app.py` (include router), `webview.js` (Tables tab), nmr-chemist workflow (write `peaks_13c.json` / `peaks_1h.json` to analysis/)
-
-**Dependencies:** `analysis/` only — no Bruker path wiring, no matplotlib, no pyproject.toml change
-
-**Why second:** data source is entirely within `analysis_dir` (already accessible to the server). Establishes the `tables.py` router pattern and the `{"state", "columns", "rows"}` response shape before the more complex `spectra.py`. The one workflow dependency (peak JSON files) is small and testable with fixtures independently of any live CASE run.
-
-### Phase C: 1D Spectra
-
-**Changes:** new `routers/spectra.py`, `app.py` (include router), `webview.js` (1D Spectra tab), `pyproject.toml` (add matplotlib), `case.md` (write `.run_manifest.json`)
-
-**Dependencies:** Bruker path via manifest (requires case.md change), matplotlib (requires pyproject.toml change), `BrukerReader.read_1d()`
-
-**Why third:** introduces the two cross-cutting concerns that 2D spectra also need — Bruker path wiring and matplotlib Agg pipeline. Doing 1D first validates the manifest → BrukerReader → Agg → PNG chain with a simpler plot (line plot) before tackling 2D contours.
-
-### Phase D: 2D Spectra
-
-**Changes:** extend `routers/spectra.py` (add HSQC/HMBC/COSY kinds), `webview.js` (2D Spectra tab, sub-tabs per experiment)
-
-**Dependencies:** all of Phase C (same router, same manifest, same matplotlib backend, `BrukerReader.read_2d()`)
-
-**Why last:** purely additive to Phase C. Router, manifest, and tab framework are already in place. The only new logic is 2D-specific: contour level computation, two-axis ppm labelling (F1 and F2). Risk is low because the full infrastructure is proven.
-
-```
-Phase A: Formatted Log
-   (frontend-only, tab framework established)
-    ↓
-Phase B: Data Tables
-   (new router, analysis/ data only)
-    ↓
-Phase C: 1D Spectra
-   (manifest wiring + matplotlib + BrukerReader.read_1d)
-    ↓
-Phase D: 2D Spectra
-   (extends Phase C router, BrukerReader.read_2d)
-```
-
----
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1: Pre-rendering plots to disk
-
-**What people do:** write PNG files to `analysis/` during peak-picking (e.g. nmr-chemist runs `lucy pick 13c` then immediately saves a PNG), serve them as static files.
-
-**Why wrong:** couples the CASE workflow to the webview presentation layer. Breaks the separation where the server reads data files (not presentation artefacts). Rendered files become stale if the rendering code is later improved.
-
-**Do this instead:** render on demand inside the route handler. Bruker data is immutable; the ~20–400 ms per request is acceptable for a local human-interaction dashboard.
-
-### Anti-Pattern 2: Adding bruker_data_dir to WebviewState
-
-**What people do:** pass `--bruker-data <path>` to `lucy webview serve`, store it in `.webview.json` alongside PID/port.
-
-**Why wrong:** conflates lifecycle state (PID/port) with data-source config. Changes the CLI signature (case.md update, docs update). Changes the Pydantic model (backward compat concern for existing `.webview.json` files). `server.py` and `state.py` must stay fastapi-free per WV-08; adding path arguments there is additional complexity.
-
-**Do this instead:** `.run_manifest.json` in `analysis_dir`. The `spectra.py` router reads it inside its own route handlers. Lifecycle state stays in `.webview.json` unchanged.
-
-### Anti-Pattern 3: Importing matplotlib at module level in spectra.py
-
-**What people do:** `import matplotlib.pyplot as plt` at the top of `spectra.py`.
-
-**Why wrong:** violates WV-08. Any code path that imports `spectra` — including test imports, type-checker runs, and the router `__init__.py` — would trigger a matplotlib import. On a base `lucy-ng` install without the `[webview]` extra, this raises `ModuleNotFoundError`.
-
-**Do this instead:** import matplotlib INSIDE `make_router()`. Follow the exact pattern of `structures.py` which imports `lucy_ng.webview.depiction` (which loads RDKit) inside `make_router()`.
-
-### Anti-Pattern 4: Calling CLI subprocesses from route handlers
-
-**What people do:** `subprocess.run(["lucy", "pick", "13c", ...])` inside `GET /api/spectrum/13c.png` to regenerate spectra on every request.
-
-**Why wrong:** violates the "dumb server reads files only" boundary, adds seconds of latency, creates a subprocess dependency, and is fragile (PATH, virtual environment, working directory).
-
-**Do this instead:** call `BrukerReader.read_1d()` directly. It reads Bruker binary files from disk (uses nmrglue) without any subprocess. Peak picking is not needed for rendering raw spectra — the raw NMR data in `pdata/1/` is what the plot shows.
-
----
+**Dependency note:** Phase C's CLI surface can be scaffolded (command signatures, `--format json`
+contracts, error handling) in parallel with Phase B once Phase A's models are stable — only the
+`reconstruct` subcommand's actual body has a hard dependency on Phase B being functional. This
+allows CLI/UX polish and the peak-pick bridge's unit tests (against synthetic/mocked reconstructed
+spectra) to proceed without blocking on real-binary reconstruction quality.
 
 ## Sources
 
-- Direct code inspection: `src/lucy_ng/webview/app.py`, `routers/status.py`, `routers/log.py`, `routers/structures.py`, `webview/server.py`, `webview/state.py`
-- Direct code inspection: `src/lucy_ng/readers/bruker.py` — `BrukerReader.read_1d()`, `BrukerReader.read_2d()`, `_detect_experiment_type()`
-- Direct code inspection: `.claude/commands/lucy-ng/case.md` — `spawn_case_team` Step 5 (webview launch), `timing` step (`run_start` block)
-- Direct code inspection: `pyproject.toml` — `[webview]` extra (fastapi, uvicorn only), hatch `artifacts = ["src/lucy_ng/webview/static/*"]`
-- Direct code inspection: `static/index.html` — existing 428-line single-file frontend
-- Design spec: `docs/superpowers/specs/2026-07-02-case-webview-design.md` — Stage 2 scope, "dumb server" boundary
-- Project context: `.planning/PROJECT.md` — v9.3 milestone goals, v9.2 decisions WV-01..08
+- `/Users/steinbeck/Dropbox/develop/lucy-ng/.planning/PROJECT.md` — v10.0 milestone definition, existing architecture section, LSD/webview extra precedents in Key Decisions history
+- `/Users/steinbeck/Dropbox/develop/data/nmrdata/active-lucy-ng-testprojects/C20H32O2/analysis/NUS-RECONSTRUCTION-GUIDE.md` — §5 recommended NMRPipe+SMILE pipeline, §7 fallback backends (hmsIST, mddnmr), §8 verification criteria, §9 return path into CASE, §3 data inventory (per-experiment FnMODE/NUS%/nuslist sizes)
+- `/Users/steinbeck/Dropbox/develop/lucy-ng/CLAUDE.md` — project structure conventions, LSD prerequisite handling (`lucy lsd check`, PATH-based install)
+- `src/lucy_ng/lsd/runner.py` — `LSDRunner` external-binary detection pattern (`SEARCH_PATHS`, `shutil.which`, `is_available()`, subprocess orchestration, fail-loud error handling) — direct precedent for `nus/backends/*`
+- `src/lucy_ng/cli/lsd.py` — `lucy lsd check`/`run`/`rank` command shapes; `_perform_ranking()` as the direct-call-not-subprocess precedent for `nus/bridge.py`
+- `src/lucy_ng/cli/webview.py` — `[webview]` optional-extra pattern (`_require_webview()`, lazy imports, import-safe module doc comment) — direct precedent for an optional `[nus]` extra
+- `src/lucy_ng/readers/bruker.py` — existing acqus/acqu2s parameter-extraction helpers (`_get_param`, `_get_param_2d`, `_detect_experiment_type`) that `nus/params.py` should reuse
+- `pyproject.toml` — `[project.optional-dependencies]` structure (`webview = [...]`), core `dependencies` list (confirms core CLI has zero heavy/binary deps today)
+- `src/lucy_ng/cli/main.py` — command-group registration pattern for the new `lucy nus` group
 
 ---
-
-*Architecture research for: v9.3 CASE Web-View Stage 2 (rendered spectra, data tables, formatted log)*
-*Researched: 2026-07-07*
+*Architecture research for: NUS 2D reconstruction integration (lucy-ng v10.0)*
+*Researched: 2026-07-12*

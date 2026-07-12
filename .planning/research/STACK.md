@@ -1,477 +1,206 @@
-# Stack Research: v9.3 CASE Web-View Stage 2
+# Stack Research: Automatic NUS 2D NMR Reconstruction
 
-**Domain:** Python web dashboard with server-side NMR spectra rendering
-**Milestone:** v9.3 CASE Web-View Stage 2
-**Researched:** 2026-07-07
-**Confidence:** HIGH — all findings grounded in the existing codebase and standard Python/matplotlib/FastAPI API patterns. One gap flagged (data table source path for peak lists).
+**Domain:** Non-uniform-sampling (NUS) 2D NMR reconstruction backend for a fully-automated (no-GUI) CASE pipeline
+**Milestone:** v10.0 Automatic NUS 2D Reconstruction
+**Researched:** 2026-07-12
+**Confidence:** MEDIUM-HIGH (core recommendation HIGH; TopSpin-headless and mddnmr/hmsIST platform details MEDIUM/LOW — flagged per-claim below)
 
----
+## Recommendation (one paragraph)
 
-## Context: What Already Exists (Do Not Re-evaluate)
+**Use NMRPipe + SMILE as the sole reconstruction backend, driven entirely by subprocess from a new `lucy nus` CLI group.** NMRPipe is free, actively maintained (current: v13.0 Rev 2026.072.12.03), has *native* Apple-Silicon and Intel macOS builds plus native Linux Intel/ARM builds, is 100% command-line/scriptable (no GUI), and ships the SMILE plugin automatically — `nmrPipe -fn SMILE` is literally a shell pipeline stage. It is also the *only* one of the four heavyweight backends investigated that does not have unresolved automation or platform question marks. hmsIST and mddnmr are legitimate fallbacks for artefact-heavy cases, but both are unmaintained (last confirmed releases 2016–2020), Linux-only in practice, and both *use NMRPipe internally anyway* — so NMRPipe has to be installed regardless of whether SMILE alone proves sufficient. TopSpin's CS/MDD reconstruction is free even in the academic "for Processing" license and is cross-platform, but no source (official Bruker docs, community write-ups) confirms a true zero-display headless mode for triggering reconstruction unattended — it is not safe to build the hard "no GUI" automation requirement on top of it; reserve it as a manual fallback for a human, exactly as the task brief itself already frames it. No mature pip-installable pure-Python CS/IST-for-NMR package exists; nmrglue itself provides only the NUS *unscrambling* utility (`expand_nus`), not a reconstruction algorithm — confirmed by direct inspection of the installed nmrglue 0.11 — which is exactly why the prior ad-hoc per-column IST left t1 ridges. Do not re-implement CS/IST from scratch; drive the validated NMRPipe/SMILE binary instead.
 
-| Component | Version (installed) | pyproject.toml | Status |
-|-----------|---------------------|----------------|--------|
-| Python | 3.10+ | `>=3.10` | Locked |
-| FastAPI | current | `>=0.100` ([webview] extra) | In use |
-| uvicorn | current | `>=0.20` ([webview] extra) | In use |
-| numpy | 2.x | `>=1.24` (core) | In use |
-| RDKit | 2025.x | `>=2023.0` (core) | In use (SVG depiction) |
-| BrukerReader | — | lucy_ng internal | In use (reads 1D + 2D Bruker data) |
-| nmrglue | git master | git dep (core) | In use (Bruker file I/O) |
+## Recommended Stack
 
-Note: The existing `structures.py` router serves RDKit SVG via `Response(content=svg_str, media_type="image/svg+xml")` — the PNG spectra endpoint follows the same pattern with `media_type="image/png"`.
+### Core Technologies
 
----
-
-## New Dependency Required for Stage 2
-
-**matplotlib is NOT currently in `pyproject.toml`** (confirmed by grep — zero imports in `src/lucy_ng/`; not listed as a dependency). It IS installed on the system (3.10.7), likely as a transitive dep from the scientific Python environment. For Stage 2 spectra rendering, it must be explicitly declared to make the requirement reproducible:
-
-```toml
-[project.optional-dependencies]
-webview = [
-    "fastapi>=0.100",
-    "uvicorn>=0.20",
-    "matplotlib>=3.7",      # ← ADD: server-side spectra rendering (Stage 2)
-]
-```
-
-That is the only new library dependency for Stage 2. Everything else is reuse.
-
----
-
-## Recommended Stack: Five Decision Areas
-
-### 1. Spectra Rendering Backend
-
-**Recommendation: matplotlib Agg (server-side) → PNG**
-
-Use `matplotlib.figure.Figure` with `matplotlib.backends.backend_agg.FigureCanvasAgg` directly, never `matplotlib.pyplot`.
-
-Why:
-- `pyplot` maintains global state (current figure/axes) that is NOT thread-safe in a FastAPI/uvicorn worker.
-- `Figure()` + explicit `FigureCanvasAgg` is fully stateless and thread-safe — each request gets its own `Figure` object with its own canvas.
-- No `matplotlib.use('Agg')` call is needed (that call modifies global backend state). Setting the canvas explicitly via `FigureCanvasAgg(fig)` is sufficient and safe in a server context.
-- PNG over SVG because 2D contour plots with hundreds of contour lines produce SVGs with thousands of path elements (easily >1 MB); a 800×500 PNG at dpi=100 is 50–150 KB.
-- SVG remains correct for molecular structure depictions (RDKit, already in place) because those are compact line drawings.
-
-Pattern for 1D spectra:
-```python
-import io
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_agg import FigureCanvasAgg
-
-def render_1d_spectrum(spectrum: Spectrum1D) -> bytes:
-    fig = Figure(figsize=(10, 4))
-    FigureCanvasAgg(fig)          # Agg canvas, no global state
-    ax = fig.add_subplot(111)
-    # NMR convention: ppm scale decreasing left to right
-    ax.plot(spectrum.ppm_scale[::-1], spectrum.data.real[::-1], lw=0.8, color='#1a5276')
-    ax.set_xlabel('δ (ppm)')
-    ax.set_ylabel('Intensity')
-    ax.set_title(f'{spectrum.nucleus} NMR')
-    ax.invert_xaxis()             # high ppm on left
-    fig.tight_layout()
-    buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-    buf.seek(0)
-    return buf.getvalue()
-    # fig goes out of scope here — no plt.close() needed; GC handles it
-```
-
-Pattern for 2D spectra (HSQC / HMBC / COSY):
-```python
-def render_2d_spectrum(spectrum: Spectrum2D) -> bytes:
-    fig = Figure(figsize=(8, 8))
-    FigureCanvasAgg(fig)
-    ax = fig.add_subplot(111)
-    # Determine auto contour levels from top 5% of absolute values
-    import numpy as np
-    threshold = np.percentile(np.abs(spectrum.data), 95)
-    levels = np.linspace(threshold * 0.1, threshold, 8)
-    ax.contour(
-        spectrum.f2_ppm_scale[::-1],   # F2 = 1H (x-axis)
-        spectrum.f1_ppm_scale[::-1],   # F1 = 13C or 1H (y-axis)
-        spectrum.data,
-        levels=levels,
-        colors=['#1a5276'],
-        linewidths=0.6,
-    )
-    ax.set_xlabel(f'F2: {spectrum.f2_nucleus} δ (ppm)')
-    ax.set_ylabel(f'F1: {spectrum.f1_nucleus} δ (ppm)')
-    ax.set_title(spectrum.experiment_type)
-    ax.invert_xaxis()
-    ax.invert_yaxis()
-    fig.tight_layout()
-    buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-    buf.seek(0)
-    return buf.getvalue()
-```
-
-### 2. Serving Images from FastAPI
-
-**Recommendation: `Response(content=bytes, media_type="image/png")` with a per-router in-memory cache**
-
-```python
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
-
-def make_router(analysis_dir: Path) -> APIRouter:
-    # WV-08: all heavy imports inside make_router body, never at module level
-    from matplotlib.figure import Figure                          # lazy
-    from matplotlib.backends.backend_agg import FigureCanvasAgg  # lazy
-    from lucy_ng.readers.bruker import BrukerReader               # already imported lazily elsewhere
-
-    router = APIRouter(prefix="/api")
-    _cache: dict[str, bytes] = {}  # render-once cache: exp_key → PNG bytes
-
-    @router.get("/spectrum/1d/{exp_type}.png")
-    def get_1d_spectrum(exp_type: str) -> Response:
-        if exp_type in _cache:
-            return Response(content=_cache[exp_type], media_type="image/png")
-        exp_dir = _find_experiment(analysis_dir.parent, exp_type)
-        if exp_dir is None:
-            raise HTTPException(status_code=404, detail="Experiment not found")
-        try:
-            spectrum = BrukerReader.read_1d(exp_dir)
-            png = render_1d_spectrum(spectrum)
-            _cache[exp_type] = png
-            return Response(content=png, media_type="image/png")
-        except Exception:
-            raise HTTPException(status_code=404, detail="Cannot render spectrum")
-
-    @router.get("/spectrum/2d/{exp_type}.png")
-    def get_2d_spectrum(exp_type: str) -> Response:
-        ...  # same pattern
-
-    return router
-```
-
-Notes on this pattern:
-- `Response(content=bytes, ...)` is correct for pre-loaded in-memory bytes; `StreamingResponse` is for generators/file handles and adds no benefit here.
-- The `_cache` dict lives in the closure — one cache per `analysis_dir`, not shared across different analysis dirs. Cache is per-process in-memory; it clears on server restart. This is appropriate because Bruker experiment data is immutable once acquired.
-- During a live run before a spectrum file exists, return HTTP 404 gracefully (same as the structures router for out-of-range index).
-- Consistent with WV-08: `matplotlib`, `FigureCanvasAgg`, and `BrukerReader` are imported inside `make_router`, never at module level of `routers/spectra.py`.
-
-**Where the Bruker data lives:**
-The webview currently takes only `analysis_dir`. CASE always runs `lucy webview serve <compound_path>/analysis`, so `analysis_dir.parent` is the compound path where Bruker experiment directories live (numbered subdirectories: `1/`, `2/`, etc.). The spectra router discovers experiments by scanning `analysis_dir.parent` for directories containing an `acqus` file (1D) or both `acqus` + `acqu2s` files (2D). The `BrukerReader` already handles this correctly.
-
-Discovery helper:
-```python
-def _find_experiment(compound_path: Path, exp_type: str) -> Path | None:
-    """Find Bruker experiment dir by pulse program or nucleus match."""
-    for d in sorted(compound_path.iterdir()):
-        if not d.is_dir(): continue
-        acqus = d / "acqus"
-        if not acqus.exists(): continue
-        pp = (acqus.read_text(errors='replace')
-              .split('PULPROG')[1].split('\n')[0]
-              .strip().strip('<>').lower()
-              if 'PULPROG' in acqus.read_text(errors='replace') else '')
-        if exp_type in ('1h', 'proton') and '1h' in pp or 'zg' in pp:
-            return d
-        ...
-    return None
-```
-
-In practice the discovery logic will need to handle the specific PULPROG names used in the test datasets (see `bruker.py`'s `_detect_experiment_type()` for the pattern-matching already in use). The spectra router can delegate to the same `BrukerReader` logic.
-
-### 3. Markdown Rendering in the Frontend
-
-**Recommendation: Hand-rolled safe markdown-to-DOM renderer in `index.html`**
-
-The constraint is self-contained single-file vanilla JS with no CDN and no build step. The existing log panel assigns content via `logEl.textContent = content` — this must be replaced with structured DOM building, but the XSS guard must be preserved.
-
-The exact subset of CASE-PROGRESS.md that needs rendering (written by the orchestrator per `progress-format.md`):
-
-| Markdown syntax | Element | Notes |
-|-----------------|---------|-------|
-| `## Iteration N` | `<h2>` | Top-level section |
-| `### Agent Name` | `<h3>` | Agent sub-section |
-| `**bold text**` | `<strong>` | Inline, appears in status lines |
-| `` `inline code` `` | `<code>` | Inline, for shift values / formulas |
-| `\| col \| col \|` rows | `<table><tr><td>` | Peak assignment tables |
-| `---` | `<hr>` | Section separators |
-| bare text lines | `<p>` | Narrative paragraphs |
-| ` ``` ` fences | `<pre><code>` | LSD snippets (rare) |
-
-Implementation principle — all text content through `textContent`, never `innerHTML`:
-
-```javascript
-function renderMarkdown(text) {
-    var container = document.createElement('div');
-    var lines = text.split('\n');
-    var i = 0;
-
-    while (i < lines.length) {
-        var line = lines[i];
-
-        // Code fences
-        if (line.startsWith('```')) {
-            var code = [];
-            i++;
-            while (i < lines.length && !lines[i].startsWith('```')) {
-                code.push(lines[i++]);
-            }
-            var pre = document.createElement('pre');
-            var codeEl = document.createElement('code');
-            codeEl.textContent = code.join('\n');  // safe
-            pre.appendChild(codeEl);
-            container.appendChild(pre);
-            i++;
-            continue;
-        }
-
-        // HR
-        if (line.match(/^---+$/)) {
-            container.appendChild(document.createElement('hr'));
-            i++; continue;
-        }
-
-        // Headings
-        if (line.startsWith('## ')) {
-            var h = document.createElement('h2');
-            appendInlineNodes(h, line.slice(3));   // inline parser for bold/code
-            container.appendChild(h);
-            i++; continue;
-        }
-        if (line.startsWith('### ')) {
-            var h3 = document.createElement('h3');
-            appendInlineNodes(h3, line.slice(4));
-            container.appendChild(h3);
-            i++; continue;
-        }
-
-        // Table (collect consecutive pipe-starting lines)
-        if (line.startsWith('|')) {
-            var table = buildTable(lines, i);
-            container.appendChild(table.el);
-            i = table.nextI;
-            continue;
-        }
-
-        // Non-empty paragraph text
-        if (line.trim()) {
-            var p = document.createElement('p');
-            appendInlineNodes(p, line);
-            container.appendChild(p);
-        }
-
-        i++;
-    }
-    return container;
-}
-
-// appendInlineNodes: safe inline parser for **bold** and `code`
-// Uses textContent for all text — never innerHTML
-function appendInlineNodes(parent, text) {
-    var parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/);
-    parts.forEach(function(part) {
-        if (part.startsWith('**') && part.endsWith('**')) {
-            var strong = document.createElement('strong');
-            strong.textContent = part.slice(2, -2);
-            parent.appendChild(strong);
-        } else if (part.startsWith('`') && part.endsWith('`')) {
-            var code = document.createElement('code');
-            code.textContent = part.slice(1, -1);
-            parent.appendChild(code);
-        } else if (part) {
-            parent.appendChild(document.createTextNode(part));
-        }
-    });
-}
-```
-
-This replaces the current `logEl.textContent = content` in `refreshLog()`. The log panel element changes from `<pre id="log-panel">` to `<div id="log-panel">` (pre is incompatible with block-level elements like table/h2).
-
-**What this does NOT support and why that is acceptable:**
-- Nested lists — CASE-PROGRESS.md uses tables, not lists
-- Link URLs — not present in CASE-PROGRESS.md content
-- Images — not present
-- Blockquotes — not present
-
-This renderer is purpose-built for CASE-PROGRESS.md's actual output format, not a general markdown renderer.
-
-### 4. Tabbed UI Without a Build Step
-
-**Recommendation: Pure CSS/JS tab navigation in a single `index.html` file**
-
-The current layout has two panels side by side (`#structure-panel` left, `#log-panel-wrapper` right). Stage 2 adds spectra and data tables. The cleanest restructuring is:
-
-- Keep the top status bar unchanged.
-- Replace the two-column `#main` with a layout that has the structure panel on the left (unchanged) and a tabbed panel on the right with four tabs.
-
-HTML structure:
-```html
-<div id="main">
-  <!-- Left: structure panel (unchanged) -->
-  <div id="structure-panel">...</div>
-
-  <!-- Right: tabbed panel -->
-  <div id="tab-area">
-    <div class="tab-bar">
-      <button class="tab-btn active" data-tab="log">Run Log</button>
-      <button class="tab-btn" data-tab="spectra-1d">1D Spectra</button>
-      <button class="tab-btn" data-tab="spectra-2d">2D Spectra</button>
-      <button class="tab-btn" data-tab="tables">Data Tables</button>
-    </div>
-    <div id="tab-log"        class="tab-panel active"><!-- log div --></div>
-    <div id="tab-spectra-1d" class="tab-panel hidden"><!-- img tags --></div>
-    <div id="tab-spectra-2d" class="tab-panel hidden"><!-- img tags --></div>
-    <div id="tab-tables"     class="tab-panel hidden"><!-- table HTML --></div>
-  </div>
-</div>
-```
-
-CSS:
-```css
-.tab-bar { display: flex; border-bottom: 1px solid #dee2e6; margin-bottom: 8px; }
-.tab-btn {
-    padding: 6px 14px; border: none; background: none; cursor: pointer;
-    font-size: 13px; color: #6c757d; border-bottom: 2px solid transparent;
-}
-.tab-btn.active { color: #212529; border-bottom-color: #1a5276; font-weight: 600; }
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
-```
-
-JS (replaces nothing — new event wiring):
-```javascript
-document.querySelectorAll('.tab-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        var target = btn.dataset.tab;
-        document.querySelectorAll('.tab-btn').forEach(function(b) {
-            b.classList.toggle('active', b.dataset.tab === target);
-        });
-        document.querySelectorAll('.tab-panel').forEach(function(p) {
-            p.classList.toggle('active', p.id === 'tab-' + target);
-        });
-    });
-});
-```
-
-**`index.html` stays as ONE file.** The hatch artifact entry is `src/lucy_ng/webview/static/*` (glob), so splitting is technically possible, but the v9.2 design decision to keep it as a single file holds — no reason to add complexity.
-
-Spectra panels use `<img>` elements whose `src` points to the new PNG endpoints:
-```html
-<!-- Inside tab-spectra-1d -->
-<img id="spec-13c" src="/api/spectrum/1d/13c.png" alt="13C spectrum" style="max-width:100%">
-<img id="spec-1h"  src="/api/spectrum/1d/1h.png"  alt="1H spectrum"  style="max-width:100%">
-```
-
-These images are fetched once on page load (or on tab activation via lazy-load logic). No polling needed — spectra are static after acquisition. The 3-second polling loop should NOT re-fetch spectra images on every tick (add a loaded flag per image).
-
-### 5. Data Table Sources
-
-**LSD Constraint Inventory (HIGH confidence)**
-
-Source: `analysis_dir / "iteration_NN" / "compound.lsd"` (the latest iteration dir). The JSON constraint inventory is embedded at the top of every `compound.lsd` file as a POSIX-comment block:
-
-```
-; {"constraint_inventory": { ... }}
-```
-
-Parse path: read the latest `compound.lsd` → extract lines starting with `; {` → `json.loads()` → serve as `/api/constraints`.
-
-Alternative (also viable): `lucy lsd validate-inventory --format json analysis/iteration_NN/compound.lsd` — uses the existing CLI to extract the JSON. This is safer because the parser already handles edge cases. The router can shell out via `subprocess.run()`.
-
-**HMBC Usage (HIGH confidence)**
-
-Source: HMBC lines in `compound.lsd`:
-```
-HMBC carbon_idx proton_idx min_j max_j  ; comment
-```
-Parse path: grep lines starting with `HMBC ` from the latest `compound.lsd` → split fields → serve as part of `/api/constraints`.
-
-**Peak Lists (MEDIUM confidence — design decision required)**
-
-Source: CASE-PROGRESS.md `## Setup` section. The orchestrator writes peak tables into the `## Setup` section from the nmr-chemist's [SETUP-COMPLETE] message. These tables are markdown pipe-tables. The nmr-chemist CLI commands (`lucy pick 1d/hsqc/hmbc --format json`) write to stdout only — no separate peak JSON files are written to disk.
-
-Options for Stage 2:
-1. Parse the `## Setup` section of CASE-PROGRESS.md (the markdown table) in a new `/api/peaks` endpoint. Fragile (depends on orchestrator's exact markdown formatting).
-2. Modify the CASE workflow to write a `peaks_summary.json` to `analysis_dir` at the end of peak picking. This is cleaner but requires a workflow change.
-3. Defer peak tables to a later phase and only show constraint inventory + HMBC usage in Stage 2.
-
-**Recommendation for Stage 2: Start with option 3 (defer peak list tables).** Serve the constraint inventory and HMBC lines from `compound.lsd` (well-structured, machine-parseable). Add a note in the roadmap that peak list tables require either markdown parsing or a workflow addition.
-
----
-
-## Core Technologies Table
-
-| Technology | Version | Purpose | New for Stage 2? |
+| Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| matplotlib | ≥3.7 | Server-side PNG spectra rendering (1D line, 2D contour) | YES — add to [webview] extra |
-| `matplotlib.backends.backend_agg.FigureCanvasAgg` | (part of matplotlib) | Headless, thread-safe canvas — no `use('Agg')` global | YES — use pattern |
-| `fastapi.responses.Response` | (part of fastapi) | Serve PNG bytes: `Response(content=bytes, media_type="image/png")` | New endpoint type |
-| `io.BytesIO` | (stdlib) | Buffer for `fig.savefig()` output | YES — pattern |
-| `lucy_ng.readers.bruker.BrukerReader` | (internal) | Read Bruker 1D/2D data → Spectrum1D/Spectrum2D | Reused |
+| NMRPipe | 13.0 Rev 2026.072.12.03 (current as of research date) | NUS expansion, FT, apodization, phasing, baseline — the whole processing chain | De-facto standard NMR processing engine; free; native macOS (Intel + Apple Silicon) and Linux (Intel + ARM) builds; 100% CLI/pipeline-driven; every other backend investigated (hmsIST, mddnmr) is built as an *add-on* to it, so it's a hard dependency either way. HIGH confidence — verified on official IBBR install page. |
+| SMILE plugin (Ying/Delaglio/Torchia/Bax, NIH) | bundled with NMRPipe ≥ March 2018 releases (current release includes it) | The actual CS/IST-family NUS reconstruction algorithm, run as `nmrPipe -fn SMILE` | De-facto standard NUS reconstruction for NMRPipe pipelines; explicitly documented to run on both Linux and macOS from the command line; installs automatically alongside NMRPipe (`plugin.smile.tZ`), no separate registration. HIGH confidence — official SMILE manual + IBBR docs. |
+| `bruk2pipe` (NMRPipe utility) | bundled with NMRPipe | Bruker `ser`/`fid` → NMRPipe binary format, with explicit flags (no interactive prompts) | Core NMRPipe conversion binary; scriptable non-interactively once F1/F2 acquisition parameters are known. **lucy-ng already parses these parameters** (`acqus`/`acqu2s` via the existing `BrukerReader`/nmrglue path) — so the `fid.com` conversion script can be *generated programmatically* from data already read by lucy-ng, avoiding NMRPipe's interactive `bruker` GUI template tool entirely. MEDIUM-HIGH confidence (mechanism verified from official docs + the project's own confirmed acqus/acqu2s parsing capability; exact bruk2pipe flag set needs a Phase-1 spike). |
+| `nusExpand.tcl` (NMRPipe utility) | bundled with NMRPipe | Expands the sparse NUS `ser` onto the full sampling grid using the `nuslist` schedule before SMILE | Standard companion tool referenced directly by the SMILE manual; command-line/Tcl, no GUI. Note: nmrglue's own `expand_nus()` (Python, already available in this repo's dependency tree) performs the equivalent unscrambling and could be used as an alternative/cross-check inside `lucy`, but the canonical pipeline documented by NIH uses `nusExpand.tcl`. MEDIUM confidence. |
 
-## Supporting Libraries
+### Supporting Libraries
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| `matplotlib.figure.Figure` | ≥3.7 | Direct figure construction without pyplot global state | All server-side rendering |
-| `numpy` | ≥1.24 (already core dep) | Contour level computation, array slicing | 2D spectra auto-levels |
+| nmrglue | 0.11 (already installed/used in this repo) | Bruker parameter parsing (acqus/acqu2s/nuslist), post-reconstruction peak picking, verification plots | Already the project's I/O layer; confirmed (by direct inspection) to expose `expand_nus()` for NUS grid expansion and generic FT/apodization primitives in `nmrglue.process.proc_base`, but **no CS/IST/SMILE-equivalent reconstruction function** — do not attempt to extend it into a reconstruction algorithm. |
+| Python `subprocess` (stdlib) | — | Drive `nmrPipe`, `bruk2pipe`, `nusExpand.tcl`, `smileNus`/`nmrPipe -fn SMILE` as external processes | All NMRPipe-family tools are csh/Tcl scripts and C binaries with no Python bindings — subprocess is the only integration path, matching lucy-ng's existing thin-CLI-wrapper architecture. |
+| nmrPype (`PhiMykah/nmrPype` on GitHub, PyPI) | 0.8.0 (BSD-licensed, Python 3.10+) | Optional: pure-Python reimplementation of NMRPipe's core processing verbs (FT/ZF/SP/PS/transpose) | Interesting as a potential pip-only fallback for the *processing* stage (post-reconstruction FT/apodization/phasing) if a real NMRPipe install proves impossible on a target machine. **Not verified to implement SMILE/IST/CS reconstruction itself** — treat as unproven/LOW confidence for the reconstruction step specifically; would need direct source inspection before relying on it. Not part of the primary recommendation. |
 
-## What NOT to Add
+### What is explicitly NOT recommended as the reconstruction algorithm
 
 | Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| `matplotlib.pyplot` (plt.*) | Not thread-safe; uses global state (current figure, current axes); calling `plt.figure()` or `plt.close()` in a FastAPI handler will corrupt renders across concurrent requests | `matplotlib.figure.Figure` + `FigureCanvasAgg` directly |
-| `matplotlib.use('Agg')` global call | Modifies module-level backend state; if called after any other matplotlib import it raises `UserWarning` and may be ignored; fragile in a server that might already have imported matplotlib | Explicit `FigureCanvasAgg(fig)` instead |
-| Plotly / Bokeh / Altair / d3.js | All require CDN delivery or a build step; violate the self-contained no-CDN constraint | Server-side matplotlib PNG |
-| marked.js / micromark / any JS markdown library | Would require CDN or inlining a >10 KB blob; more complex than the needed subset | Hand-rolled 50-line DOM renderer |
-| htmx / Alpine.js / any JS framework | CDN dependency; overkill for tab navigation | 10-line vanilla JS tab switcher |
-| `StreamingResponse` for PNG | For generators/file handles; adds overhead for in-memory bytes | `Response(content=bytes, ...)` |
-| `pandas` | Not needed; constraint inventory from compound.lsd is simple key-value JSON; peak tables are simple lists | Direct `json.loads()` / string split |
-| Splitting `index.html` into multiple files | Adds path-join complexity; single file is simpler to package, test, and serve | Keep single `index.html` |
+|-------|-----|--------------|
+| Hand-rolled per-column 1D IST on top of `nmrglue.expand_nus()` (the prior approach) | Confirmed root cause of the t1-ridge artefacts that stalled the last CASE run — nmrglue has no validated multidimensional CS/IST algorithm; a naive per-column threshold loop is not equivalent to SMILE/hmsIST-class reconstruction | NMRPipe + SMILE (`nmrPipe -fn SMILE`) |
+| A from-scratch pure-Python CS/IST implementation (e.g., built on `sigpy`, `PySAP`/`pysap-mri`, or `mripy`) | These are general MRI/compressed-sensing toolkits, not NMR-FID-aware; none understands Bruker `nuslist`/FnMODE quadrature layout out of the box; re-deriving the Hyberts/Sun/Wagner IST algorithm correctly (and getting the phase/quadrature handling right for echo-antiecho HSQC/HMBC and QF COSY) is a multi-week research-grade effort with high correctness risk, essentially re-implementing hmsIST/SMILE from the papers | NMRPipe + SMILE (mature, peer-reviewed, widely validated implementation) |
+
+## Installation
+
+### macOS (Apple Silicon, primary dev machine) — WORKS NATIVELY
+
+```bash
+# tcsh is macOS's default install already (per environment check in NUS-RECONSTRUCTION-GUIDE.md);
+# NMRPipe REQUIRES csh/tcsh as the invoking shell for its install + wrapper scripts.
+mkdir -p ~/nmrpipe_install && cd ~/nmrpipe_install
+
+# Exact filenames/URLs change per release — check https://www.ibbr.umd.edu/nmrpipe/install
+# for the current tarball list before running. As of this research, download is a direct
+# curl/wget with no visible registration wall on the IBBR-hosted install page (older
+# NMRPipe documentation from spin.niddk.nih.gov historically referenced an email-registration
+# step to bax@nih.gov for *redistribution* rights — re-verify this distinction at install time).
+curl -O https://www.ibbr.umd.edu/api/nmrpipe/download?fileName=install.com
+curl -O https://www.ibbr.umd.edu/api/nmrpipe/download?fileName=binval.com
+# ... plus the platform-specific .tZ bundle for mac11_arm64 (Apple Silicon) —
+# select mac11_arm64 explicitly, NOT mac11_64 (Intel) or the Linux ARM VM build.
+
+csh install.com          # runs interactively but is fully scriptable with default answers
+csh binval.com           # validates the install
+source ~/.cshrc          # or wherever install.com wrote the env additions
+
+nmrPipe -help            # verify
+smileNus -help            # verify SMILE plugin installed
+nusExpand.tcl -help      # verify
+```
+
+Apple-Silicon-specific note: NMRPipe publishes a **native** `mac11_arm64` build (Mac OS 13.3.1 M1 baseline) — no Rosetta 2 translation needed, unlike many older scientific tools. `nmrDraw` (the interactive GUI) is documented as **not** working directly on macOS — irrelevant here since the pipeline is headless anyway (peak picking will go through nmrglue/lucy-ng, not nmrDraw).
+
+### Linux (Intel or ARM) — WORKS NATIVELY, easiest platform
+
+```bash
+# csh/tcsh required; on Ubuntu:
+sudo apt-get install csh tcsh
+# Then the same install.com/binval.com flow, selecting the matching platform build:
+# linux239_64 (Ubuntu 24), linux235_64 (Ubuntu 22), linux231_64 (Ubuntu 20),
+# linux212_64 (legacy CentOS 6.5), or linux235_arm64 (Ubuntu 22 ARM, e.g. Apple-Silicon VM/cloud ARM).
+```
+
+Native Linux ARM build exists (`linux235_arm64`) — relevant if the pipeline is later containerized/deployed to ARM cloud instances or run inside a Linux VM on an Apple-Silicon Mac.
+
+### Windows — NO NATIVE BUILD; documented platform gap, workaround required
+
+NMRPipe has **not shipped a maintained native Windows build since v8.9** (the legacy `winxp` build is explicitly marked as no longer updated). The IBBR install page's own recommended path for Windows users is a **Linux virtual machine** (VMware image with NMRPipe 13.0 preinstalled is offered directly by IBBR for both Windows/Intel and macOS/ARM hosts).
+
+- **Recommended workaround (not officially documented by IBBR, but the standard community practice and consistent with the "Linux VM" guidance):** WSL2 with an Ubuntu distribution, then install the matching Linux Intel build inside WSL2. This should work because WSL2 is a real Linux kernel (unlike WSL1), and NMRPipe's Linux binaries have no unusual kernel/driver dependencies — but this has **not been independently verified in this research pass** and should be spiked/validated before being written into requirements as fact. Confidence: LOW-MEDIUM (inferred, not sourced).
+- **Officially supported workaround:** the IBBR-provided pre-built Ubuntu VM image (VMware). Higher confidence since it's IBBR's own recommendation, but adds a VM-management dependency to the automation story (the `lucy` CLI would need to shell out across a VM boundary, e.g. via `vmrun`/SSH — materially more complex than a native/WSL2 subprocess call).
+- **Document this as an accepted platform gap** per the milestone's own "documented limitations allowed" clause — full native Windows support for the reconstruction backend is not realistically achievable without Bruker TopSpin (see below), which has its own unresolved headless-automation gap.
+
+## Platform Support Matrix
+
+| Backend | macOS Apple Silicon | macOS Intel | Linux (Intel) | Linux (ARM) | Windows | Headless/scriptable? | Python binding? |
+|---|---|---|---|---|---|---|---|
+| **NMRPipe + SMILE** | **Works** (native `mac11_arm64`) | Works (native `mac11_64`) | **Works** (native, multiple distro builds) | Works (native `linux235_arm64`) | No native build (v8.9 was last); Linux VM or WSL2 (unverified) workaround | Yes — pure CLI/pipe, no GUI at all | No — subprocess only |
+| **hmsIST** (Wagner lab) | Not documented / unverified | Not documented / unverified | Likely (built for NMRPipe-Linux workflows; exact binary architectures not confirmed) | Unverified | Unverified, likely no | Yes, in principle (csh + NMRPipe pipeline scripts) — but distribution/platform details too thin to commit to a specific OS | No — subprocess/script only |
+| **mddnmr / qMDD** | No (no macOS build found) | No (no macOS build found) | Works — "statically linked executables for several Linux platforms" (v2.7 manual, Sept 2020) | Unverified | No | The **qMDD GUI is a GUI** (Python 2 + PySide — obsolete stack, hard to even install in 2026); but mddnmr also ships **command-line-only shell scripts** that bypass the GUI and are scriptable | No modern binding (qMDD's Python layer is Python 2/PySide, effectively unusable/unmaintained in 2026); CLI scripts are subprocess-only |
+| **TopSpin headless (CS/MDD)** | Runs (M1-compatible per Bruker; native-ARM status not explicitly confirmed) | Runs | Runs (AlmaLinux stated) | Unverified | Runs | **Unverified** — TopSpin's own Python interface (4.3+) connects to a *running* TopSpin instance over a network/web service, and legacy Jython AU-program automation runs *inside* a running TopSpin process; no source found confirming TopSpin can run fully headless (zero display, no interactive session) to trigger NUS/CS reconstruction unattended | Yes — network/web-service Python API (Python 3.9+) exists in TopSpin ≥4.3, but only for driving an already-running TopSpin instance |
+| **Pure-Python CS/IST (pip)** | N/A — no such package exists (see below) | N/A | N/A | N/A | N/A | N/A | N/A |
+
+## Per-Candidate Detail
+
+### 1. NMRPipe + SMILE — RECOMMENDED PRIMARY
+
+- **License:** Free for academic/non-commercial use, provided "as-is and without warranties." Site terms note the *software* itself "is not to be redistributed without permission from the authors" — this governs redistribution, not local use. No blocking registration wall observed on the current (2026) IBBR-hosted install page (direct `wget`/`curl`), though older documentation referenced an email-based registration step (`bax@nih.gov`) — worth a 5-minute re-check at install time since this detail has visibly changed over the tool's history. Confidence: MEDIUM (current mechanism), HIGH (that it's free/no-cost).
+- **Install:** Native binaries for macOS (Intel + Apple Silicon) and Linux (Intel + ARM, multiple distro-targeted builds). No Windows native build since v8.9; VM/WSL2 workaround required (see above).
+- **csh dependency:** Hard requirement — install scripts and the runtime environment setup are csh/tcsh. Already satisfied on the dev machine per the task brief's own environment check.
+- **Python binding:** None — pure CLI/pipeline tool (`nmrPipe -fn SMILE ...`), invoked via `subprocess`, exactly matching lucy-ng's existing thin-CLI-wrapper architectural pattern (nmrglue/LSD/RDKit are all wrapped the same way).
+- **Version/maintenance:** Actively maintained — current version 13.0 Rev 2026.072.12.03 (script update dated 2026-05-20), i.e. maintained as of this research date. HIGH confidence (official install page).
+- **Unattended end-to-end feasibility:** YES. Every step (bruk2pipe conversion → nusExpand.tcl → `nmrPipe -fn SMILE` → apodization/ZF/FT/PS/baseline via standard `.com` pipe scripts → peak picking) is a shell/Tcl invocation with no interactive prompts once parameters are supplied — this is precisely the pattern NIH's own SMILE manual documents for multi-job/multicore batch reconstruction.
+- **Source:** https://www.ibbr.umd.edu/nmrpipe/install , https://spin.niddk.nih.gov/bax/software/smile/smile_manual.pdf , https://spin.niddk.nih.gov/bax/software/SMILE/
+
+### 2. hmsIST (Wagner lab, Harvard) — VIABLE FALLBACK, LOW-CONFIDENCE ON DISTRIBUTION/PLATFORM
+
+- **License:** Ambiguous — the GitHub mirror (`eburakova/hmsIST`) states the tools "can be distributed freely but are not publicly accessible," which is self-contradictory given the repo is in fact a public GitHub repo; a separate Wagner-lab copyright PDF is referenced. Treat as "usable, terms unclear" and re-verify with the lab/PDF before shipping this into an automated pipeline. Confidence: LOW.
+- **Install:** No documented macOS or Windows build; presumably Linux binaries built to plug into an existing NMRPipe pipeline (it explicitly "works in conjunction with NMR Pipe," reusing NMRPipe's csh/Tcl scripting conventions). Platform matrix for this tool specifically could not be confirmed from available sources.
+- **Python binding:** None — csh/Tcl scripts + compiled reconstruction binary, subprocess-only, same integration pattern as NMRPipe.
+- **Version/maintenance:** Effectively unmaintained — the GitHub repo is explicitly described as "stored for archiving purposes," last substantive publications are from 2012–2017 (the seminal IST-HMS paper is 2012; the tmax-optimization follow-up is 2017). No 2020s activity found.
+- **Unattended feasibility:** Plausible in principle (same csh-pipeline pattern as NMRPipe/SMILE) but unverified in practice given the platform/distribution uncertainty above.
+- **Recommendation:** Keep as a documented fallback for artefact-heavy datasets if SMILE underperforms on this project's 25%/33% sampling densities, but do not build it into the v10.0 requirements as a guaranteed path — needs its own platform spike before being relied upon.
+- **Source:** https://github.com/eburakova/hmsIST , https://link.springer.com/article/10.1007/s10858-012-9611-z , https://link.springer.com/article/10.1007/s10858-017-0103-z
+
+### 3. mddnmr / qMDD (Orekhov group) — VIABLE FALLBACK, LINUX-ONLY
+
+- **License:** Free for academic use (stated in the user manual); the distribution site (`mddnmr.spektrino.com`) currently returns a **TLS certificate mismatch** (cert issued for `home.pl`/`*.home.pl`, not the mddnmr domain) — a signal of site/infrastructure rot that should raise caution about currency and trustworthiness of the download itself. Confidence: MEDIUM on licensing text, LOW on current site health.
+- **Install:** Distributed as **statically-linked executables for several Linux platforms** (per the v2.7/Sept-2020 manual and v2.5 release notes) — no macOS or Windows build found in any source consulted. The MDD/CS/IST computational core runs from Linux command-line shell scripts; the **qMDD GUI wrapper is Python 2 + PySide** — Python 2 has been EOL since January 2020, making the GUI path essentially unusable/unreasonable to stand up fresh in 2026 without a legacy environment. However, mddnmr also ships command-line-only scripts that drive the same reconstruction without the GUI.
+- **Python binding:** None current/modern — qMDD's Python layer is Python-2-only and should not be relied on; the CLI-script path is subprocess-only, same pattern as the other backends.
+- **Version/maintenance:** Last confirmed version is 2.5–2.7 (manual dated September 2020); no evidence of activity since. Effectively unmaintained. Confidence: MEDIUM (based on available manual/groups.io evidence; could not access the live download page directly due to the TLS issue above).
+- **Unattended feasibility:** Yes for the CLI-script path on Linux (calls into NMRPipe for the FT stage, same subprocess pattern) — but platform-limited to Linux only, and the qMDD convenience GUI must be avoided entirely.
+- **Recommendation:** Linux-only fallback; do not target macOS/Windows for this backend. Given hmsIST and mddnmr are both Linux-only, unmaintained, and layer on top of NMRPipe anyway, prioritize getting SMILE working well before investing in either.
+- **Source:** http://mddnmr.spektrino.com/man (v2.7 manual, Sept 2020), Google Groups "Mddnmr 2.5 – out now!" (https://groups.google.com/g/mddnmr/c/VekBfc7gYXE)
+
+### 4. TopSpin headless (CS/MDD reconstruction) — NOT RECOMMENDED for the automated pipeline
+
+- **License:** Free "TopSpin for Processing — Academic/Government/Non-Profit" license, valid 3 years, renewable; explicitly includes 2D NUS/CS processing at no extra cost ("NUS processing for 2D spectra... is also available in the academic version"). Full 3D-6D NUS and the Structure-Elucidation CMC-se module are separately licensed/paid. Confidence: HIGH (Bruker's own FAQ).
+- **Install:** Cross-platform — Windows, macOS (M1-compatible per Bruker marketing copy, though "native Apple-Silicon" vs. Rosetta was not explicitly stated and should be verified), and Linux (AlmaLinux). No registration-wall beyond the academic-license application process (institutional email, org verification).
+- **Python binding:** Two generations exist — (a) legacy **Jython** (Python 2.7) automation that runs *inside* a live TopSpin process via AU programs / `edpy`, and (b) a newer **TopSpin Python Interface** (TopSpin ≥ 4.3) that lets an *external* Python 3.9+ process talk to a running TopSpin instance over an embedded network/web service. Both require **TopSpin itself to already be running** as a process — neither source consulted describes a way to launch TopSpin, run a reconstruction, and exit with zero display/session, i.e. a true unattended headless mode (à la a systemd/cron job with no X server or virtual desktop at all). This is the critical unresolved gap for this project's hard "no GUI" requirement. Confidence: LOW that full headless automation is achievable without dedicated, possibly platform-specific, engineering (e.g. Xvfb tricks that Bruker does not document or support).
+- **Version/maintenance:** Actively maintained, current TopSpin generation is 4.x (4.3+ for the modern Python interface); this is the best-maintained software of the five candidates by a wide margin, since it's Bruker's flagship commercial product.
+- **Recommendation:** Do not build v10.0 automation on TopSpin. It remains valid as the **manual fallback for a human operator** (Chris) exactly as the task brief itself already frames it (§6 "Alternative A... eher der Weg für den Menschen selbst") — keep it out of the `lucy` CLI's automated critical path. If a future milestone wants to revisit this, the concrete open question to resolve first is: *can `TopSpin` be started in a genuinely displayless mode (no X11/Aqua/RDP session at all) on Linux and still accept commands over the Python-interface network API?* — this needs a dedicated spike, not assumed from marketing docs.
+- **Source:** https://www.bruker.com/en/products-and-solutions/mr/nmr-software/topspin-faqs.html , https://www.bruker.com/en/products-and-solutions/mr/nmr-software/topspin/topspin-python-interface.html , https://ekwan.github.io/2020/01/topspin-automation
+
+### 5. Pure-Python / pip-installable CS/IST — DOES NOT EXIST AS A MATURE OPTION; DO NOT BUILD ONE FROM SCRATCH
+
+- **nmrglue (already a lucy-ng dependency, v0.11):** direct inspection of the installed package (`nmrglue.process.proc_base`) confirms it provides `expand_nus()` (schedule-based NUS-grid expansion/unscrambling — the same conceptual step as `nusExpand.tcl`) plus generic FT/apodization/phase-correction primitives (`fft`, `zf`, `sp`, `em`, `ps`, `tp`, etc.), but **no CS, IST, SMILE, or any other multidimensional sparse-reconstruction algorithm**. This is a directly-verified, HIGH-confidence negative finding, and it explains the prior failure: the "ad-hoc per-column IST" mentioned in the task brief was necessarily a hand-written addition on top of these primitives, not a library feature — and a naive per-column 1D threshold loop is not equivalent to a validated multidimensional CS/IST algorithm (which must jointly threshold across the full indirect-dimension spectrum, not column-by-column), which plausibly explains the residual t1 ridges.
+- **General-purpose Python CS/MRI toolkits** (`sigpy`, `PySAP`/`pysap-mri`, `mripy`/`peng-cao/mripy`): all exist and are pip-installable/GitHub-installable, but are built around **MRI k-space** conventions (Cartesian/non-Cartesian k-space trajectories, coil sensitivities), not NMR FID/quadrature-detection conventions (States-TPPI, echo-antiecho, QF). None was found to have NMR-specific examples, Bruker-format awareness, or NMRPipe-format I/O. Adapting one correctly for this project's echo-antiecho HSQC/HMBC and QF COSY data would itself be a from-scratch signal-processing implementation project. LOW confidence that this is a shorter path than driving NMRPipe/SMILE.
+- **`nmrPype` (PyPI, `PhiMykah/nmrPype`, v0.8.0, BSD, Python 3.10+):** a genuine, actively-tagged pure-Python reimplementation of NMRPipe's *processing* verbs (FT/ZF/SP/PS/transpose) — pip-installable, no NMRPipe binary required for those steps. Interesting as a potential pip-only fallback for the **post-reconstruction processing** stage specifically. Its PyPI/GitHub description does not claim SMILE/IST/CS reconstruction support, and this was not independently verified by reading its source — treat any use of it for the *reconstruction* step (as opposed to plain FT/ZF/apodization) as unverified/LOW confidence.
+- **Recommendation:** Do not attempt to implement CS/IST/SMILE from the published algorithm papers as the v10.0 solution. The correctness risk (subtle quadrature/phase bugs are exactly the kind of thing that silently produces "plausible-looking but wrong" reconstructions, which is the CASE failure mode this milestone exists to eliminate) outweighs any packaging convenience. Use the validated NMRPipe+SMILE binary via subprocess instead.
 
 ## Alternatives Considered
 
-| Recommended | Alternative | Why Not |
-|-------------|-------------|---------|
-| Server-side PNG via matplotlib | Client-side plotly.js from CDN | Violates no-CDN constraint; CDN means no air-gap, adds external dependency |
-| `FigureCanvasAgg` explicit | `matplotlib.use('Agg')` global | Global state change unsafe in server; fails silently after first import |
-| Hand-rolled markdown renderer | Inline minified marked.js (~50 KB) | Maintains XSS discipline; purpose-built for the CASE-PROGRESS.md subset; no blob to maintain |
-| PNG format | SVG for spectra | 2D contour SVGs are >1 MB (thousands of path elements); PNG is 50–150 KB |
-| `analysis_dir.parent` convention | Passing `compound_path` to `create_app()` | No API change needed; CASE always creates `analysis/` as a direct child of the compound dir |
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|--------------------------|
+| NMRPipe + SMILE | hmsIST | If SMILE reconstructions on this project's 25–33% sampling densities still show visible t1-ridge artefacts after tuning (SMILE iteration count, threshold), and you're on Linux — hmsIST is a robust, well-cited fallback algorithm, but budget time for its platform/distribution uncertainty. |
+| NMRPipe + SMILE | mddnmr CLI scripts (not qMDD GUI) | Same artefact-quality trigger as above, Linux-only, and only via the command-line scripts (never the Python-2/PySide GUI). |
+| NMRPipe + SMILE (fully automated) | TopSpin GUI CS/MDD | If full automation genuinely turns out infeasible on a given machine (e.g., NMRPipe truly cannot be stood up, no VM/WSL2 permitted) — accept a manual, human-driven reconstruction step for that one machine, documented as an explicit exception to the "no GUI" constraint, not as a scripted `lucy` pathway. |
+
+## What NOT to Use
+
+| Avoid | Why | Use Instead |
+|-------|-----|--------------|
+| Hand-rolled per-column IST on `nmrglue.expand_nus()` | Proven root cause of the prior CASE-run failure (t1-ridge artefacts, LSD unable to prune the candidate space) | NMRPipe + SMILE |
+| qMDD GUI (Python 2 + PySide) | Python 2 is EOL (Jan 2020); GUI-driven; unmaintained since ~2020 | mddnmr's own command-line-only scripts (Linux only), or better, skip mddnmr entirely and use SMILE |
+| TopSpin as the automated reconstruction path in the `lucy` CLI | No documented/verified true-headless (zero-display) automation mode for CS/MDD reconstruction; would make the pipeline silently depend on an interactive session existing somewhere | NMRPipe + SMILE, subprocess-driven |
+| From-scratch pure-Python CS/IST implementation | High correctness risk reproducing published algorithms exactly (quadrature/phase handling for echo-antiecho and QF data is easy to get subtly wrong); no existing pip package implements it correctly for NMR today | NMRPipe + SMILE (mature, peer-reviewed, widely validated) |
+| Native Windows NMRPipe install | Not maintained since v8.9 (legacy XP-only build) | WSL2 Ubuntu (needs validation) or IBBR's own prebuilt Ubuntu VM image, documented as an accepted platform gap |
+
+## Stack Patterns by Variant
+
+**If running on macOS Apple Silicon (primary dev machine) or any native Linux (Intel/ARM):**
+- Install NMRPipe + SMILE natively; drive the full pipeline (bruk2pipe → nusExpand.tcl → SMILE → standard processing) via `subprocess` from a new `lucy nus` command group.
+- Generate the `fid.com`/conversion parameters programmatically from lucy-ng's existing Bruker `acqus`/`acqu2s` parsing rather than using NMRPipe's interactive `bruker` GUI template tool.
+
+**If running on Windows:**
+- Document as a platform gap. Recommend WSL2 Ubuntu as the primary workaround (needs a validation spike before being asserted as supported) or the IBBR-provided Ubuntu VM image as the officially-sanctioned fallback. Do not attempt a native Windows NMRPipe install.
+
+**If SMILE reconstructions fail the quality gate (t1 ridges still present after tuning) on this project's 25%/33%-sampled data:**
+- Fall back to hmsIST or mddnmr's CLI-only path, both Linux-only, both layered on the same already-required NMRPipe install. Treat both as experimental/spike-first, not drop-in replacements.
 
 ## Version Compatibility
 
-| Package | Compatible With | Notes |
-|---------|-----------------|-------|
-| matplotlib ≥3.7 | numpy ≥1.24 | Both already satisfied by existing deps |
-| matplotlib 3.10.7 (system) | FastAPI + uvicorn (existing) | No conflicts; matplotlib is only imported inside route handlers |
-| FigureCanvasAgg | Python 3.10–3.12 | Stable API; no breaking changes in matplotlib 3.x |
+| Package A | Compatible With | Notes |
+|-----------|------------------|-------|
+| NMRPipe 13.0 (mac11_arm64) | SMILE plugin bundled with the same release | SMILE requires "NMRPipe posted March 15 2018 or later" — any current download already satisfies this; do not mix an old NMRPipe core with a separately-obtained SMILE plugin. |
+| nmrglue 0.11 (already installed) | Any NMRPipe version | nmrglue's `nmrglue.fileio.pipe` module reads/writes NMRPipe-format files, giving lucy-ng a native Python bridge to hand processed NMRPipe spectra back into the existing peak-picking code without needing NMRPipe's own text-peaklist tools. |
+| WSL2 + Ubuntu Linux NMRPipe build | Should match one of `linux231_64`/`linux235_64`/`linux239_64` (Ubuntu 20/22/24) | Pick the build matching the WSL2 distro's Ubuntu version; unverified end-to-end in this research pass. |
 
-## Installation Delta
+## Grounding: real data checked against this recommendation
 
-```toml
-# In pyproject.toml [project.optional-dependencies]:
-webview = [
-    "fastapi>=0.100",
-    "uvicorn>=0.20",
-    "matplotlib>=3.7",    # ADD for Stage 2 spectra rendering
-]
-```
-
-```bash
-# Reinstall with updated extra:
-pip install -e ".[webview]"
-```
+Direct inspection of `/Users/steinbeck/Dropbox/develop/data/nmrdata/active-lucy-ng-testprojects/C20H32O2/2/` (exp2, COSY) confirms the task brief's data-inventory table: `nuslist` contains 188 zero-based t1 indices (0, 124, 431, …, matching `NusAMOUNT=25`, `NusSEED=54321` in `acqus`), `acqus` shows `PULPROG=<cosygpmfppqf>`, `AQ_mod=3`, `TD=2048`, `SW_h=3750`, and `acqu2s` shows `FnMODE=1` (QF) with indirect `TD=188` — exactly matching the guide's "COSY / QF / 188 points" row. This confirms the sampling-schedule and FnMODE facts this STACK research (and the downstream conversion-script design) are built on are accurate, not assumed.
 
 ## Sources
 
-- Codebase reading: `src/lucy_ng/webview/app.py`, `routers/status.py`, `routers/structures.py`, `routers/log.py`, `static/index.html` — existing patterns confirmed (WV-08 lazy imports, make_router closure, Response for binary content)
-- Codebase reading: `src/lucy_ng/readers/bruker.py` — `Spectrum1D`/`Spectrum2D` fields confirmed (data, ppm_scale, f1_ppm_scale, f2_ppm_scale, nucleus, experiment_type)
-- Codebase reading: `pyproject.toml` — confirmed matplotlib absent from declared deps
-- System: `python3 -c "import matplotlib; print(matplotlib.__version__)"` → 3.10.7 (installed but undeclared)
-- Codebase reading: `.claude/agents/lucy-nmr-chemist.md`, `.claude/commands/lucy-ng/case.md` — confirmed peak data only in CASE-PROGRESS.md + compound.lsd (no separate JSON files written to analysis_dir)
-- matplotlib official docs pattern: `Figure` + `FigureCanvasAgg` for headless server rendering — standard MEDIUM→HIGH confidence (stable API, widely documented, no version concerns for ≥3.7)
-- Design spec: `docs/superpowers/specs/2026-07-02-case-webview-design.md` — Stage 2 requirements confirmed
+- https://www.ibbr.umd.edu/nmrpipe/install — NMRPipe platform matrix, version, csh requirement, download mechanism (HIGH confidence, official/current)
+- https://spin.niddk.nih.gov/bax/software/smile/smile_manual.pdf — SMILE manual, install/bundling with NMRPipe, macOS+Linux CLI usage (HIGH confidence, official)
+- https://spin.niddk.nih.gov/bax/software/SMILE/ — SMILE overview, example scripts (HIGH confidence, official)
+- https://github.com/eburakova/hmsIST — hmsIST distribution, ambiguous license notice, "archived" status (MEDIUM confidence — public repo but self-described as an archive mirror)
+- https://link.springer.com/article/10.1007/s10858-012-9611-z , https://link.springer.com/article/10.1007/s10858-017-0103-z — hmsIST/IST-HMS primary literature, dates the last known active development (2012, 2017) (HIGH confidence for dates, MEDIUM for currency inference)
+- http://mddnmr.spektrino.com/man — mddnmr v2.7 manual (Sept 2020), Linux-only statically-linked executables (MEDIUM confidence — manual content retrieved, but the live site currently fails TLS certificate validation, a currency/trust red flag)
+- https://groups.google.com/g/mddnmr/c/VekBfc7gYXE — mddnmr 2.5 release notes, Linux platform confirmation (MEDIUM confidence)
+- https://www.bruker.com/en/products-and-solutions/mr/nmr-software/topspin-faqs.html — TopSpin academic/free licensing, 2D NUS included free (HIGH confidence, official vendor)
+- https://www.bruker.com/en/products-and-solutions/mr/nmr-software/topspin/topspin-python-interface.html — TopSpin Python Interface (4.3+), network/web-service architecture, Python 3.9+ requirement (HIGH confidence, official vendor; LOW confidence on headless/no-display capability, which the page does not address)
+- https://ekwan.github.io/2020/01/topspin-automation — community write-up confirming legacy Jython/AU-program automation runs inside a live TopSpin process, no headless mode described (MEDIUM confidence, single community source)
+- Direct inspection of installed `nmrglue` 0.11 (`nmrglue.process.proc_base`) in this repo's environment — confirms `expand_nus()` exists, confirms no CS/IST/SMILE function exists (HIGH confidence — first-party verification, not a web source)
+- Direct inspection of `C20H32O2/2/{nuslist,acqus,acqu2s}` — grounds the FnMODE/nuslist/NusAMOUNT facts used throughout this document (HIGH confidence — first-party verification)
+- https://pypi.org/project/nmrPype/ — pure-Python NMRPipe-processing-verb reimplementation, BSD/Python 3.10+ (MEDIUM confidence — PyPI listing read via search snippet, not independently source-verified for SMILE/IST support)
 
 ---
-
-*Stack research for: v9.3 CASE Web-View Stage 2 — spectra rendering, markdown log, tabbed UI, data tables*
-*Researched: 2026-07-07*
+*Stack research for: NUS 2D NMR reconstruction backend (lucy-ng v10.0)*
+*Researched: 2026-07-12*
