@@ -11,6 +11,7 @@ from lucy_ng.cli.fetch import fetch
 from lucy_ng.cli.fragment import fragment
 from lucy_ng.cli.identify import identify
 from lucy_ng.cli.lsd import lsd
+from lucy_ng.cli.nus import nus
 from lucy_ng.cli.pick import pick
 from lucy_ng.cli.predict import predict
 from lucy_ng.cli.pylsd import pylsd
@@ -43,6 +44,7 @@ def cli() -> None:
       database    Database management (build, info)
       fragment    Fragment library (build, search, info)
       webview     Dashboard server for live CASE runs
+      nus         NUS (Non-Uniform Sampling) 2D reconstruction
     """
     pass
 
@@ -62,3 +64,4 @@ cli.add_command(fetch)
 cli.add_command(database)
 cli.add_command(fragment)
 cli.add_command(webview)
+cli.add_command(nus)

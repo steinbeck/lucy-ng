@@ -63,6 +63,11 @@ webview = [
     "uvicorn>=0.20",
     "matplotlib>=3.7",
 ]
+nus = [
+    # No dependencies yet -- NUS-01..05 (Phase 97) use only nmrglue/pydantic/click,
+    # already core dependencies. Reserved for Phase 98/99 pip-installable pieces
+    # (e.g. QC-plotting deps), following the [webview] extra's lazy-import pattern.
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true

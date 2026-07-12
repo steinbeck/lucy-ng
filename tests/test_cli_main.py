@@ -1,5 +1,8 @@
 """Tests for CLI main module."""
 
+import subprocess
+import sys
+
 from click.testing import CliRunner
 
 from lucy_ng import __version__
@@ -49,14 +52,46 @@ class TestCLIMain:
         assert "analyze" in result.output
         assert "dereplicate" in result.output
         assert "lsd" in result.output
+        assert "nus" in result.output
 
     def test_subcommand_help(self) -> None:
         """Test subcommand help is accessible."""
         runner = CliRunner()
-        for cmd in ["read", "pick", "analyze", "dereplicate", "lsd"]:
+        for cmd in ["read", "pick", "analyze", "dereplicate", "lsd", "nus"]:
             result = runner.invoke(cli, [cmd, "--help"])
             assert result.exit_code == 0
             assert "Usage:" in result.output
+
+    def test_nus_help_lists_check_params_schedule(self) -> None:
+        """D-02: only the implemented check/params/schedule subcommands are
+        registered on `lucy nus`; no dead reconstruct/pipeline stubs."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["nus", "--help"])
+        assert result.exit_code == 0
+        assert "check" in result.output
+        assert "params" in result.output
+        assert "schedule" in result.output
+
+
+class TestNusImportSafe:
+    """NUS-05: core `lucy` CLI stays importable without the [nus] extra.
+
+    Phase 97's nus/ submodules only use core dependencies (nmrglue, pydantic,
+    click stdlib), so this is a plain "does the process exit 0" smoke check --
+    there is no optional third-party package to detect a leak of (unlike the
+    webview extra's fastapi/uvicorn leak check).
+    """
+
+    def test_cli_import_without_nus_extra(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "-c", "from lucy_ng.cli import cli"],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, (
+            f"lucy_ng.cli failed to import.\n"
+            f"stdout: {result.stdout}\nstderr: {result.stderr}"
+        )
 
 
 class TestCLIIntegration:
