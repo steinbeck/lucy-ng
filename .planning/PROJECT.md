@@ -10,9 +10,11 @@ Lucy-ng is an AI-agent skill for Computer-Assisted Structure Elucidation (CASE) 
 
 An AI agent can autonomously determine the structure of an unknown organic compound from its NMR spectra, with a multi-agent architecture that prevents unproductive loops and keeps the elucidation on track.
 
-## Current Milestone: v9.3 CASE Web-View Stage 2
+## v9.3 CASE Web-View Stage 2 — SHIPPED ✅ (2026-07-12)
 
-**Goal:** Grow the read-only CASE webview from a status monitor into a full run inspector — a formatted run log plus rendered spectra and data tables in tabs.
+**Outcome:** All four target features shipped and verified (each phase VERIFICATION passed): formatted markdown run log + 4-tab framework (Phase 93), data tables (Phase 94), 1D real spectra + peak overlay (Phase 95), 2D real spectra + peak overlay (Phase 96). New `tables.py` + `spectra.py` routers on the v9.2 "tabs dock in without a rewrite" architecture; `.run_manifest.json` raw-Bruker-path wiring; matplotlib in the `[webview]` extra (OO-API/lazy, WV-08). Full archive: `milestones/v9.3-ROADMAP.md`, tagged `v9.3`. Two defects caught & fixed at Phase 96 verification (2D F1-axis inversion via the manual browser checkpoint; placeholder-figsize layout-jump via code review).
+
+**Goal (shipped):** Grow the read-only CASE webview from a status monitor into a full run inspector — a formatted run log plus rendered spectra and data tables in tabs.
 
 **Target features:**
 - **Formatted run log** — render `CASE-PROGRESS.md` markdown in the log panel (headings, bold, tables, monospace code) instead of raw text (reverses v9.2 D-13; deferred-with-trigger in Phase 91, trigger met on the live CASE1 run).
@@ -47,7 +49,9 @@ An AI agent can autonomously determine the structure of an unknown organic compo
 
 ## Current State
 
-**Version:** v9.2 shipped 2026-07-07 (v9.1 2026-06-29, v9.0 2026-06-17)
+**Version:** v9.3 shipped 2026-07-12 (v9.2 2026-07-07, v9.1 2026-06-29, v9.0 2026-06-17)
+
+**What shipped in v9.3 (CASE Web-View Stage 2, phases 93–96):** The read-only dashboard grew into a full spectral-inspection suite — a persistent 4-tab bar (Run Log / 1D / 2D Spectra / Tables) over a markdown-rendered run log (hand-rolled XSS-safe DOM renderer), data tables (¹³C signals, HSQC/HMBC/COSY correlations with HMBC flag colours, LSD constraint inventory), and **real rendered 1D + 2D NMR spectra with the picked peaks overlaid** (reversed ppm axes; HMBC flag-coloured markers; COSY diagonal). New `tables.py` + `spectra.py` routers; `.run_manifest.json` raw-Bruker-path wiring; matplotlib in the `[webview]` extra (OO-API/lazy, WV-08, base CLI dependency-free); 2D block-max decimation + MAD contour levels + mtime PNG cache. Validation-only across CASE1–9 (no new milestone UAT).
 **Codebase:** Python package (`src/lucy_ng/`) + `src/lucy_ng/webview/` (optional `[webview]` extra), test suite **1174 tests** at v9.2 close
 **Database:** SQLite with 928K compounds, 7.9M HOSE statistics + fragment library (2.4M SSCs)
 **Agent definitions:** 4-agent CASE team + case.md orchestrator (in `repo/.claude/`, symlinked into `~/.claude`)
@@ -143,9 +147,14 @@ An AI agent can autonomously determine the structure of an unknown organic compo
 - Dashboard endpoints + UI: `/api/status|/api/log|/api/structures|/api/structure/{i}.svg` with graceful degradation (200 not 500 on partial files; 404 out-of-range; placeholder on malformed SMILES), RDKit SVG depictions, single-file vanilla-JS auto-refresh frontend, no build step (WV-03/04/05/06) — v9.2
 - Orchestrator auto-launch: `case.md` starts the dashboard at run-start, reports URL + stop hint, server outlives `terminate_team`; live-validated on CASE1 (WV-07) — v9.2
 
-### Deferred
+### Validated (v9.3 — CASE Web-View Stage 2)
 
-- [ ] **Stage 2 (v9.3) — webview:** formatted run log (render `CASE-PROGRESS.md` markdown) + rendered spectra tabs (1D ¹³C/¹H/DEPT, 2D HSQC/HMBC/COSY) + data tables (peak lists, constraint inventory, HMBC usage). Design spec `docs/superpowers/specs/2026-07-02-case-webview-design.md` § Stage 2; architecture built to accommodate.
+- Formatted run log + 4-tab framework: persistent Run Log / 1D / 2D Spectra / Tables bar; CASE-PROGRESS.md rendered as markdown via a hand-rolled createElement/textContent DOM renderer (XSS-safe, no innerHTML of server content); `webview.js` served as a static asset (LOG-01, TAB-01) — v9.3
+- Data tables: `tables.py` router, 5 never-500 routes — ¹³C signals, HSQC/HMBC/COSY correlations (HMBC flag colours), LSD constraint inventory from the latest `compound.lsd`; per-panel "waiting for data" state (TBL-01/02/03) — v9.3
+- 1D real spectra + peak overlay: `spectra.py` router renders real ¹³C/¹H Bruker traces (BrukerReader/nmrglue + matplotlib Agg) on a reversed ppm axis with picked peaks overlaid; `.run_manifest.json` raw-data path wiring; matplotlib in `[webview]` extra, lazy imports (SP1-01, SP-02, WV-08) — v9.3
+- 2D real spectra + peak overlay: three `/api/spectra/2d/{hsqc,hmbc,cosy}` routes render real HSQC/HMBC/COSY contour plots with cross-peak overlays (open circles; HMBC flag colours; COSY diagonal; reversed axes both dims), block-max decimation ≤512×512, MAD-threshold geometric levels, mtime PNG cache, never-500 degradation (SP2-01, SP-02) — v9.3
+
+### Deferred
 - [ ] CASE4 azulene-regiochemistry-enumeration gap — exact chamazulene regiochemistry not reachable (di-methyl-ethyl class is searched). 4th defect class surfaced by v9.1 UAT-01. (todo `2026-06-25-case4-azulene-regiochemistry-enumeration-gap`)
 - [ ] 4J HMBC coupling handling via pyLSD (Priority 1 — v7.0 statistical approach failed, pyLSD solver-based approach next)
 - [ ] Multi-compound CASE comparison UAT (blocked on 4J handling or non-aromatic test compounds)
@@ -284,4 +293,4 @@ Minimum viable spectral data for v1:
 | `CLAUDE_CODE_SUBAGENT_MODEL=inherit` | A stale `=sonnet` override silently forced all subagents to Sonnet 4.6 and drove earlier CASE failures | Good — Opus 4.8 then solved both cases |
 
 ---
-*Last updated: 2026-07-07 after the v9.2 CASE Web-View milestone (phases 90–92, WV-01..08) — archived to `milestones/v9.2-ROADMAP.md` + `milestones/v9.2-REQUIREMENTS.md`, tagged `v9.2`. Delivered the read-only CASE dashboard (server/CLI + endpoints/depictions/frontend + orchestrator auto-launch), live-validated on CASE1. Next: `/gsd-new-milestone` to scope Stage 2 (v9.3) — formatted run log + rendered spectra tabs + data tables.*
+*Last updated: 2026-07-12 after the v9.3 CASE Web-View Stage 2 milestone (phases 93–96, LOG-01/TAB-01/TBL-01..03/SP1-01/SP2-01/SP-02) — archived to `milestones/v9.3-ROADMAP.md` + `milestones/v9.3-REQUIREMENTS.md`, tagged `v9.3`. Delivered the full spectral-inspection suite: formatted run log + tab framework, data tables, and real rendered 1D + 2D NMR spectra with picked peaks overlaid. Next: `/gsd-new-milestone` to scope the next cycle.*

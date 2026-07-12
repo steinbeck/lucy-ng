@@ -1,5 +1,25 @@
 # Project Milestones: lucy-ng
 
+## v9.3 CASE Web-View Stage 2 (Shipped: 2026-07-12)
+
+**Phases completed:** 4 phases, 16 plans, 23 tasks
+
+**Delivered:** The read-only CASE web-view dashboard grew from a run-status monitor into a full spectral-inspection suite — a persistent tab bar over a formatted run log, data tables, and real rendered 1D + 2D NMR spectra with picked peaks overlaid for visual QC.
+
+**Key accomplishments:**
+
+- **Phase 93 — Formatted log + tab framework:** persistent 4-tab bar (Run Log / 1D / 2D Spectra / Tables) with no page reload; CASE-PROGRESS.md rendered as formatted markdown via a hand-rolled createElement/textContent DOM renderer (headings/bold/pipe-tables/code) that preserves the v9.2 XSS discipline (never `innerHTML` of server content); `webview.js` extracted to a served static asset.
+- **Phase 94 — Data tables:** `tables.py` router with 5 never-500 GET routes rendering the ¹³C signal table, HSQC/HMBC/COSY correlation tables (HMBC flag colour-coding), and the LSD constraint inventory parsed from the latest `compound.lsd`; each panel degrades to a "waiting for data" state during a live run.
+- **Phase 95 — 1D real spectra:** `spectra.py` router renders real ¹³C/¹H Bruker traces (BrukerReader + nmrglue + matplotlib Agg) on a reversed ppm axis with picked peaks overlaid; introduced the `.run_manifest.json` raw-data path wiring (written by `case.md` at run-start) and the matplotlib `[webview]`-extra + lazy-import discipline (WV-08).
+- **Phase 96 — 2D real spectra:** three `/api/spectra/2d/{hsqc,hmbc,cosy}` routes render real HSQC/HMBC/COSY contour plots with cross-peak overlays (open circles; HMBC flag colours; COSY diagonal), block-max decimation to ≤512×512, MAD-threshold geometric contour levels, and an mtime-keyed PNG cache; three stacked `<img>` populate the 2D tab.
+- **Cross-cutting quality:** matplotlib OO-API only (never pyplot), lazy imports confined to `make_router()`, base `lucy` install imports without the `[webview]` extra; "dumb server, never-500, graceful unavailable" contract across every tab. Two defects were caught and fixed at Phase 96 verification — a 2D F1/y-axis inversion (found via the manual browser checkpoint + real-CASE1 render) and a placeholder-figsize layout-jump (code review CR-01).
+
+**Stats:** ~107 commits, 72 files changed (+16,988 / −287). Validation-only across CASE1–9 (no new milestone UAT).
+
+**Known deferred items at close:** 2 pending todos, both outside v9.3 webview scope (CASE4 azulene-regiochemistry enumeration gap [skill]; ranking-tests hard-fail without hosegen [tests]) — see STATE.md § Deferred Items.
+
+---
+
 ## v9.2 CASE Web-View (Shipped: 2026-07-07)
 
 **Delivered:** A read-only web dashboard that makes a CASE run observable live and after the fact — three auto-refreshing widgets (run status, top RDKit-rendered candidate structures with MAE/rank, scrollable run log), auto-launched by the orchestrator and kept alive past the run. Ships as an optional extra (`lucy-ng[webview]`); the core CLI stays dependency-free. Live-validated on a CASE1 run (ibuprofen solved, Rank 1 MAE 0.25).

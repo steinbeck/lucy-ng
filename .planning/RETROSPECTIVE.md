@@ -185,6 +185,37 @@ A read-only web dashboard for CASE runs: `lucy webview serve/stop/status` (FastA
 
 ---
 
+## Milestone: v9.3 — CASE Web-View Stage 2
+
+**Shipped:** 2026-07-12
+**Phases:** 4 (93–96) | **Plans:** 16 | **Tasks:** 23
+
+### What Was Built
+Formatted markdown run log + 4-tab framework (93); data tables — ¹³C/HSQC/HMBC/COSY + LSD constraint inventory (94); 1D real Bruker spectra + peak overlay with `.run_manifest.json` path wiring + matplotlib `[webview]` pipeline (95); 2D HSQC/HMBC/COSY contour plots + cross-peak overlay with block-max decimation, MAD levels, mtime cache (96).
+
+### What Worked
+- **The manual browser checkpoint earned its keep.** Phase 96's `autonomous:false` checkpoint — driven by rendering the real CASE1 PNGs and viewing them — caught a 2D F1/y-axis inversion that the headless test *asserted in the wrong direction* and so happily passed. Visual verification against real data found what the test couldn't.
+- **Adversarial gates each caught a real, distinct defect:** plan-checker (2 blockers: a `-k` selector matching zero tests; a frozen-signature contract break), UI-checker (typography 4-size cap), code-review (CR-01 placeholder layout-jump). None were rubber-stamps.
+- **Purely-additive phase design** (extend `spectra.py` in place, mirror the 1D→2D pattern) kept the diff analog-driven and low-risk; PATTERNS.md made the 1D→2D mapping explicit.
+
+### What Was Inefficient
+- The headless axis test encoded the *wrong* expected direction and passed green — a reminder that a passing test proves consistency with its own assertion, not correctness. Spatial/visual contracts (axis direction, aromatic-top-left) need either a golden-image check or a human look.
+- `mypy`/`ruff` over the whole repo surfaces large pre-existing debt unrelated to the phase; scoping checks to the changed files avoided false alarms but the debt remains.
+
+### Patterns Established
+- **Render-and-look verification for image outputs:** for server-rendered chart PNGs, render against a real dataset and inspect the actual pixels (headless + browser) rather than trusting `ylim[0] > ylim[1]`-style proxies.
+- **figsize parity across real + placeholder render paths** (CR-01) so a panel never changes height when it flips between "unavailable" and real data.
+
+### Key Lessons
+- A green test is only as good as its assertion — for direction/orientation/layout, assert the *spatial* outcome or verify visually.
+- Advisory gates (UI-check, code-review) are worth running even in an auto-chain: three of them each found a distinct real defect here.
+
+### Cost Observations
+- Model mix: orchestration on Opus; researcher/planner-checker/executor/verifier/reviewer subagents on Sonnet.
+- Notable: ran as a single `--chain` discuss→plan→execute→verify→complete pipeline with one interactive manual-checkpoint + inline fix loop (axis fix + code-review fixes). Verification/review caught 4 real defects post-plan.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution

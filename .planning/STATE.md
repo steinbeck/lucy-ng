@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v9.3
 milestone_name: CASE Web-View Stage 2
-status: milestone_complete
-stopped_at: Milestone complete (Phase 96 was final phase)
-last_updated: 2026-07-12T08:42:23.851Z
-last_activity: 2026-07-11 -- Phase 96 execution started
+status: Awaiting next milestone
+stopped_at: Phase 96 context gathered
+last_updated: "2026-07-12T10:13:47.803Z"
+last_activity: 2026-07-12 — Milestone v9.3 completed and archived
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
   completed_plans: 16
-  percent: 75
+  percent: 100
 ---
 
 # lucy-ng State
@@ -25,15 +25,10 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 
 ## Current Position
 
-Phase: 96
-Plan: Not started
-Next: Phase 95 (1D Real Spectra + Peak Overlay) — introduces Bruker-path wiring + matplotlib Agg
-Status: Milestone complete
-Last activity: 2026-07-12
-
-```
-Progress: [██████████░░░░░░░░░░] 50% (2/4 phases)
-```
+Phase: Milestone v9.3 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-12 — Milestone v9.3 completed and archived
 
 ## Milestone v9.3 Phases
 
@@ -47,6 +42,13 @@ Progress: [██████████░░░░░░░░░░] 50% (2/
 **Sequencing:** Phase 93 (tab framework + markdown log) ships first as a pure frontend change — it establishes the tab dock-in that all later phases populate and carries zero backend risk. Phase 94 (data tables) comes next, establishing the `analysis/`-only router pattern without matplotlib. Phase 95 (1D spectra) introduces the Bruker-path wiring (`.run_manifest.json` written by `case.md`) and the matplotlib Agg pipeline — two cross-cutting concerns that Phase 96 inherits. Phase 96 (2D spectra) is purely additive to Phase 95: same router, same manifest, same matplotlib backend, only adds 2D contour logic + caching.
 
 ## Deferred Items
+
+Items acknowledged and deferred at **v9.3 CASE Web-View Stage 2 milestone close on 2026-07-12**:
+
+| Category | Item | Status | Note |
+|----------|------|--------|------|
+| todo | 2026-06-25-case4-azulene-regiochemistry-enumeration-gap | deferred (re-confirmed) | CASE-solver backlog; unrelated to the v9.3 webview scope. Still open. |
+| todo | 2026-06-30-ranking-tests-hardfail-without-hosegen | deferred (re-confirmed) | v9.1 test-infra backlog; unrelated to the v9.3 webview scope. |
 
 Items acknowledged and deferred at **v9.2 CASE Web-View milestone close on 2026-07-07** (carried into v9.3 or later):
 
@@ -145,3 +147,7 @@ Resume with: `/gsd-execute-phase 94` (continue with Plan 94-03 — frontend Tabl
 
 ---
 *Last updated: 2026-07-07 — v9.3 roadmap created (4 phases, 8 requirements mapped)*
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
