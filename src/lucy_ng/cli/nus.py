@@ -1,16 +1,18 @@
 """Lucy NUS (Non-Uniform Sampling) reconstruction CLI commands.
 
 This module is import-safe: it does NOT import ``lucy_ng.nus.params``,
-``lucy_ng.nus.schedule``, or ``lucy_ng.nus.backends`` at the top level. All
-``lucy_ng.nus.*`` imports are deferred into command bodies so that the core
-``lucy`` CLI stays importable without the optional ``[nus]`` extra (NUS-05).
+``lucy_ng.nus.schedule``, ``lucy_ng.nus.backends``, or ``lucy_ng.nus.runner``
+at the top level. All ``lucy_ng.nus.*`` imports are deferred into command
+bodies so that the core ``lucy`` CLI stays importable without the optional
+``[nus]`` extra (NUS-05).
 
-Phase 97 only implements the ``check``/``params``/``schedule`` subcommands
-(backend detection + pure-Python acquisition/schedule parsing). Reconstruction
-(``reconstruct``) and the full processing pipeline (``pipeline``) are Phase
-98/99 deliverables and are deliberately NOT registered here (D-02: no dead
-stubs) -- this establishes the deferred-import convention now so those later
-commands slot in without a refactor.
+Phase 97 implemented the ``check``/``params``/``schedule`` subcommands
+(backend detection + pure-Python acquisition/schedule parsing). Phase 98
+(Plan 06) adds ``reconstruct`` -- the whole-pipeline CLI wrapper around
+``lucy_ng.nus.runner.NusRunner`` -- following the exact same deferred-import
+convention. The full processing pipeline (``pipeline``, wiring in Phase 99's
+peak-pick bridge) remains deliberately NOT registered here (D-02: no dead
+stubs).
 """
 
 from __future__ import annotations
@@ -139,3 +141,113 @@ def schedule(expdir: str, output_format: str) -> None:
         click.echo(f"TD (F1): {model.td_f1}")
         click.echo(f"NusTD: {model.nus_td}")
         click.echo(f"Sampled points: {model.n_sampled} / {model.nus_td}")
+
+
+@nus.command("reconstruct")
+@click.argument("expdir", type=click.Path(exists=True))
+@click.option(
+    "--iterations",
+    type=int,
+    default=500,
+    show_default=True,
+    help=(
+        "SMILE -maxIter upper bound. This is NOT the sole stopping rule -- "
+        "the real stopping condition is the -nSigma/-thresh noise-threshold "
+        "convergence check; -maxIter only prevents an unbounded run."
+    ),
+)
+@click.option(
+    "--threshold",
+    type=float,
+    default=0.8,
+    show_default=True,
+    help="SMILE -thresh value (noise-threshold convergence check).",
+)
+@click.option(
+    "--virtual-echo/--no-virtual-echo",
+    "virtual_echo",
+    default=True,
+    show_default=True,
+    help=(
+        "Request virtual-echo/Echo-AntiEcho (-EA) reconstruction when the "
+        "FnMODE recipe allows it (echo-antiecho experiments only; ignored "
+        "for QF/magnitude-mode FnMODEs)."
+    ),
+)
+@click.option(
+    "--f2-p0",
+    type=float,
+    default=0.0,
+    show_default=True,
+    help="F2 (direct-dimension) zero-order phase override (D-02, PROVISIONAL default).",
+)
+@click.option(
+    "--f2-p1",
+    type=float,
+    default=0.0,
+    show_default=True,
+    help="F2 (direct-dimension) first-order phase override (D-02).",
+)
+@click.option(
+    "--f1-p0",
+    type=float,
+    default=90.0,
+    show_default=True,
+    help="F1 (indirect-dimension) zero-order phase override (D-02, PROVISIONAL default).",
+)
+@click.option(
+    "--f1-p1",
+    type=float,
+    default=0.0,
+    show_default=True,
+    help="F1 (indirect-dimension) first-order phase override (D-02).",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+    help="Output format.",
+)
+def reconstruct(
+    expdir: str,
+    iterations: int,
+    threshold: float,
+    virtual_echo: bool,
+    f2_p0: float,
+    f2_p1: float,
+    f1_p0: float,
+    f1_p1: float,
+    output_format: str,
+) -> None:
+    """Run the whole NUS reconstruction + processing pipeline on EXPDIR.
+
+    EXPDIR is a Bruker NUS experiment directory (contains `ser`, `nuslist`,
+    `acqus`, `acqu2s`). Drives bruk2pipe -> nusExpand.tcl -> SMILE ->
+    FT/phase/baseline fully automatically (RECON-01), enforcing the
+    F2-before-F1 hard ordering gate (RECON-02) and FnMODE-aware branching
+    (RECON-03) via `NusRunner.reconstruct()`. Intermediates are written to
+    `analysis/nus_recon/<expN>/` under EXPDIR and kept (D-03).
+    """
+    from lucy_ng.nus.runner import NusRunner
+
+    resolved = Path(expdir).resolve()
+    result = NusRunner().reconstruct(
+        resolved,
+        max_iter=iterations,
+        threshold=threshold,
+        virtual_echo=virtual_echo,
+        f1_p0=f1_p0,
+        f1_p1=f1_p1,
+        f2_p0=f2_p0,
+        f2_p1=f2_p1,
+    )
+
+    if output_format == "json":
+        click.echo(json.dumps(result.to_dict(), indent=2))
+    else:
+        click.echo(f"Backend: {result.backend}")
+        click.echo(f"Success: {result.success}")
+        click.echo(f"Stage dir: {result.stage_dir}")
+        click.echo(f"Processed spectrum: {result.processed_spectrum}")
