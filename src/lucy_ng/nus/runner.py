@@ -2,21 +2,33 @@
 
 This module is the NUS analog of `lucy_ng.lsd.runner.LSDRunner`: it owns the
 one shared, fail-loud subprocess wrapper every external-tool stage
-(bruk2pipe, nusExpand.tcl, SMILE, post-processing) must call.
+(bruk2pipe, nusExpand.tcl, SMILE, post-processing) must call, plus the
+FnMODE-driven stage-order recipe table (Critical Finding 1 of
+98-RESEARCH.md: the bruk2pipe <-> nusExpand.tcl invocation order is
+FnMODE-dependent, not fixed).
 
-Wave 1 (Plan 02) ships only the foundation primitives -- `run_stage()` here,
-with the FnMODE-driven stage-order recipe table added alongside it in this
-same plan. No orchestration (`NusRunner.reconstruct()`) or backend
-invocation lives here yet; those are built in Plans 03/05 on top of these
-primitives.
+Wave 1 (Plan 02) ships only these two foundation primitives -- `run_stage()`
+and the FnMODE recipe/`_ordering_for_fnmode()` helper. No orchestration
+(`NusRunner.reconstruct()`) or backend invocation lives here yet; those are
+built in Plans 03/05 on top of these primitives.
 """
 
 from __future__ import annotations
 
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import nmrglue as ng
+
+from lucy_ng.models.nus import COMPLEX_FNMODES, REAL_FNMODES
+
+#: The two stage-order branches this project has verified against the
+#: official SMILE manual (98-RESEARCH.md Critical Finding 1). Any FnMODE
+#: outside REAL_FNMODES/COMPLEX_FNMODES has no known recipe -- refuse to
+#: guess (mirrors nus/schedule.py's expected_sample_count() convention).
+StageOrder = Literal["expand_first", "convert_first"]
 
 
 def run_stage(
@@ -84,3 +96,130 @@ def run_stage(
                 "is all-zero/empty data -- treat as a hard failure, not a "
                 "legitimate empty result."
             )
+
+
+def _ordering_for_fnmode(fnmode: int) -> StageOrder:
+    """Resolve the bruk2pipe<->nusExpand.tcl stage order for a given FnMODE.
+
+    Per the official SMILE manual (98-RESEARCH.md Critical Finding 1):
+    running `nusExpand.tcl` *before* `bruk2pipe` is the recommended,
+    fully-worked path for phase-sensitive (echo-antiecho/complex-pair)
+    experiments, but the manual explicitly states this order "does not
+    work" for magnitude-mode (QF) Bruker data -- which must instead run
+    `bruk2pipe` first.
+
+    Args:
+        fnmode: `acqu2s FnMODE` (F1/indirect dimension).
+
+    Returns:
+        `"expand_first"` for `fnmode in COMPLEX_FNMODES` (4, 5, 6),
+        `"convert_first"` for `fnmode in REAL_FNMODES` (1, 2).
+
+    Raises:
+        NotImplementedError: If `fnmode` is not a recognized real/complex
+            mode -- refuses to guess (mirrors
+            `nus/schedule.py::expected_sample_count()`).
+    """
+    if fnmode in COMPLEX_FNMODES:
+        return "expand_first"
+    if fnmode in REAL_FNMODES:
+        return "convert_first"
+    raise NotImplementedError(f"FnMODE={fnmode} has no known stage-order recipe")
+
+
+@dataclass(frozen=True)
+class FnModeRecipe:
+    """Per-FnMODE reconstruction recipe (RECON-03's one auditable table).
+
+    Captures the four things that differ by FnMODE per 98-RESEARCH.md
+    Pattern 3: stage order, the `bruk2pipe -yMODE` value, whether F1 phase
+    correction applies at all, and whether SMILE's `-EA` flag is passed.
+
+    Attributes:
+        stage_order: `"expand_first"` or `"convert_first"` -- see
+            `_ordering_for_fnmode`.
+        bruk2pipe_ymode: The literal string passed to `bruk2pipe -yMODE`.
+        phase_sensitive: True for COMPLEX_FNMODES (echo-antiecho/States/
+            States-TPPI); False for REAL_FNMODES (QF/QSEQ magnitude mode,
+            e.g. COSY -- processed without phase correction).
+        smile_ea: True if SMILE's `-EA` flag applies for this FnMODE
+            (Echo-AntiEcho only, FnMODE=6).
+    """
+
+    stage_order: StageOrder
+    bruk2pipe_ymode: str
+    phase_sensitive: bool
+    smile_ea: bool
+
+
+# Per-FnMODE recipe table -- the single auditable place FnMODE-driven
+# reconstruction behavior lives (RECON-03). `bruk2pipe -yMODE` string
+# values for FnMODE 4/5/6 are directly confirmed against the SMILE
+# manual's own worked scripts (98-RESEARCH.md Standard Stack /
+# Critical Finding 1). The FnMODE 1/2 (QF/QSEQ magnitude) `-yMODE` value
+# is PROVISIONAL per 98-RESEARCH.md Assumptions Log A3: only
+# "Echo-AntiEcho"/"Complex"/"States" were directly confirmed via the
+# manual's own worked scripts; a secondary source's mode-value list for
+# magnitude mode was ambiguous/garbled. "QF" is bruk2pipe's own
+# documented flag name for the Bruker QF acquisition mode, but has NOT
+# been independently verified against a primary SMILE-manual example --
+# flagged here, not asserted as confirmed. Verify via
+# `bruk2pipe -yMODE -help` at implementation time before trusting this
+# value unattended for the exp2 COSY branch.
+_FNMODE_RECIPES: dict[int, FnModeRecipe] = {
+    6: FnModeRecipe(
+        stage_order="expand_first",
+        bruk2pipe_ymode="Echo-AntiEcho",
+        phase_sensitive=True,
+        smile_ea=True,
+    ),
+    5: FnModeRecipe(
+        stage_order="expand_first",
+        bruk2pipe_ymode="States-TPPI",
+        phase_sensitive=True,
+        smile_ea=False,
+    ),
+    4: FnModeRecipe(
+        stage_order="expand_first",
+        bruk2pipe_ymode="States",
+        phase_sensitive=True,
+        smile_ea=False,
+    ),
+    2: FnModeRecipe(
+        stage_order="convert_first",
+        bruk2pipe_ymode="QSEQ",  # PROVISIONAL -- see Assumptions Log A3 above
+        phase_sensitive=False,
+        smile_ea=False,
+    ),
+    1: FnModeRecipe(
+        stage_order="convert_first",
+        bruk2pipe_ymode="QF",  # PROVISIONAL -- see Assumptions Log A3 above
+        phase_sensitive=False,
+        smile_ea=False,
+    ),
+}
+
+
+def recipe_for_fnmode(fnmode: int) -> FnModeRecipe:
+    """Return the `FnModeRecipe` for a given FnMODE.
+
+    Args:
+        fnmode: `acqu2s FnMODE` (F1/indirect dimension).
+
+    Returns:
+        The `FnModeRecipe` capturing stage order, `bruk2pipe -yMODE` value,
+        phase-sensitivity, and SMILE `-EA` applicability for this FnMODE.
+
+    Raises:
+        NotImplementedError: If `fnmode` is not a recognized real/complex
+            mode -- refuses to guess (mirrors `_ordering_for_fnmode`).
+    """
+    try:
+        return _FNMODE_RECIPES[fnmode]
+    except KeyError:
+        # Delegate to _ordering_for_fnmode purely for its consistent
+        # refuse-to-guess NotImplementedError message/behavior; it will
+        # always raise here since _FNMODE_RECIPES and
+        # REAL_FNMODES/COMPLEX_FNMODES cover the identical fnmode set.
+        _ordering_for_fnmode(fnmode)
+        raise AssertionError("unreachable")  # pragma: no cover

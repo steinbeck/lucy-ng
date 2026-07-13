@@ -15,7 +15,6 @@ from __future__ import annotations
 import pytest
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
 def test_echo_antiecho_expand_first() -> None:
     """FnMODE=6 (echo-antiecho, HSQC exp3 @ 25% and HMBC exp4 @ 33%) must
     resolve to the "expand_first" stage order (nusExpand.tcl before
@@ -28,7 +27,6 @@ def test_echo_antiecho_expand_first() -> None:
     assert _ordering_for_fnmode(6) == "expand_first"
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
 def test_qf_convert_first() -> None:
     """FnMODE=1 (QF/magnitude, COSY exp2) must resolve to the
     "convert_first" stage order (bruk2pipe before nusExpand.tcl) -- the
@@ -42,7 +40,6 @@ def test_qf_convert_first() -> None:
     assert _ordering_for_fnmode(1) == "convert_first"
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
 def test_unknown_fnmode_raises() -> None:
     """An FnMODE outside the two verified branches (REAL_FNMODES /
     COMPLEX_FNMODES from models/nus.py) must raise NotImplementedError --
