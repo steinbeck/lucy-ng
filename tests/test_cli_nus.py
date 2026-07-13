@@ -136,8 +136,8 @@ class TestImportSafety:
         )
 
     def test_nus_group_help_lists_only_implemented_subcommands(self) -> None:
-        """D-02: no dead reconstruct/pipeline stubs registered."""
-        assert set(nus.commands) == {"check", "params", "schedule"}
+        """D-02: no dead pipeline stubs registered (reconstruct is real, Plan 06)."""
+        assert set(nus.commands) == {"check", "params", "schedule", "reconstruct"}
 
         runner = CliRunner()
         result = runner.invoke(nus, ["--help"])
@@ -145,3 +145,4 @@ class TestImportSafety:
         assert "check" in result.output
         assert "params" in result.output
         assert "schedule" in result.output
+        assert "reconstruct" in result.output
