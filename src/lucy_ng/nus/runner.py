@@ -70,13 +70,16 @@ def run_stage(
             string, never a shell-invocation flag.
         cwd: Working directory for the subprocess.
         expected_output: Path to the file this stage must produce. Checked
-            for existence, non-emptiness, and (for `.fid`/`.ft2` outputs)
-            non-all-zero parsed data.
+            for existence, non-emptiness, and (for `.fid`/`.ft1`/`.ft2`
+            outputs) non-all-zero parsed data. `.ft1` is the SMILE
+            reconstruction output (`reconstruct_indirect()`), the stage
+            most prone to producing plausible-but-empty/all-zero data --
+            it MUST receive the all-zero parse check, not just exists/size.
         timeout: Maximum seconds to allow the subprocess to run.
 
     Raises:
         RuntimeError: On non-zero exit code, on a missing/empty
-            `expected_output`, or on an `.fid`/`.ft2` output that is
+            `expected_output`, or on an `.fid`/`.ft1`/`.ft2` output that is
             all-zero/truncated data.
     """
     proc = subprocess.run(
@@ -94,7 +97,7 @@ def run_stage(
             "continue (csh-piped NMRPipe stages can silently pass through "
             "truncated data, Pitfall 14)."
         )
-    if expected_output.suffix in {".fid", ".ft2"}:
+    if expected_output.suffix in {".fid", ".ft1", ".ft2"}:
         try:
             _dic, data = ng.fileio.pipe.read(str(expected_output))
             all_zero = data.size == 0 or not data.any()
