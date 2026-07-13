@@ -252,25 +252,33 @@ NusSchedule (nus/schedule.py) ─────────┤
     ▼                                   ▼
 nus/runner.py: NusRunner.reconstruct(expdir)
     │
-    ├─ 1. branch on params.fnmode_f1 (Critical Finding 1)
+    ├─ 1. read params/schedule once (Phase 97) + branch on params.fnmode_f1 (Critical Finding 1)
+    │
+    ├─ 2. F2-before-F1 ordering gate (RECON-02, hard precondition — _resolve_f2_plan(params)
+    │      raises BEFORE any reconstruction subprocess runs if the direct-dimension phase/apod
+    │      plan is unresolved). This gate is now PHYSICALLY correct, not just symbolic: SMILE
+    │      requires the direct (F2) dimension to be fully processed and transposed first.
+    │
+    ├─ 3. backend.convert(): FnMODE-branched Bruker→NMRPipe conversion + NUS expansion
     │      ├─ echo-antiecho (FnMODE=6, HSQC/HMBC): nusExpand.tcl FIRST → bruk2pipe SECOND
     │      └─ QF/magnitude (FnMODE=1, COSY):        bruk2pipe FIRST → expand SECOND (spike, A1)
+    │      └─► analysis/nus_recon/<expN>/converted.fid   (fail-loud run_stage)
     │
-    ├─ 2. run_stage("bruk2pipe", [...]) ──► analysis/nus_recon/<expN>/test.fid
-    │        │ (fail-loud: exit code + nmrglue.fileio.pipe.read() non-empty/shape check)
+    ├─ 4. postprocess.process_direct(): DIRECT-dimension (F2) processing — apod/ZF/FT/
+    │      PS[deterministic p0/p1]/POLY/EXT, THEN transpose (TP)
+    │      └─► analysis/nus_recon/<expN>/f2_processed.fid   (SMILE's ACTUAL input — a transposed,
+    │          F2-processed FID, NOT a raw time-domain FID; fail-loud run_stage)
+    │      ▲ This step is the literal, mechanical enforcement of RECON-02's F2-before-F1 gate —
+    │        SMILE manual §4/§6.1: "the direct dimension must be first apodized, zero filled,
+    │        Fourier transformed, and phased... before... SMILE... can be called."
     │
-    ├─ 3. run_stage("nusExpand.tcl", [...]) ──► analysis/nus_recon/<expN>/ser_full (or expanded .fid)
-    │        │ (fail-loud, same check)
-    │
-    ├─ 4. F2-before-F1 ordering gate (RECON-02, hard precondition — raises before any
-    │      reconstruction subprocess runs if violated)
-    │
-    ├─ 5. run_stage("nmrPipe -fn SMILE ...", [...]) ──► analysis/nus_recon/<expN>/reconstructed.fid
+    ├─ 5. backend.reconstruct_indirect(): run_stage("nmrPipe -fn SMILE ...") on the transposed
+    │      F2-processed FID ──► analysis/nus_recon/<expN>/reconstructed.ft1
     │        │ (fail-loud; SMILE knobs: -maxIter, -thresh, -nSigma/-sigma, -EA per axis)
     │
-    ├─ 6. nus/postprocess.py: run_stage("nmrPipe -fn SP|ZF|FT|PS|POLY ...", [...])
-    │        │  (apod/ZF/FT/phase[deterministic P0/P1]/baseline)
-    │        └─► analysis/nus_recon/<expN>/processed.ft2 (reversed, 1D-calibrated ppm axes)
+    ├─ 6. postprocess.process_indirect(): post-SMILE INDIRECT-dimension (F1) processing —
+    │      ZF/FT/PS[deterministic p0/p1], final transpose (TP), reversed 1D-calibrated ppm axes
+    │        └─► analysis/nus_recon/<expN>/processed.ft2 (fail-loud)
     │
     └─ 7. Return NusReconstructionResult (backend, params used, stage log paths, output file)
               — consumed by Phase 99's nus/bridge.py (NOT built in this phase)
@@ -284,9 +292,13 @@ src/lucy_ng/nus/
 ├── schedule.py           # EXISTING (Phase 97) — unchanged
 ├── runner.py             # NEW — NusRunner: stage orchestration, FnMODE branching,
 │                         #   F2-before-F1 gate, owns analysis/nus_recon/<expN>/ lifecycle
-├── postprocess.py        # NEW — apod/ZF/FT/phase/baseline stage (still nmrPipe subprocess)
+├── postprocess.py        # NEW — process_direct() (F2 apod/ZF/FT/PS/POLY/EXT + TP, runs
+│                         #   BEFORE SMILE) + process_indirect() (post-SMILE F1 ZF/FT/PS +
+│                         #   final TP + ppm calibration) — still nmrPipe subprocess stages
 └── backends/
-    └── nmrpipe_smile.py  # EXISTING (Phase 97 detection) — ADD reconstruct() method here
+    └── nmrpipe_smile.py  # EXISTING (Phase 97 detection) — ADD convert() (FnMODE-branched
+                          #   conversion) + reconstruct_indirect() (SMILE on the transposed
+                          #   F2-processed FID) methods here
 ```
 
 ### Pattern 1: Hard F2-before-F1 ordering gate as an explicit precondition, not implicit ordering
@@ -581,7 +593,9 @@ enough for this project's scope but not to be assumed unchanging release-to-rele
 gaps this research pass could not close from available primary sources within scope, each with
 a concrete, low-cost mitigation (a short implementation-time spike against the real data).
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> **RESOLVED (2026-07-13, planning close):** all three questions below are deferred to an implementation-time spike and mitigated in the plans — Q1 via the Plan-03 QF branch carrying a PROVISIONAL (A1/A3) annotation + an early empirical spike against real exp2 data; Q2 via D-02's CLI phase-override flags (Plan 06) + the PROVISIONAL (A2) default annotation (Plan 04); Q3 explicitly not adopted this phase (kept as a documented future simplification). No open question blocks planning.
 
 1. **Exact COSY (QF/magnitude) bruk2pipe↔nusExpand.tcl invocation** (ties to A1/A3)
    - What we know: the correct *order* (convert first, expand after) and that SMILE is "not
