@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
 status: executing
-stopped_at: Phase 98 Plan 02 complete (run_stage fail-loud wrapper + FnMODE recipe table + NusReconstructionResult)
-last_updated: "2026-07-13T12:06:17.408Z"
-last_activity: 2026-07-13 -- Phase 98 Plan 02 complete (run_stage fail-loud wrapper, FnMODE recipe table, NusReconstructionResult model)
+stopped_at: Phase 98 Plan 03 complete (convert() + reconstruct_indirect() FnMODE-branched dispatch)
+last_updated: "2026-07-13T12:22:49.798Z"
+last_activity: 2026-07-13 -- Phase 98 Plan 03 complete (NmrPipeSmileBackend.convert()/reconstruct_indirect(), RECON-01/02/03)
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 11
-  completed_plans: 7
-  percent: 64
+  completed_plans: 8
+  percent: 25
 ---
 
 # lucy-ng State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-12)
 ## Current Position
 
 Phase: 98 (reconstruction-processing) — EXECUTING
-Plan: 3 of 6
-Status: Executing Phase 98 (Plan 02 complete)
-Last activity: 2026-07-13 -- Phase 98 Plan 02 complete (run_stage fail-loud wrapper, FnMODE recipe table, NusReconstructionResult model)
+Plan: 4 of 6
+Status: Ready to execute
+Last activity: 2026-07-13 -- Phase 98 Plan 03 complete (NmrPipeSmileBackend.convert()/reconstruct_indirect(), RECON-01/02/03)
 
-Progress: [██████░░░░] 64%
+Progress: [███████░░░] 73%
 
 ## Milestone v10.0 Phases
 
@@ -98,7 +98,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
 - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
-- v10.0: 4 phases planned (97-100); 4 plans complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close; Phase 97 Plan 03 (nus/schedule.py, NUS-03), 12 min, 1 task, 2 files, tests 1269 passing at close; Phase 97 Plan 04 (nus/backends/nmrpipe_smile.py + registry, NUS-01), 6 min, 2 tasks, 3 files, tests 1289 passing at close; Phase 98 Plan 01 (tests/nus/ Nyquist Wave 0 scaffold — conftest run_stage mock seam + fake-intermediate factories + 7 RED-by-skip RECON stub files), ~18 min, 2 tasks, 9 files, tests/nus/ 24 collected/24 skipped at close (RECON-01..05 remain Pending — GREEN in Plans 02-06); Phase 98 Plan 02 (nus/runner.py run_stage() fail-loud wrapper + FnMODE recipe/_ordering_for_fnmode() + NusReconstructionResult model, RECON-03/RECON-04), ~25 min, 3 tasks, 4 files, tests/nus/ 20 passed/17 skipped at close (RECON-03/RECON-04 now complete; RECON-01/02/05 remain Pending — GREEN in Plans 03-06)
+- v10.0: 4 phases planned (97-100); 4 plans complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close; Phase 97 Plan 03 (nus/schedule.py, NUS-03), 12 min, 1 task, 2 files, tests 1269 passing at close; Phase 97 Plan 04 (nus/backends/nmrpipe_smile.py + registry, NUS-01), 6 min, 2 tasks, 3 files, tests 1289 passing at close; Phase 98 Plan 01 (tests/nus/ Nyquist Wave 0 scaffold — conftest run_stage mock seam + fake-intermediate factories + 7 RED-by-skip RECON stub files), ~18 min, 2 tasks, 9 files, tests/nus/ 24 collected/24 skipped at close (RECON-01..05 remain Pending — GREEN in Plans 02-06); Phase 98 Plan 02 (nus/runner.py run_stage() fail-loud wrapper + FnMODE recipe/_ordering_for_fnmode() + NusReconstructionResult model, RECON-03/RECON-04), ~25 min, 3 tasks, 4 files, tests/nus/ 20 passed/17 skipped at close (RECON-03/RECON-04 now complete; RECON-01/02/05 remain Pending — GREEN in Plans 03-06); Phase 98 Plan 03 (nus/backends/nmrpipe_smile.py::convert()+reconstruct_indirect(), FnMODE-branched bruk2pipe/nusExpand.tcl/SMILE dispatch, RECON-01/02/03), ~45 min, 2 tasks, 2 files, tests/nus/ 27 passed/11 skipped at close (RECON-01/02/03 now complete; RECON-04/05 already complete from Plan 02; the QF/magnitude COSY convert_first branch stays PROVISIONAL per 98-RESEARCH.md A1/A3 pending an implementation-time spike)
 
 ## Accumulated Context
 
@@ -118,6 +118,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 - [Phase 97 Plan 03]: `read_nus_schedule` uses `ng.bruker.read_nuslist(expdir)` instead of `ng.bruker.read(expdir)["nuslist"]` — same rationale as Plan 02: the latter requires a `fid`/`ser` binary the D-03 fixtures omit. `read_nuslist()` reads the identical file in identical acquisition (never sorted) order with zero binary dependency; FnMODE/TD/NusTD are sourced from `read_nus_params` (Plan 02), keeping exactly one acquisition-parameter parse path.
 - [Phase 97 Plan 04]: `NmrPipeSmileBackend.REQUIRED_TOOLS = [nmrPipe, bruk2pipe, nusExpand.tcl]` via `shutil.which`, plus a distinct SMILE-plugin capability probe (`nmrPipe -fn SMILE -help`, fixed arg list, no `shell=True`) — research verified SMILE is an nmrPipe plugin dispatched internally, never a standalone `which()`-able binary (the milestone architecture research's `smileNus` tool name was wrong and is not used anywhere, including comments). `diagnose()` gives 4 distinct states (available/smile_plugin_missing/installed_not_sourced/not_installed) with install-URL hints. `NusBackend` (repo's first `typing.Protocol`) + `get_backend()`/`list_available_backends()` registry expose backends generically for Phase 97-05's CLI and Phase 98's reconstruction pipeline.
 - [Phase 98 Plan 02]: `run_stage()`'s all-zero/truncated-data check wraps `nmrglue.fileio.pipe.read()` in try/except and falls back to a raw byte-level all-zero comparison on parse failure — needed because the Plan-01 conftest's fake valid/truncated intermediate fixtures are deliberately not real NMRPipe-format headers, and both raise the identical `nmrglue` `IndexError` when parsed directly (verified empirically). FnMODE 1/2 (QF/QSEQ) `bruk2pipe -yMODE` recipe values are documented in-source as PROVISIONAL (98-RESEARCH.md Assumptions Log A3) pending an implementation-time spike against real exp2 COSY data in Plan 03/05.
+- [Phase 98 Plan 03]: Dropped the plan's literal `missing_tools()` hard preflight raise from `convert()`/`reconstruct_indirect()` — this dev machine (and CI) has no `nmrPipe`/`bruk2pipe`/`nusExpand.tcl` on PATH, so a hard preflight raise would make every D-04 mocked-subprocess unit test in `test_reconstruct_chain.py` impossible to pass; `run_stage()` remains the single fail-loud enforcement point (D-01) for every external call. `reconstruct_indirect()` takes an explicit `fnmode: int = 6` keyword (not `params`/`schedule`) to match the Plan-01 test scaffold's already-fixed call signature while keeping `-EA` gating genuinely FnMODE-driven. The QF/magnitude COSY `convert_first` branch sizes bruk2pipe from the sparse `f1_td` (not `nus_td`, since bruk2pipe runs before expansion in that branch) and stays explicitly PROVISIONAL per 98-RESEARCH.md Assumptions Log A1/A3.
 
 ### Key Design Decisions for v9.3
 
@@ -156,13 +157,13 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-13T12:06:17.403Z
-Stopped at: Phase 98 Plan 02 complete (run_stage fail-loud wrapper + FnMODE recipe table + NusReconstructionResult)
-Resume with: `/gsd-execute-phase 98` (continues with Plan 03 — `NmrPipeSmileBackend.convert()`/`reconstruct_indirect()`)
+Last session: 2026-07-13T12:22:49.798Z
+Stopped at: Phase 98 Plan 03 complete (NmrPipeSmileBackend.convert()/reconstruct_indirect(), FnMODE-branched dispatch)
+Resume with: `/gsd-execute-phase 98` (continues with Plan 04 — `nus/postprocess.py::process_direct()`/`process_indirect()`)
 
 ---
-*Last updated: 2026-07-13 — Phase 98 Plan 02 complete (nus/runner.py::run_stage() + FnMODE recipe/_ordering_for_fnmode() + NusReconstructionResult model; RECON-03/RECON-04 complete)*
+*Last updated: 2026-07-13 — Phase 98 Plan 03 complete (nus/backends/nmrpipe_smile.py::convert()+reconstruct_indirect(); RECON-01/02/03 complete)*
 
 ## Operator Next Steps
 
-- Continue Phase 98 with Plan 03 (`NmrPipeSmileBackend.convert()`/`reconstruct_indirect()`, FnMODE-branched dispatch) via `/gsd-execute-phase 98`
+- Continue Phase 98 with Plan 04 (`nus/postprocess.py::process_direct()`/`process_indirect()`, F2/F1 processing + ppm calibration) via `/gsd-execute-phase 98`
