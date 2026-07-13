@@ -23,7 +23,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase (see Tra
 - [x] **RECON-02**: Post-reconstruction processing (apodization, zero-fill, FT, phase correction, baseline) runs with direct-dimension-first (F2 before F1) ordering enforced as a hard pipeline gate, on reversed ppm axes calibrated to match the reliable 1D reference.
 - [x] **RECON-03**: Reconstruction/processing is FnMODE-aware, correctly handling both echo-antiecho phase-sensitive (HSQC/HMBC) and QF magnitude-mode (COSY) experiments from one pipeline, at both 25% and 33% sampling densities.
 - [x] **RECON-04**: Every external-tool invocation runs through a fail-loud subprocess wrapper that checks both exit code and output-file non-emptiness — csh-piped NMRPipe stages do not reliably propagate failures, so a truncated/empty intermediate must never pass silently.
-- [ ] **RECON-05**: Reconstruction knobs (iteration count, threshold, virtual-echo toggle) are exposed via CLI flags with sane defaults; the stopping criterion is convergence/residual-based, not a fixed iteration count alone.
+- [x] **RECON-05**: Reconstruction knobs (iteration count, threshold, virtual-echo toggle) are exposed via CLI flags with sane defaults; the stopping criterion is convergence/residual-based, not a fixed iteration count alone.
 
 ### Quality gate (QC)
 

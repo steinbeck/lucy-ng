@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
-status: executing
-stopped_at: "Phase 98 Plan 05 complete (nus/runner.py::NusRunner.reconstruct() four-stage orchestration + F2-before-F1 hard gate, RECON-01/02)"
-last_updated: "2026-07-13T12:49:12.831Z"
+status: verifying
+stopped_at: Phase 98 Plan 06 complete (lucy nus reconstruct CLI command, RECON-05 knob flags + D-02 phase overrides) -- Phase 98 (RECON-01..05) fully complete, ready for verification
+last_updated: "2026-07-13T12:57:37.599Z"
 last_activity: 2026-07-13
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 11
-  completed_plans: 10
-  percent: 25
+  completed_plans: 11
+  percent: 50
 ---
 
 # lucy-ng State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-07-12)
 
 Phase: 98 (reconstruction-processing) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-13
 
-Progress: [█████████░] 91%
+Progress: [██████████] 100%
 
 ## Milestone v10.0 Phases
 
@@ -98,7 +98,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
 - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
-- v10.0: 4 phases planned (97-100); 5 plans complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close; Phase 97 Plan 03 (nus/schedule.py, NUS-03), 12 min, 1 task, 2 files, tests 1269 passing at close; Phase 97 Plan 04 (nus/backends/nmrpipe_smile.py + registry, NUS-01), 6 min, 2 tasks, 3 files, tests 1289 passing at close; Phase 98 Plan 01 (tests/nus/ Nyquist Wave 0 scaffold — conftest run_stage mock seam + fake-intermediate factories + 7 RED-by-skip RECON stub files), ~18 min, 2 tasks, 9 files, tests/nus/ 24 collected/24 skipped at close (RECON-01..05 remain Pending — GREEN in Plans 02-06); Phase 98 Plan 02 (nus/runner.py run_stage() fail-loud wrapper + FnMODE recipe/_ordering_for_fnmode() + NusReconstructionResult model, RECON-03/RECON-04), ~25 min, 3 tasks, 4 files, tests/nus/ 20 passed/17 skipped at close (RECON-03/RECON-04 now complete; RECON-01/02/05 remain Pending — GREEN in Plans 03-06); Phase 98 Plan 03 (nus/backends/nmrpipe_smile.py::convert()+reconstruct_indirect(), FnMODE-branched bruk2pipe/nusExpand.tcl/SMILE dispatch, RECON-01/02/03), ~45 min, 2 tasks, 2 files, tests/nus/ 27 passed/11 skipped at close (RECON-01/02/03 now complete; RECON-04/05 already complete from Plan 02; the QF/magnitude COSY convert_first branch stays PROVISIONAL per 98-RESEARCH.md A1/A3 pending an implementation-time spike); Phase 98 Plan 04 (nus/postprocess.py::process_direct()+process_indirect() F2/F1 processing stages + ppm_scale()/ppm_axis_for_dimension()/calibrate_against_1d_reference() ppm calibration, RECON-02), ~18 min, 2 tasks, 2 files, tests/nus/ 19 passed/6 skipped at close (RECON-02 complete; all 5 Plan-01 RECON-02 stubs now GREEN); Phase 98 Plan 05 (nus/runner.py::NusRunner.reconstruct() four-stage orchestration + F2-before-F1 hard gate, RECON-01/02), ~20 min, 2 tasks, 3 files, tests/nus/ 22 passed/3 skipped at close (RECON-01/02 now complete; rewrote Plan-01's 3 orchestration stubs to patch at the four-stage-callable boundary since the stub's mock_run_stage/result.output_file shape didn't match the real NusReconstructionResult model; RECON-05/CLI wiring deferred to Plan 06)
+- v10.0: 4 phases planned (97-100); 6 plans complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close; Phase 97 Plan 03 (nus/schedule.py, NUS-03), 12 min, 1 task, 2 files, tests 1269 passing at close; Phase 97 Plan 04 (nus/backends/nmrpipe_smile.py + registry, NUS-01), 6 min, 2 tasks, 3 files, tests 1289 passing at close; Phase 98 Plan 01 (tests/nus/ Nyquist Wave 0 scaffold — conftest run_stage mock seam + fake-intermediate factories + 7 RED-by-skip RECON stub files), ~18 min, 2 tasks, 9 files, tests/nus/ 24 collected/24 skipped at close (RECON-01..05 remain Pending — GREEN in Plans 02-06); Phase 98 Plan 02 (nus/runner.py run_stage() fail-loud wrapper + FnMODE recipe/_ordering_for_fnmode() + NusReconstructionResult model, RECON-03/RECON-04), ~25 min, 3 tasks, 4 files, tests/nus/ 20 passed/17 skipped at close (RECON-03/RECON-04 now complete; RECON-01/02/05 remain Pending — GREEN in Plans 03-06); Phase 98 Plan 03 (nus/backends/nmrpipe_smile.py::convert()+reconstruct_indirect(), FnMODE-branched bruk2pipe/nusExpand.tcl/SMILE dispatch, RECON-01/02/03), ~45 min, 2 tasks, 2 files, tests/nus/ 27 passed/11 skipped at close (RECON-01/02/03 now complete; RECON-04/05 already complete from Plan 02; the QF/magnitude COSY convert_first branch stays PROVISIONAL per 98-RESEARCH.md A1/A3 pending an implementation-time spike); Phase 98 Plan 04 (nus/postprocess.py::process_direct()+process_indirect() F2/F1 processing stages + ppm_scale()/ppm_axis_for_dimension()/calibrate_against_1d_reference() ppm calibration, RECON-02), ~18 min, 2 tasks, 2 files, tests/nus/ 19 passed/6 skipped at close (RECON-02 complete; all 5 Plan-01 RECON-02 stubs now GREEN); Phase 98 Plan 05 (nus/runner.py::NusRunner.reconstruct() four-stage orchestration + F2-before-F1 hard gate, RECON-01/02), ~20 min, 2 tasks, 3 files, tests/nus/ 22 passed/3 skipped at close (RECON-01/02 now complete; rewrote Plan-01's 3 orchestration stubs to patch at the four-stage-callable boundary since the stub's mock_run_stage/result.output_file shape didn't match the real NusReconstructionResult model; RECON-05/CLI wiring deferred to Plan 06); Phase 98 Plan 06 (cli/nus.py::reconstruct command — RECON-05 knob flags --iterations/--threshold/--virtual-echo + D-02 phase-override flags, --format json), ~15 min, 2 tasks, 3 files, tests/nus/ + tests/test_cli_nus.py 37 passed/1 skipped at close (RECON-05 now complete; **Phase 98 fully closed, RECON-01..05 all complete** -- ready for `/gsd-verify-work 98`)
 
 ## Accumulated Context
 
@@ -121,6 +121,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 - [Phase 98 Plan 03]: Dropped the plan's literal `missing_tools()` hard preflight raise from `convert()`/`reconstruct_indirect()` — this dev machine (and CI) has no `nmrPipe`/`bruk2pipe`/`nusExpand.tcl` on PATH, so a hard preflight raise would make every D-04 mocked-subprocess unit test in `test_reconstruct_chain.py` impossible to pass; `run_stage()` remains the single fail-loud enforcement point (D-01) for every external call. `reconstruct_indirect()` takes an explicit `fnmode: int = 6` keyword (not `params`/`schedule`) to match the Plan-01 test scaffold's already-fixed call signature while keeping `-EA` gating genuinely FnMODE-driven. The QF/magnitude COSY `convert_first` branch sizes bruk2pipe from the sparse `f1_td` (not `nus_td`, since bruk2pipe runs before expansion in that branch) and stays explicitly PROVISIONAL per 98-RESEARCH.md Assumptions Log A1/A3.
 - [Phase 98 Plan 04]: `process_direct()`/`process_indirect()` each dispatch their entire nmrPipe verb chain (SP/ZF/FT/PS/POLY/TP) as ONE `nmrPipe` invocation with multiple chained `-fn` blocks — idiomatic NMRPipe multi-verb processing-script usage, not unix-pipe chaining — keeping each stage as ONE `run_stage()`-checked `subprocess.run()` call with zero shell interpretation. Matched the Plan-01 test scaffold's exact ppm-helper names (`ppm_axis_for_dimension()`, `calibrate_against_1d_reference()`) and optional `params` argument over the plan's illustrative interface sketch (same class of deviation as Plan 03's `reconstruct_indirect()` signature match) — `ppm_scale()` is kept as the real 4-argument implementation satisfying the plan's own literal acceptance-grep, with `ppm_axis_for_dimension()` as the tests' imported entry point. `process_indirect()` writes a best-effort `processed_ppm_axis.json` sidecar (raw + calibrated F1 axis) only when `params` carries F1 SF/OFFSET calibration fields.
 - [Phase 98 Plan 05]: `NusRunner.reconstruct()` reads params/schedule once, then dispatches `backend.convert()` → `postprocess.process_direct()` (F2+TP) → `backend.reconstruct_indirect()` (SMILE) → `postprocess.process_indirect()` (F1+calib) in strict physical order, with `_resolve_f2_plan()`/`F2Plan` (a thin `magnitude`-flag wrapper over `recipe_for_fnmode()`) implementing the RECON-02 hard gate: it returns `None` (never raises) on an unrecognized FnMODE so `reconstruct()` itself raises the RuntimeError before any subprocess dispatch. F2 phase defaults (`f2_p0=0.0`/`f2_p1=0.0`) are explicitly PROVISIONAL (no manual-verified universal value exists, unlike F1's already-provisional 90.0/0.0 default) — CLI override deferred to Plan 06. Rewrote all three Plan-01 orchestration test stubs (they referenced a non-existent `result.output_file` and used the low-level `mock_run_stage` seam, which cannot distinguish `process_direct()`'s output from `convert()`'s internal bruk2pipe/nusExpand.tcl outputs) to patch at the four-stage-callable boundary instead, per the plan's own Task 1 action text. Same fix applied to the real end-to-end integration test's assertions (`result.processed_spectrum`, still skips cleanly, no `ser` binary added).
+- [Phase 98 Plan 06]: `cli/nus.py::reconstruct` mirrors the existing `params`/`schedule` command shape exactly (deferred `NusRunner` import, `Path(expdir).resolve()`, `--format json`); RECON-05 knobs named `--iterations`/`--threshold`/`--virtual-echo`/`--no-virtual-echo` (descriptive lucy-ng names per RESEARCH.md's own recommendation, not SMILE's raw `-maxIter`/`-thresh`/`-EA` flag names), plus D-02 phase-override flags `--f2-p0`/`--f2-p1`/`--f1-p0`/`--f1-p1` defaulting to `NusRunner.reconstruct()`'s own provisional constants (one source of truth, no duplicate hard-coding). Rewrote both Plan-01 `test_cli_reconstruct.py` stubs: the stub guessed `--max-iter` (superseded by the plan's own `--iterations` naming decision) and looked up the SMILE stage by the wrong casing (`"smile"` vs. the real `run_stage("SMILE", ...)` call) — both fixed, plus the CLI-invocation test now copies its fixture into `tmp_path` first (mirrors Plan 05's `_copy_fixture`) so `NusRunner._stage_dir()`'s real `mkdir()`/JSON-sidecar side effects never touch the tracked `tests/fixtures/nus/` tree. Phase 98 (RECON-01..05) is now fully complete.
 
 ### Key Design Decisions for v9.3
 
@@ -159,13 +160,13 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-13T12:49:04.436Z
-Stopped at: Phase 98 Plan 05 complete (nus/runner.py::NusRunner.reconstruct() four-stage orchestration + F2-before-F1 hard gate, RECON-01/02)
-Resume with: `/gsd-execute-phase 98` (continues with Plan 06)
+Last session: 2026-07-13T12:57:37.594Z
+Stopped at: Phase 98 Plan 06 complete (lucy nus reconstruct CLI command, RECON-05 knob flags + D-02 phase overrides) -- Phase 98 (RECON-01..05) fully complete, ready for verification
+Resume with: `/gsd-verify-work 98`
 
 ---
-*Last updated: 2026-07-13 — Phase 98 Plan 05 complete (nus/runner.py::NusRunner.reconstruct() four-stage orchestration convert→process_direct(F2+TP)→reconstruct_indirect(SMILE)→process_indirect(F1+calib) + F2-before-F1 hard gate; RECON-01/02 complete)*
+*Last updated: 2026-07-13 — Phase 98 Plan 06 complete (cli/nus.py::reconstruct command — RECON-05 knob flags --iterations/--threshold/--virtual-echo + D-02 phase-override flags, --format json); Phase 98 (RECON-01..05) fully complete*
 
 ## Operator Next Steps
 
-- Continue Phase 98 with Plan 06 via `/gsd-execute-phase 98`
+- Verify Phase 98 via `/gsd-verify-work 98`

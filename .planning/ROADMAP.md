@@ -52,7 +52,7 @@ the 5-agent team.
 ### Phases
 
 - [x] **Phase 97: Backend Integration + Params/Schedule** — `lucy nus check` backend detection (LSD precedent) + pure-Python `NusAcquisitionParams`/`NusSchedule` parsing, fixture-tested against real C20H32O2 data (completed 2026-07-12)
-- [ ] **Phase 98: Reconstruction + Processing** — real NMRPipe+SMILE subprocess chain (bruk2pipe → nusExpand.tcl → SMILE → FT/phase/baseline), FnMODE-aware, fail-loud wrapper
+- [x] **Phase 98: Reconstruction + Processing** — real NMRPipe+SMILE subprocess chain (bruk2pipe → nusExpand.tcl → SMILE → FT/phase/baseline), FnMODE-aware, fail-loud wrapper (completed 2026-07-13)
 - [ ] **Phase 99: Peak-Pick Bridge + QC Gate + CLI** — bridge to existing `PeakPicker2D`, mandatory automated QC gate (PASS/PARTIAL/FAIL) blocking CASE handoff on FAIL, full `lucy nus` CLI group
 - [ ] **Phase 100: Cross-Platform Hardening + End-to-End Validation** — portability matrix, C20H32O2 exp2/3/4 reconstruction passing the §8 gate, `/lucy-ng:case C20H32O2` convergence
 
@@ -92,7 +92,7 @@ the 5-agent team.
 - [x] 98-03-PLAN.md — NmrPipeSmileBackend.reconstruct() chain: bruk2pipe/nusExpand.tcl/SMILE, FnMODE-branched order, nus_td grid, GRPDLY, convergence knobs (RECON-01/03, wave 3)
 - [x] 98-04-PLAN.md — nus/postprocess.py: F2-first FT/apod/phase/baseline stage + reversed 1D-calibrated ppm axes (RECON-02, wave 3)
 - [x] 98-05-PLAN.md — NusRunner.reconstruct orchestration + F2-before-F1 hard gate + skipif end-to-end integration test (RECON-01/02, wave 4)
-- [ ] 98-06-PLAN.md — lucy nus reconstruct CLI command + iteration/threshold/virtual-echo flags + import-safety companion edit (RECON-05, wave 5)
+- [x] 98-06-PLAN.md — lucy nus reconstruct CLI command + iteration/threshold/virtual-echo flags + import-safety companion edit (RECON-05, wave 5)
 
 #### Phase 99: Peak-Pick Bridge + QC Gate + CLI
 
@@ -124,6 +124,6 @@ the 5-agent team.
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
 | 97. Backend Integration + Params/Schedule | 5/5 | Complete    | 2026-07-12 |
-| 98. Reconstruction + Processing | 5/6 | In Progress|  |
+| 98. Reconstruction + Processing | 6/6 | Complete   | 2026-07-13 |
 | 99. Peak-Pick Bridge + QC Gate + CLI | 0/TBD | Not started | - |
 | 100. Cross-Platform Hardening + End-to-End Validation | 0/TBD | Not started | - |
