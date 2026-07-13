@@ -1,10 +1,11 @@
-"""RECON-01/02/03 stubs: `backend.convert()` + `reconstruct_indirect()` dispatch.
+"""RECON-01/02/03: `backend.convert()` + `reconstruct_indirect()` dispatch.
 
 Implemented in Plan 03 (`nus/backends/nmrpipe_smile.py::convert()` +
 `reconstruct_indirect()`). Covers the FnMODE-branched conversion dispatch
 order (Critical Finding 1), the exact bruk2pipe grid-size parameter source
 (Critical Finding 2: NusTD, never sparse F1 TD), the exact non-integer
-GRPDLY passthrough (Pitfall 3), and SMILE's true input artefact.
+GRPDLY passthrough (Pitfall 3), SMILE's true input artefact, and the QF
+branch's `-EA` omission.
 
 IMPORTANT: there is deliberately NO
 `test_dispatches_expand_then_convert_then_smile` test in this file. SMILE
@@ -20,7 +21,6 @@ from __future__ import annotations
 import pytest
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 03")
 def test_echo_antiecho_convert_dispatches_expand_then_bruk2pipe(
     mock_run_stage, nus_fixture_dir, tmp_path
 ) -> None:
@@ -44,7 +44,7 @@ def test_echo_antiecho_convert_dispatches_expand_then_bruk2pipe(
     assert stage_names.index("nusExpand.tcl") < stage_names.index("bruk2pipe")
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 03")
+@pytest.mark.skip(reason="Task 2 of this plan — convert_first branch not yet implemented")
 def test_qf_convert_dispatches_bruk2pipe_then_expand(
     mock_run_stage, nus_fixture_dir, tmp_path
 ) -> None:
@@ -68,7 +68,6 @@ def test_qf_convert_dispatches_bruk2pipe_then_expand(
     assert stage_names.index("bruk2pipe") < stage_names.index("nusExpand.tcl")
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 03")
 def test_smile_argv_carries_default_knobs(mock_run_stage, tmp_path) -> None:
     """`reconstruct_indirect()`'s SMILE invocation argv must carry the
     RECON-05 default knobs (-maxIter upper bound, -nSigma/-thresh
@@ -91,7 +90,6 @@ def test_smile_argv_carries_default_knobs(mock_run_stage, tmp_path) -> None:
     assert "-nSigma" in argv or "-thresh" in argv
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 03")
 def test_bruk2pipe_uses_nus_td_not_f1_td(mock_run_stage, nus_fixture_dir, tmp_path) -> None:
     """`convert()`'s bruk2pipe invocation must use `NusSchedule.nus_td` /
     `NusAcquisitionParams.nus_td` (the full expanded grid size) for its
@@ -119,7 +117,6 @@ def test_bruk2pipe_uses_nus_td_not_f1_td(mock_run_stage, nus_fixture_dir, tmp_pa
     assert "100" not in bruk2pipe_argv
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 03")
 def test_grpdly_passed_exact_non_integer(mock_run_stage, nus_fixture_dir, tmp_path) -> None:
     """`convert()`'s bruk2pipe invocation must pass the EXACT non-integer
     GRPDLY value parsed from `acqus` (e.g. 67.9841918945312...) via
@@ -147,7 +144,6 @@ def test_grpdly_passed_exact_non_integer(mock_run_stage, nus_fixture_dir, tmp_pa
     assert passed_value != int(passed_value)
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 03")
 def test_smile_input_is_f2_processed_not_raw_converted_fid(mock_run_stage, tmp_path) -> None:
     """`reconstruct_indirect()` must be invoked with the TRANSPOSED,
     F2-processed FID (`f2_processed.fid`, produced by
