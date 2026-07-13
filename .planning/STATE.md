@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
-status: ready_to_plan
-stopped_at: Phase 97 complete (5/5) — ready to discuss Phase 98
-last_updated: 2026-07-12T15:11:51.070Z
+status: planning
+stopped_at: Phase 98 context gathered
+last_updated: "2026-07-13T10:43:29.765Z"
 last_activity: 2026-07-12
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
   completed_plans: 5
-  percent: 0
+  percent: 25
 ---
 
 # lucy-ng State
@@ -155,8 +155,8 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-12T14:36:17.225Z
-Stopped at: Phase 97 Plan 04 complete (nus/backends/nmrpipe_smile.py, NUS-01)
+Last session: 2026-07-13T10:43:29.760Z
+Stopped at: Phase 98 context gathered
 Resume with: `/gsd-execute-phase 97` (continues with Plan 05 — final Phase 97 plan)
 
 ---
