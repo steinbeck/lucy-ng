@@ -87,7 +87,7 @@ the 5-agent team.
   4. Every external-tool subprocess invocation runs through a fail-loud wrapper checking both exit code and output-file non-emptiness; a deliberately truncated/empty intermediate aborts the pipeline with a clear error instead of silently passing through (guards against csh-piped NMRPipe stages that don't reliably propagate exit codes).
   5. `lucy nus reconstruct` exposes iteration count, threshold, and virtual-echo toggle as CLI flags with sane defaults, and stopping is convergence/residual-based rather than a fixed iteration count alone.
 **Plans**: 6 plans (5 waves)
-- [ ] 98-01-PLAN.md — Nyquist Wave 0 test scaffolding: tests/nus/ package + conftest (run_stage mock seam, fake intermediates) + one RED-by-skip stub per RECON requirement (wave 1)
+- [x] 98-01-PLAN.md — Nyquist Wave 0 test scaffolding: tests/nus/ package + conftest (run_stage mock seam, fake intermediates) + one RED-by-skip stub per RECON requirement (wave 1)
 - [ ] 98-02-PLAN.md — Fail-loud run_stage() wrapper (RECON-04) + FnMODE recipe/ordering helper (RECON-03) + NusReconstructionResult model (wave 2)
 - [ ] 98-03-PLAN.md — NmrPipeSmileBackend.reconstruct() chain: bruk2pipe/nusExpand.tcl/SMILE, FnMODE-branched order, nus_td grid, GRPDLY, convergence knobs (RECON-01/03, wave 3)
 - [ ] 98-04-PLAN.md — nus/postprocess.py: F2-first FT/apod/phase/baseline stage + reversed 1D-calibrated ppm axes (RECON-02, wave 3)
@@ -124,6 +124,6 @@ the 5-agent team.
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
 | 97. Backend Integration + Params/Schedule | 5/5 | Complete    | 2026-07-12 |
-| 98. Reconstruction + Processing | 0/6 | Planned | - |
+| 98. Reconstruction + Processing | 1/6 | In Progress|  |
 | 99. Peak-Pick Bridge + QC Gate + CLI | 0/TBD | Not started | - |
 | 100. Cross-Platform Hardening + End-to-End Validation | 0/TBD | Not started | - |
