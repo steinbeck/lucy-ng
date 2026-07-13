@@ -315,23 +315,31 @@ def ppm_scale(sf: float, offset: float, sw_h: float, size: int) -> list[float]:
 
     Args:
         sf: Spectrometer frequency (MHz) for this dimension (`SF`).
-        offset: ppm-scale offset (Hz), the highest-frequency edge of the
-            spectral window (`OFFSET`).
+        offset: ppm of the leftmost/highest-frequency edge of the spectral
+            window, read from Bruker `procs`/`proc2s` `OFFSET`. Bruker
+            stores `OFFSET` **in ppm** (not Hz), so it is used directly as
+            the axis start -- it is NOT divided by `sf`.
         sw_h: Spectral width in Hz (`SW_h`).
         size: Number of points in the axis.
 
     Returns:
         A list of `size` ppm values, descending (`scale[0] > scale[-1]`) --
-        index 0 is the highest ppm, matching Bruker/NMRPipe display
-        convention.
+        index 0 is the highest ppm (== `offset`), matching Bruker/NMRPipe
+        display convention.
 
     Raises:
         ValueError: If `size` is not positive.
     """
     if size <= 0:
         raise ValueError(f"size must be positive, got {size}")
-    hz_per_point = sw_h / size
-    return [(offset - i * hz_per_point) / sf for i in range(size)]
+    # OFFSET is already in ppm (Bruker convention): use it directly as the
+    # axis start; only the per-point spacing (Hz/point -> ppm/point) is
+    # divided by SF. Dividing OFFSET by SF (the previous behavior) collapsed
+    # the axis start by ~SF (e.g. 200 ppm -> ~1 ppm), shifting the whole
+    # axis by a large constant that calibrate_against_1d_reference() could
+    # not rescue (no reference shift fell within tol of any point).
+    ppm_per_point = (sw_h / sf) / size
+    return [offset - i * ppm_per_point for i in range(size)]
 
 
 def ppm_axis_for_dimension(

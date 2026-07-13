@@ -90,6 +90,12 @@ def test_ppm_axes_reversed(tmp_path) -> None:
     axis = ppm_axis_for_dimension(sf=150.9, offset=200.0, sw_h=25000.0, size=1024)
 
     assert axis[0] > axis[-1]
+    # WR-04: Bruker OFFSET is already in ppm -- the axis must START at the
+    # OFFSET value (~200 ppm for this 13C window), NOT at offset/sf (~1.3
+    # ppm, the old Hz-misinterpretation bug). Pin the start so a regression
+    # to dividing OFFSET by SF is caught here rather than silently
+    # producing an axis shifted ~140+ ppm off scale.
+    assert axis[0] == 200.0
 
 
 def test_ppm_calibrated_to_1d_reference(tmp_path) -> None:
