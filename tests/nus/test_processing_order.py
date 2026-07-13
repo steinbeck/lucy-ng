@@ -11,8 +11,6 @@ final reversed, 1D-calibrated ppm axes.
 
 from __future__ import annotations
 
-import pytest
-
 
 def test_f2_direct_chain_runs_before_transpose_before_smile_input(
     mock_run_stage, tmp_path
@@ -77,7 +75,6 @@ def test_magnitude_branch_skips_phase(mock_run_stage, tmp_path) -> None:
     assert "-fn PS" not in argv_str
 
 
-@pytest.mark.skip(reason="Task 2 of this plan — ppm_axis_for_dimension() ships next")
 def test_ppm_axes_reversed(tmp_path) -> None:
     """The final processed spectrum's ppm axes must be reversed (highest
     ppm first, Bruker convention) on both dimensions -- RECON-02.
@@ -95,9 +92,6 @@ def test_ppm_axes_reversed(tmp_path) -> None:
     assert axis[0] > axis[-1]
 
 
-@pytest.mark.skip(
-    reason="Task 2 of this plan — calibrate_against_1d_reference() ships next"
-)
 def test_ppm_calibrated_to_1d_reference(tmp_path) -> None:
     """The processed spectrum's ppm calibration must be cross-checked
     against the reliable 1D ground-truth reference shifts (NUS-RECONSTRUCTION-
