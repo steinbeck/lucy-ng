@@ -14,7 +14,6 @@ from __future__ import annotations
 import pytest
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 04")
 def test_f2_direct_chain_runs_before_transpose_before_smile_input(
     mock_run_stage, tmp_path
 ) -> None:
@@ -38,7 +37,6 @@ def test_f2_direct_chain_runs_before_transpose_before_smile_input(
     assert "TP" in " ".join(str(a) for a in argv)
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 04")
 def test_f2_phase_constants_thread_through(mock_run_stage, tmp_path) -> None:
     """`process_direct()`'s deterministic F2 phase constants (p0/p1) must
     appear verbatim in the nmrPipe PS invocation -- never derived via a
@@ -59,7 +57,6 @@ def test_f2_phase_constants_thread_through(mock_run_stage, tmp_path) -> None:
     assert "-24" in argv_str
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 04")
 def test_magnitude_branch_skips_phase(mock_run_stage, tmp_path) -> None:
     """When `magnitude=True` (COSY, FnMODE=1), `process_direct()`/
     `process_indirect()` must NOT apply a PS (phase) step at all -- COSY is
@@ -80,7 +77,7 @@ def test_magnitude_branch_skips_phase(mock_run_stage, tmp_path) -> None:
     assert "-fn PS" not in argv_str
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 04")
+@pytest.mark.skip(reason="Task 2 of this plan — ppm_axis_for_dimension() ships next")
 def test_ppm_axes_reversed(tmp_path) -> None:
     """The final processed spectrum's ppm axes must be reversed (highest
     ppm first, Bruker convention) on both dimensions -- RECON-02.
@@ -98,7 +95,9 @@ def test_ppm_axes_reversed(tmp_path) -> None:
     assert axis[0] > axis[-1]
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 04")
+@pytest.mark.skip(
+    reason="Task 2 of this plan — calibrate_against_1d_reference() ships next"
+)
 def test_ppm_calibrated_to_1d_reference(tmp_path) -> None:
     """The processed spectrum's ppm calibration must be cross-checked
     against the reliable 1D ground-truth reference shifts (NUS-RECONSTRUCTION-
