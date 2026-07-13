@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
-status: verifying
-stopped_at: Phase 98 Plan 06 complete (lucy nus reconstruct CLI command, RECON-05 knob flags + D-02 phase overrides) -- Phase 98 (RECON-01..05) fully complete, ready for verification
-last_updated: "2026-07-13T12:57:37.599Z"
+status: ready_to_plan
+stopped_at: Phase 98 complete (6/6) — ready to discuss Phase 99
+last_updated: 2026-07-13T13:20:06.632Z
 last_activity: 2026-07-13
 progress:
   total_phases: 4
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-12)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 98 — reconstruction-processing
+**Current focus:** Phase 99 — peak pick bridge + qc gate + cli
 
 ## Current Position
 
-Phase: 98 (reconstruction-processing) — EXECUTING
-Plan: 6 of 6
-Status: Phase complete — ready for verification
+Phase: 99
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-07-13
 
 Progress: [██████████] 100%
@@ -94,7 +94,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 
 **Velocity:**
 
-- Total plans completed: 197 across 12 milestones (11 shipped + 1 abandoned) at v9.2 close
+- Total plans completed: 203 across 12 milestones (11 shipped + 1 abandoned) at v9.2 close
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
 - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
