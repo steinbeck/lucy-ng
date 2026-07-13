@@ -18,8 +18,6 @@ covers the conversion stage's own two-branch dispatch, not the full chain.
 
 from __future__ import annotations
 
-import pytest
-
 
 def test_echo_antiecho_convert_dispatches_expand_then_bruk2pipe(
     mock_run_stage, nus_fixture_dir, tmp_path
@@ -44,7 +42,6 @@ def test_echo_antiecho_convert_dispatches_expand_then_bruk2pipe(
     assert stage_names.index("nusExpand.tcl") < stage_names.index("bruk2pipe")
 
 
-@pytest.mark.skip(reason="Task 2 of this plan — convert_first branch not yet implemented")
 def test_qf_convert_dispatches_bruk2pipe_then_expand(
     mock_run_stage, nus_fixture_dir, tmp_path
 ) -> None:
@@ -171,3 +168,38 @@ def test_smile_input_is_f2_processed_not_raw_converted_fid(mock_run_stage, tmp_p
     argv = mock_run_stage["calls"][-1][1]
     assert str(f2_processed_fid) in argv or "f2_processed" in " ".join(argv)
     assert str(raw_converted_fid) not in argv
+
+
+def test_reconstruct_indirect_omits_ea_for_qf_fnmode(mock_run_stage, tmp_path) -> None:
+    """`reconstruct_indirect()` must NOT pass `-EA` for FnMODE=1 (QF/
+    magnitude COSY, `REAL_FNMODES`) -- `-EA` (virtual echo / Echo-AntiEcho
+    reconstruction) only applies to `COMPLEX_FNMODES` per
+    `FnModeRecipe.smile_ea`. The default (FnMODE=6, echo-antiecho) DOES
+    carry `-EA`, confirming the branch is genuinely FnMODE-driven rather
+    than always-on or always-off.
+
+    Implementing plan: Plan 03 (`nus/backends/nmrpipe_smile.py
+    ::reconstruct_indirect`), Task 2 (QF branch).
+    """
+    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+
+    f2_processed_fid = tmp_path / "f2_processed.fid"
+    f2_processed_fid.write_bytes(b"\x01" * 64)
+
+    NmrPipeSmileBackend.reconstruct_indirect(
+        f2_processed_fid,
+        nuslist_path=tmp_path / "nuslist",
+        stage_dir=tmp_path,
+        fnmode=6,
+    )
+    echo_antiecho_argv = mock_run_stage["calls"][-1][1]
+    assert "-EA" in echo_antiecho_argv
+
+    NmrPipeSmileBackend.reconstruct_indirect(
+        f2_processed_fid,
+        nuslist_path=tmp_path / "nuslist",
+        stage_dir=tmp_path,
+        fnmode=1,
+    )
+    qf_argv = mock_run_stage["calls"][-1][1]
+    assert "-EA" not in qf_argv

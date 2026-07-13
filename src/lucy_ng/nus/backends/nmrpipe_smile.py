@@ -366,12 +366,56 @@ class NmrPipeSmileBackend:
                 timeout=timeout,
             )
         elif recipe.stage_order == "convert_first":
-            # QF/magnitude COSY (FnMODE 1/2) -- implemented in Task 2 of
-            # this plan (98-03), PROVISIONAL per 98-RESEARCH.md Assumptions
-            # Log A1/A3. Not yet implemented at this commit.
-            raise NotImplementedError(
-                "convert_first (QF/magnitude) stage order not yet implemented "
-                "-- see Task 2 of 98-03-PLAN.md"
+            # QF/magnitude COSY (FnMODE 1/2) -- PROVISIONAL branch, see the
+            # docstring above and 98-RESEARCH.md Assumptions Log A1/A3.
+            # bruk2pipe runs FIRST on the still-sparse raw `ser`
+            # (expansion has not happened yet, so -yN/-yT use the sparse
+            # `f1_td`, never `nus_td`); nusExpand.tcl expands the resulting
+            # `.fid` afterward to produce the final `converted.fid`.
+            converted_raw = stage_dir / "converted_raw.fid"
+            bruk2pipe_argv = cls._bruk2pipe_argv(
+                input_path=expdir / "ser",
+                output_path=converted_raw,
+                params=params,
+                f1_grid_size=params.f1_td,
+                recipe=recipe,
+                aq2d=aq2d,
+            )
+            run_stage(
+                "bruk2pipe",
+                bruk2pipe_argv,
+                cwd=stage_dir,
+                expected_output=converted_raw,
+                timeout=timeout,
+            )
+
+            # PROVISIONAL (A1/A3): the SMILE manual does not fully
+            # document the post-conversion expansion invocation for
+            # magnitude-mode data; `-mode pipe` (expanding an
+            # already-converted NMRPipe FID rather than a raw Bruker
+            # `ser`) is this repo's best-effort reading of the manual's
+            # "can be used too" remark, NOT a manual-verified flag value --
+            # confirm empirically against real exp2 data before trusting
+            # this branch unattended.
+            expand_argv = [
+                "nusExpand.tcl",
+                "-mode",
+                "pipe",
+                "-sampleCount",
+                str(schedule.n_sampled),
+                "-in",
+                str(converted_raw),
+                "-out",
+                str(converted_fid),
+                "-sample",
+                str(expdir / "nuslist"),
+            ]
+            run_stage(
+                "nusExpand.tcl",
+                expand_argv,
+                cwd=stage_dir,
+                expected_output=converted_fid,
+                timeout=timeout,
             )
         else:  # pragma: no cover -- recipe_for_fnmode only returns the two
             # branches handled above; defensive, mirrors the "unreachable"
