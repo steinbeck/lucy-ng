@@ -7,10 +7,18 @@ FnMODE-driven stage-order recipe table (Critical Finding 1 of
 98-RESEARCH.md: the bruk2pipe <-> nusExpand.tcl invocation order is
 FnMODE-dependent, not fixed).
 
-Wave 1 (Plan 02) ships only these two foundation primitives -- `run_stage()`
-and the FnMODE recipe/`_ordering_for_fnmode()` helper. No orchestration
-(`NusRunner.reconstruct()`) or backend invocation lives here yet; those are
-built in Plans 03/05 on top of these primitives.
+Plan 02 shipped the two foundation primitives (`run_stage()` and the FnMODE
+recipe/`_ordering_for_fnmode()` helper). Plan 05 (this addition) adds
+`NusRunner` -- the whole-pipeline orchestrator: `reconstruct(expdir)` reads
+Phase 97's `NusAcquisitionParams`/`NusSchedule` exactly once, owns the
+`analysis/nus_recon/<expN>/` stage-dir lifecycle (D-03: persistent, kept --
+no `rmtree`), enforces the F2-before-F1 hard ordering gate as an explicit
+precondition that raises BEFORE any subprocess is dispatched (RECON-02), and
+dispatches the four physically-ordered stages (SMILE manual Sec.4/Sec.6.1):
+`backend.convert()` -> `postprocess.process_direct()` (F2 + transpose,
+SMILE's actual input) -> `backend.reconstruct_indirect()` (SMILE) ->
+`postprocess.process_indirect()` (post-SMILE F1 + transpose + ppm
+calibration).
 """
 
 from __future__ import annotations
@@ -18,11 +26,20 @@ from __future__ import annotations
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import nmrglue as ng
 
-from lucy_ng.models.nus import COMPLEX_FNMODES, REAL_FNMODES
+from lucy_ng.models.nus import (
+    COMPLEX_FNMODES,
+    REAL_FNMODES,
+    NusAcquisitionParams,
+    NusReconstructionResult,
+)
+from lucy_ng.nus.backends import get_backend
+from lucy_ng.nus.params import read_nus_params
+from lucy_ng.nus.postprocess import process_direct, process_indirect
+from lucy_ng.nus.schedule import read_nus_schedule
 
 #: The two stage-order branches this project has verified against the
 #: official SMILE manual (98-RESEARCH.md Critical Finding 1). Any FnMODE
@@ -223,3 +240,239 @@ def recipe_for_fnmode(fnmode: int) -> FnModeRecipe:
         # REAL_FNMODES/COMPLEX_FNMODES cover the identical fnmode set.
         _ordering_for_fnmode(fnmode)
         raise AssertionError("unreachable")  # pragma: no cover
+
+
+@dataclass(frozen=True)
+class F2Plan:
+    """Resolved direct-dimension (F2) processing plan (RECON-02 hard gate).
+
+    `NusRunner._resolve_f2_plan()` returns this (or `None` if the plan
+    cannot be resolved) BEFORE any subprocess is dispatched -- the explicit
+    precondition that makes the F2-before-F1 ordering gate raise up front
+    rather than fail partway through the pipeline.
+
+    Attributes:
+        magnitude: True when this FnMODE's recipe is magnitude-mode
+            (`not recipe.phase_sensitive`, e.g. QF/QSEQ COSY) -- threaded
+            into `postprocess.process_direct()`/`process_indirect()`'s own
+            `magnitude` flag, which skips the `PS` phase-correction verb
+            entirely for magnitude-mode data.
+    """
+
+    magnitude: bool
+
+
+class NusRunner:
+    """Whole-pipeline NUS reconstruction orchestrator (RECON-01/RECON-02).
+
+    The NUS analog of `lucy_ng.lsd.runner.LSDRunner`: owns the
+    `analysis/nus_recon/<expN>/` stage-dir lifecycle (D-03: persistent,
+    kept -- never `shutil.rmtree`'d) and dispatches the four physically
+    ordered reconstruction stages from one `reconstruct(expdir)` entrypoint.
+
+    Does not implement its own binary detection/`SEARCH_PATHS` -- that
+    already exists on the resolved backend (`NmrPipeSmileBackend`,
+    Phase 97); `__init__` resolves a backend via `get_backend()` rather than
+    re-implementing discovery.
+    """
+
+    def __init__(self, backend: Any | None = None) -> None:
+        """Resolve the reconstruction backend.
+
+        Args:
+            backend: An object/class exposing `convert()` and
+                `reconstruct_indirect()` (matching `NmrPipeSmileBackend`'s
+                classmethod surface). Defaults to
+                `get_backend()` (the registered `"nmrpipe_smile"` backend,
+                Phase 97) when not supplied -- test doubles may pass their
+                own fake backend here. Typed `Any` rather than a narrower
+                Protocol/class type because both a classmethod-based
+                backend *class* (the production default) and a plain
+                instance test double (unit tests, this plan's own
+                `_RecordingBackend`) are legitimate callers -- the real
+                contract (`convert()`/`reconstruct_indirect()` signature
+                compatibility) is enforced by the `NusBackend` Protocol at
+                the registry boundary (`nus/backends/__init__.py`), not
+                here.
+        """
+        self.backend: Any = backend if backend is not None else get_backend()
+
+    def _stage_dir(self, expdir: Path) -> Path:
+        """Return (and create) this experiment's persistent stage dir.
+
+        D-03: `analysis/nus_recon/<expN>/` under the *resolved* experiment
+        directory, `mkdir(parents=True, exist_ok=True)`'d -- KEPT, never
+        `shutil.rmtree`'d by this method or any caller in this phase.
+
+        Args:
+            expdir: The (already-resolved) Bruker NUS experiment directory.
+
+        Returns:
+            The created stage directory
+            (`expdir / "analysis" / "nus_recon" / expdir.name`).
+        """
+        expdir = Path(expdir).resolve()
+        stage_dir = expdir / "analysis" / "nus_recon" / expdir.name
+        stage_dir.mkdir(parents=True, exist_ok=True)
+        return stage_dir
+
+    def _resolve_f2_plan(self, params: NusAcquisitionParams) -> F2Plan | None:
+        """Resolve the direct-dimension (F2) processing plan, or `None`.
+
+        Consults `recipe_for_fnmode(params.fnmode_f1)` for the
+        phase-sensitivity/magnitude split (RECON-03's single auditable
+        FnMODE recipe table) -- returns `None` (never raises) when the
+        FnMODE has no known recipe, so `reconstruct()`'s hard gate can
+        raise its own, more specific `RuntimeError` before any subprocess
+        is dispatched (RECON-02), rather than propagating a bare
+        `NotImplementedError` from deep inside the pipeline.
+
+        Args:
+            params: Already-parsed `NusAcquisitionParams` (Phase 97).
+
+        Returns:
+            An `F2Plan` if `params.fnmode_f1` has a known recipe, else
+            `None`.
+        """
+        try:
+            recipe = recipe_for_fnmode(params.fnmode_f1)
+        except NotImplementedError:
+            return None
+        return F2Plan(magnitude=not recipe.phase_sensitive)
+
+    def reconstruct(
+        self,
+        expdir: str | Path,
+        *,
+        max_iter: int = 500,
+        threshold: float = 0.8,
+        n_sigma: int = 5,
+        virtual_echo: bool = True,
+        f1_p0: float = 90.0,
+        f1_p1: float = 0.0,
+        f2_p0: float = 0.0,
+        f2_p1: float = 0.0,
+        timeout: int = 600,
+    ) -> NusReconstructionResult:
+        """Run the whole NUS reconstruction + processing pipeline.
+
+        Reads `NusAcquisitionParams`/`NusSchedule` exactly once (Phase 97's
+        `read_nus_params`/`read_nus_schedule` -- never re-parsed), resolves
+        this experiment's persistent stage dir (D-03), enforces the
+        F2-before-F1 hard ordering gate as an explicit precondition BEFORE
+        any subprocess is dispatched (RECON-02), then dispatches the four
+        physically ordered stages (SMILE manual Sec.4/Sec.6.1):
+
+        1. `self.backend.convert()` -- FnMODE-branched Bruker -> NMRPipe
+           conversion (`converted.fid`).
+        2. `postprocess.process_direct()` -- DIRECT (F2) processing +
+           transpose (`f2_processed.fid`) -- SMILE's actual input.
+        3. `self.backend.reconstruct_indirect()` -- SMILE, consuming
+           `process_direct()`'s output, NEVER `convert()`'s raw output
+           (`reconstructed.ft1`).
+        4. `postprocess.process_indirect()` -- post-SMILE INDIRECT (F1)
+           processing + transpose + ppm calibration (`processed.ft2`).
+
+        Args:
+            expdir: Bruker NUS experiment directory (contains `ser`,
+                `nuslist`, `acqus`, `acqu2s`).
+            max_iter: SMILE `-maxIter` upper bound (RECON-05), forwarded to
+                `backend.reconstruct_indirect()`.
+            threshold: SMILE `-thresh` value (RECON-05).
+            n_sigma: SMILE `-nSigma` noise-threshold convergence value
+                (RECON-05).
+            virtual_echo: Whether to request virtual-echo/`-EA`
+                reconstruction when the FnMODE recipe allows it (RECON-05).
+            f1_p0: F1 zero-order phase (D-02 CLI-overridable constant),
+                threaded into both `reconstruct_indirect()`'s `-xP0` and
+                `process_indirect()`'s post-SMILE phase correction.
+            f1_p1: F1 first-order phase. Same contract as `f1_p0`.
+            f2_p0: F2 zero-order phase (D-02 CLI-overridable constant),
+                threaded into `process_direct()`'s phase correction.
+                PROVISIONAL default (0.0) -- no universal value exists
+                across pulse sequences; a later plan exposes this as a CLI
+                override once the correct empirical value is known for this
+                project's own data.
+            f2_p1: F2 first-order phase. Same contract as `f2_p0`.
+            timeout: Per-stage subprocess timeout in seconds, forwarded to
+                every stage.
+
+        Returns:
+            A `NusReconstructionResult` with `success=True`, `stage_dir` set
+            to `analysis/nus_recon/<expN>/`, `stage_outputs` populated with
+            all four stage paths, and `processed_spectrum` set to
+            `process_indirect()`'s output.
+
+        Raises:
+            RuntimeError: If the F2 processing plan cannot be resolved
+                (raised BEFORE any subprocess dispatch -- RECON-02 hard
+                gate), or propagated from any stage's `run_stage()` failure.
+            FileNotFoundError: Propagated from `read_nus_params`/
+                `read_nus_schedule` if `expdir` does not exist.
+            NotImplementedError: Propagated if `params.fnmode_f1` has no
+                known stage-order/reconstruction recipe.
+        """
+        expdir = Path(expdir).resolve()
+        params = read_nus_params(expdir)
+        schedule = read_nus_schedule(expdir)
+        stage_dir = self._stage_dir(expdir)
+
+        # Hard gate (RECON-02): the F2 plan must be resolved BEFORE any
+        # subprocess is dispatched -- checked first, raises immediately.
+        f2_plan = self._resolve_f2_plan(params)
+        if f2_plan is None:
+            raise RuntimeError(
+                "F2 (direct-dimension) processing plan not resolved -- "
+                "refusing to start F1/SMILE reconstruction out of order "
+                "(RECON-02 hard gate)."
+            )
+
+        converted = self.backend.convert(
+            expdir, params, schedule, stage_dir, timeout=timeout
+        )
+        f2_processed = process_direct(
+            converted,
+            stage_dir,
+            params,
+            f2_p0=f2_p0,
+            f2_p1=f2_p1,
+            magnitude=f2_plan.magnitude,
+            timeout=timeout,
+        )
+        reconstructed = self.backend.reconstruct_indirect(
+            f2_processed,
+            nuslist_path=expdir / "nuslist",
+            stage_dir=stage_dir,
+            fnmode=params.fnmode_f1,
+            max_iter=max_iter,
+            threshold=threshold,
+            n_sigma=n_sigma,
+            virtual_echo=virtual_echo,
+            f1_p0=f1_p0,
+            f1_p1=f1_p1,
+            timeout=timeout,
+        )
+        processed = process_indirect(
+            reconstructed,
+            stage_dir,
+            params,
+            f1_p0=f1_p0,
+            f1_p1=f1_p1,
+            magnitude=f2_plan.magnitude,
+            timeout=timeout,
+        )
+
+        return NusReconstructionResult(
+            success=True,
+            backend=getattr(self.backend, "__name__", type(self.backend).__name__),
+            fnmode_f1=params.fnmode_f1,
+            stage_dir=str(stage_dir),
+            stage_outputs={
+                "convert": str(converted),
+                "process_direct": str(f2_processed),
+                "smile": str(reconstructed),
+                "process_indirect": str(processed),
+            },
+            processed_spectrum=str(processed),
+            smile_iterations=None,
+        )
