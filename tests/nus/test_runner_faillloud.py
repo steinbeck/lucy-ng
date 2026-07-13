@@ -14,7 +14,6 @@ from __future__ import annotations
 import pytest
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
 def test_nonzero_exit_raises(mock_subprocess_run, make_valid_intermediate, tmp_path) -> None:
     """`run_stage()` must raise RuntimeError when the subprocess exit code is
     non-zero, regardless of whether an output file happens to exist.
@@ -31,7 +30,6 @@ def test_nonzero_exit_raises(mock_subprocess_run, make_valid_intermediate, tmp_p
         run_stage("bruk2pipe", ["bruk2pipe", "-in", "ser"], tmp_path, output)
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
 def test_empty_output_raises(mock_subprocess_run, make_empty_intermediate, tmp_path) -> None:
     """`run_stage()` must raise RuntimeError when the subprocess reports exit
     0 but the declared expected_output file is zero-byte / missing.
@@ -47,7 +45,6 @@ def test_empty_output_raises(mock_subprocess_run, make_empty_intermediate, tmp_p
         run_stage("bruk2pipe", ["bruk2pipe", "-in", "ser"], tmp_path, output)
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
 def test_truncated_all_zero_output_raises(
     mock_subprocess_run, make_truncated_intermediate, tmp_path
 ) -> None:
@@ -66,7 +63,6 @@ def test_truncated_all_zero_output_raises(
         run_stage("bruk2pipe", ["bruk2pipe", "-in", "ser"], tmp_path, output)
 
 
-@pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
 def test_valid_output_passes(mock_subprocess_run, make_valid_intermediate, tmp_path) -> None:
     """`run_stage()` must NOT raise when the subprocess reports exit 0 and
     the output file is non-empty (the success path).
