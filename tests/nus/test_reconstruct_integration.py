@@ -55,7 +55,7 @@ def test_reconstruct_exp3_hsqc_end_to_end(tmp_path: Path) -> None:
     Implementing plan: Plan 05 (`nus/runner.py::NusRunner.reconstruct`).
     Quality judgement (ridges/fabricated peaks) belongs to Phase 99/100,
     not this test -- this test only asserts the pipeline completes and
-    produces the expected output artefact.
+    produces the expected, non-empty output artefact.
     """
     from lucy_ng.nus.runner import NusRunner
 
@@ -65,4 +65,7 @@ def test_reconstruct_exp3_hsqc_end_to_end(tmp_path: Path) -> None:
     result = runner.reconstruct(expdir)
 
     assert result.success is True
-    assert result.output_file.exists()
+    assert result.processed_spectrum is not None
+    processed_path = Path(result.processed_spectrum)
+    assert processed_path.exists()
+    assert processed_path.stat().st_size > 0
