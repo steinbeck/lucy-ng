@@ -266,19 +266,60 @@ def process_indirect(
         timeout=timeout,
     )
 
-    _write_ppm_calibration_sidecar(stage_dir, params)
+    _write_ppm_calibration_sidecar(stage_dir, params, processed)
 
     return processed
 
 
+def _read_processed_f1_size(processed: Path) -> int | None:
+    """Read the actual (zero-filled) F1 point count from a processed `.ft2`.
+
+    `process_indirect()`'s verb chain applies `ZF -auto` (zero-fill,
+    typically to the next power of two >= `nus_td`) then `FT` before the
+    final transpose, so the produced spectrum's F1 axis has this
+    zero-filled point count -- NOT the raw `params.nus_td` grid size. The
+    ppm sidecar axis must match the spectrum it labels, so read the real
+    size back from the NMRPipe header via nmrglue.
+
+    Returns the F1 (indirect) dimension size, or `None` if the file cannot
+    be read/parsed (in which case the caller falls back to `params.nus_td`
+    and records the fallback).
+    """
+    try:
+        import nmrglue as ng
+
+        dic, data = ng.pipe.read(str(processed))
+        udic = ng.pipe.guess_udic(dic, data)
+        # nmrglue's 2D convention: udic dim 0 is the indirect (F1)
+        # dimension; dim (ndim-1) is the direct (F2) dimension. guess_udic
+        # normalizes logical dimension order regardless of the on-disk
+        # transpose state left by the final `TP` verb. (Cross-check against
+        # a real reconstructed .ft2 is deferred to Phase 100 validation --
+        # both the intended and observed sizes are recorded in the sidecar
+        # so any mismatch is visible, never silently wrong.)
+        size = int(udic[0]["size"])
+        return size if size > 0 else None
+    except Exception:
+        return None
+
+
 def _write_ppm_calibration_sidecar(
-    stage_dir: Path, params: NusAcquisitionParams | None
+    stage_dir: Path,
+    params: NusAcquisitionParams | None,
+    processed: Path | None = None,
 ) -> None:
     """Best-effort ppm-axis reversal + 1D-calibration sidecar (RECON-02).
 
-    Pure arithmetic, no external tool. Silently no-ops when `params` is
-    `None` or its F1 SF/OFFSET/SW_h calibration fields are not yet
-    populated (a legitimate pre-processing state, not an error).
+    Pure arithmetic (plus a header read), no external tool. Silently
+    no-ops when `params` is `None` or its F1 SF/OFFSET/SW_h calibration
+    fields are not yet populated (a legitimate pre-processing state, not an
+    error).
+
+    The F1 axis is sized from the actual zero-filled F1 point count of the
+    produced `processed.ft2` (read back via nmrglue), falling back to
+    `params.nus_td` only when the file cannot be read. Both the intended
+    raw-grid size and the observed processed size are recorded so a
+    size mismatch is auditable rather than silent (WR-03).
     """
     if params is None:
         return
@@ -287,11 +328,21 @@ def _write_ppm_calibration_sidecar(
 
     import json
 
+    intended_size = params.nus_td
+    axis_size = intended_size
+    processed_f1_size: int | None = None
+    size_source = "params.nus_td (raw full-grid; processed .ft2 size unavailable)"
+    if processed is not None:
+        processed_f1_size = _read_processed_f1_size(processed)
+        if processed_f1_size is not None:
+            axis_size = processed_f1_size
+            size_source = "processed.ft2 F1 dimension (zero-filled/processed size)"
+
     axis = ppm_axis_for_dimension(
         sf=params.f1_sf,
         offset=params.f1_offset,
         sw_h=params.f1_sw_h,
-        size=params.nus_td,
+        size=axis_size,
     )
     calibrated_axis, offset_applied = calibrate_against_1d_reference(
         axis, GUIDE_S10_C13
@@ -304,6 +355,10 @@ def _write_ppm_calibration_sidecar(
                 "calibrated_ppm_axis": calibrated_axis,
                 "calibration_offset_ppm": offset_applied,
                 "reference_shifts": GUIDE_S10_C13,
+                "axis_size": axis_size,
+                "axis_size_source": size_source,
+                "intended_raw_grid_size": intended_size,
+                "processed_f1_size": processed_f1_size,
             },
             indent=2,
         )
