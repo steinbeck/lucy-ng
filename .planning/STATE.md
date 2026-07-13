@@ -4,14 +4,14 @@ milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
 status: executing
 stopped_at: Phase 98 context gathered
-last_updated: "2026-07-13T11:51:11.260Z"
+last_updated: "2026-07-13T11:51:45.842Z"
 last_activity: 2026-07-13
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 11
   completed_plans: 6
-  percent: 25
+  percent: 55
 ---
 
 # lucy-ng State
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-07-12)
 
 Phase: 98 (reconstruction-processing) — EXECUTING
 Plan: 2 of 6
-Status: Ready to execute
-Last activity: 2026-07-13
+Status: Executing Phase 98 (Plan 01 complete)
+Last activity: 2026-07-13 -- Phase 98 Plan 01 complete (Nyquist Wave 0 test scaffolding)
 
 Progress: [██████░░░░] 55%
 
@@ -98,7 +98,7 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
 - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
-- v10.0: 4 phases planned (97-100); 4 plans complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close; Phase 97 Plan 03 (nus/schedule.py, NUS-03), 12 min, 1 task, 2 files, tests 1269 passing at close; Phase 97 Plan 04 (nus/backends/nmrpipe_smile.py + registry, NUS-01), 6 min, 2 tasks, 3 files, tests 1289 passing at close
+- v10.0: 4 phases planned (97-100); 4 plans complete — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close; Phase 97 Plan 03 (nus/schedule.py, NUS-03), 12 min, 1 task, 2 files, tests 1269 passing at close; Phase 97 Plan 04 (nus/backends/nmrpipe_smile.py + registry, NUS-01), 6 min, 2 tasks, 3 files, tests 1289 passing at close; Phase 98 Plan 01 (tests/nus/ Nyquist Wave 0 scaffold — conftest run_stage mock seam + fake-intermediate factories + 7 RED-by-skip RECON stub files), ~18 min, 2 tasks, 9 files, tests/nus/ 24 collected/24 skipped at close (RECON-01..05 remain Pending — GREEN in Plans 02-06)
 
 ## Accumulated Context
 
@@ -155,13 +155,13 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-13T10:43:29.760Z
-Stopped at: Phase 98 context gathered
-Resume with: `/gsd-execute-phase 97` (continues with Plan 05 — final Phase 97 plan)
+Last session: 2026-07-13T11:51:17.230Z
+Stopped at: Phase 98 Plan 01 complete (Nyquist Wave 0 test scaffolding)
+Resume with: `/gsd-execute-phase 98` (continues with Plan 02 — fail-loud run_stage() + FnMODE ordering helper + NusReconstructionResult)
 
 ---
-*Last updated: 2026-07-12 — Phase 97 Plan 04 complete (nus/backends/nmrpipe_smile.py + registry, NUS-01)*
+*Last updated: 2026-07-13 — Phase 98 Plan 01 complete (tests/nus/ Wave 0 scaffold; RECON-01..05 stubbed RED-by-skip, requirements remain Pending until Plans 02-06 make them GREEN)*
 
 ## Operator Next Steps
 
-- Continue Phase 97 with Plan 05 (final plan of Phase 97) via `/gsd-execute-phase 97`
+- Continue Phase 98 with Plan 02 (fail-loud `run_stage()` wrapper + FnMODE recipe/ordering helper + `NusReconstructionResult` model) via `/gsd-execute-phase 98`
