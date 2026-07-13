@@ -169,3 +169,65 @@ class NusSchedule(BaseModel):
     def from_dict(cls, d: dict[str, Any]) -> "NusSchedule":
         """Create from dictionary."""
         return cls(**d)
+
+
+class NusReconstructionResult(BaseModel):
+    """Result of running the NUS reconstruction + processing pipeline.
+
+    Mirrors `lucy_ng.lsd.runner.LSDResult`'s field-set-and-`summary()`
+    convention. Paths are stored as strings (not `Path`) for
+    JSON-serializability, matching the `--format json` CLI convention used
+    throughout `cli/nus.py`.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    success: bool
+    backend: str
+    fnmode_f1: int
+    stage_dir: str  # analysis/nus_recon/<expN>/ path
+    stage_outputs: dict[str, str]  # stage name -> output file path under stage_dir
+    processed_spectrum: str | None  # final .ft2 path, if reconstruction succeeded
+    smile_iterations: int | None  # iterations SMILE actually ran, if known
+
+    @field_validator("fnmode_f1")
+    @classmethod
+    def validate_fnmode_f1(cls, v: int) -> int:
+        """Validate FnMODE (F1/indirect dimension) is a recognized real/complex mode."""
+        if v not in VALID_FNMODES:
+            raise ValueError(f"Unknown FnMODE: {v}. Valid: {sorted(VALID_FNMODES)}")
+        return v
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to JSON-serializable dictionary."""
+        return {
+            "success": self.success,
+            "backend": self.backend,
+            "fnmode_f1": self.fnmode_f1,
+            "stage_dir": self.stage_dir,
+            "stage_outputs": dict(self.stage_outputs),
+            "processed_spectrum": self.processed_spectrum,
+            "smile_iterations": self.smile_iterations,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "NusReconstructionResult":
+        """Create from dictionary."""
+        return cls(**d)
+
+    def summary(self) -> str:
+        """Return a human-readable summary of the reconstruction result."""
+        status = "Success" if self.success else "Failed"
+        lines = [
+            f"NUS Reconstruction Result: {status}",
+            f"  Backend: {self.backend}",
+            f"  FnMODE (F1): {self.fnmode_f1}",
+            f"  Stage dir: {self.stage_dir}",
+        ]
+        if self.stage_outputs:
+            lines.append(f"  Stages completed: {len(self.stage_outputs)}")
+        if self.processed_spectrum:
+            lines.append(f"  Processed spectrum: {self.processed_spectrum}")
+        if self.smile_iterations is not None:
+            lines.append(f"  SMILE iterations: {self.smile_iterations}")
+        return "\n".join(lines)
