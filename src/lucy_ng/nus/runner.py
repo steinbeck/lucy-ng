@@ -420,8 +420,15 @@ class NusRunner:
         schedule = read_nus_schedule(expdir)
         stage_dir = self._stage_dir(expdir)
 
-        # Hard gate (RECON-02): the F2 plan must be resolved BEFORE any
+        # Recipe gate (RECON-02): the F2 plan must be resolvable BEFORE any
         # subprocess is dispatched -- checked first, raises immediately.
+        # This is defense-in-depth: in production `f2_plan` is never `None`
+        # because `params.fnmode_f1` is Pydantic-validated to VALID_FNMODES
+        # at parse time and `_FNMODE_RECIPES` covers exactly that set, so
+        # the `None` branch is reachable only via a test double / monkeypatch
+        # (see test_f2_before_f1_gate_raises_before_any_subprocess). It is
+        # kept as a cheap up-front assertion, NOT the actual ordering
+        # guarantee -- that is the reachable f2_processed guard below.
         f2_plan = self._resolve_f2_plan(params)
         if f2_plan is None:
             raise RuntimeError(
@@ -442,6 +449,21 @@ class NusRunner:
             magnitude=f2_plan.magnitude,
             timeout=timeout,
         )
+
+        # Reachable F2-before-F1 ordering guard (RECON-02): SMILE must
+        # consume the F2-processed, transposed FID produced by
+        # process_direct(), NEVER the raw converted FID. Unlike the
+        # recipe gate above (defense-in-depth, monkeypatch-only), this is a
+        # genuine runtime precondition on real inputs -- it fires if the
+        # pipeline is ever mis-wired so that direct-dimension (F2)
+        # processing did not run, or did not run before, the SMILE call.
+        if f2_processed is None or Path(f2_processed) == Path(converted):
+            raise RuntimeError(
+                "F2-before-F1 ordering violated (RECON-02): SMILE's input "
+                "must be process_direct()'s F2-processed output, not the raw "
+                f"converted FID ({converted}) -- refusing to dispatch SMILE."
+            )
+
         reconstructed = self.backend.reconstruct_indirect(
             f2_processed,
             nuslist_path=expdir / "nuslist",

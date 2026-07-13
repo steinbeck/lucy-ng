@@ -92,6 +92,38 @@ def test_f2_before_f1_gate_raises_before_any_subprocess(
     assert mock_subprocess_run["calls"] == []
 
 
+def test_f2_before_f1_guard_raises_when_smile_would_get_raw_converted_fid(
+    nus_fixture_dir, tmp_path, monkeypatch
+) -> None:
+    """The reachable F2-before-F1 guard (RECON-02) must raise if the
+    pipeline is mis-wired so SMILE would consume the raw converted FID
+    instead of process_direct()'s F2-processed output -- exercised here on
+    a real fnmode (no impossible-state monkeypatch of _resolve_f2_plan),
+    unlike the recipe gate which is defense-in-depth only.
+    """
+    import lucy_ng.nus.runner as runner_module
+    from lucy_ng.nus.runner import NusRunner
+
+    expdir = _copy_fixture(nus_fixture_dir, tmp_path, "exp3_hsqc")
+
+    calls: list[str] = []
+    backend = _RecordingBackend(calls, {})
+
+    # Mis-wire: process_direct returns the SAME path convert() produced
+    # (the raw converted FID), i.e. F2 processing effectively did not run.
+    def bad_process_direct(converted_fid, stage_dir, params=None, **kwargs):
+        return Path(converted_fid)
+
+    monkeypatch.setattr(runner_module, "process_direct", bad_process_direct)
+
+    runner = NusRunner(backend=backend)
+    with pytest.raises(RuntimeError, match="F2-before-F1"):
+        runner.reconstruct(expdir)
+
+    # SMILE must never have been dispatched.
+    assert "smile" not in calls
+
+
 def test_orchestration_sequences_convert_then_direct_then_smile_then_indirect(
     nus_fixture_dir, tmp_path, monkeypatch
 ) -> None:
