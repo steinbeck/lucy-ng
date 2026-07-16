@@ -36,7 +36,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from lucy_ng.models.nus import QcCheckResult
+from lucy_ng.models.nus import QcCheckResult, QcReport, QcVerdict
 from lucy_ng.nus.postprocess import (
     DEFAULT_CALIBRATION_TOL,
     GUIDE_S10_C13,
@@ -63,6 +63,12 @@ PROTONATED_REFERENCE: list[float] = [
     for shift in GUIDE_S10_C13
     if all(abs(shift - quaternary) > 0.01 for quaternary in DEFAULT_QUATERNARY_SHIFTS)
 ]
+
+#: D-02's critical/soft check-name partition, driving `aggregate_verdict()`.
+CRITICAL_CHECKS = frozenset(
+    {"quaternary_exclusion", "ppm_calibration", "signal_to_ridge", "hsqc_coverage"}
+)
+SOFT_CHECKS = frozenset({"edited_sign_consistency", "cosy_diagonal_symmetry"})
 
 
 @dataclass(frozen=True)
@@ -212,6 +218,40 @@ def _dedupe_shifts(shifts: Sequence[float], tol: float) -> list[float]:
         else:
             clusters.append([value])
     return [cluster[0] for cluster in clusters]
+
+
+def _load_peaks(peaks_dir: Path) -> tuple[dict[str, list[dict[str, Any]]], list[str]]:
+    """Glob-load HSQC/HMBC/COSY cross-peaks by experiment-type keyword.
+
+    Returns `(peaks_by_type, errors)`. `peaks_by_type` only contains a key
+    for an experiment type when at least one matching file was found (so
+    callers can distinguish "no such experiment present" from "present but
+    empty"). Each file's JSON parse and `cross_peaks` presence is wrapped
+    in a per-file try/except -- a malformed file is recorded in `errors`
+    and skipped, never crashes the whole run and never silently treated as
+    an empty (clean) list (T-99-01).
+    """
+    resolved_dir = Path(peaks_dir).resolve()
+    peaks_by_type: dict[str, list[dict[str, Any]]] = {}
+    errors: list[str] = []
+    for exp_type, keyword in (("HSQC", "hsqc"), ("HMBC", "hmbc"), ("COSY", "cosy")):
+        matches = _glob_by_keyword(resolved_dir, keyword)
+        if not matches:
+            continue
+        merged: list[dict[str, Any]] = []
+        for path in matches:
+            try:
+                data: dict[str, Any] = json.loads(path.read_text())
+            except (OSError, json.JSONDecodeError) as exc:
+                errors.append(f"{path.name}: {exc}")
+                continue
+            cross_peaks = data.get("cross_peaks")
+            if cross_peaks is None:
+                errors.append(f"{path.name}: missing 'cross_peaks' key")
+                continue
+            merged.extend(cross_peaks)
+        peaks_by_type[exp_type] = merged
+    return peaks_by_type, errors
 
 
 # ---------------------------------------------------------------------------
@@ -554,3 +594,99 @@ def check_cosy_diagonal_symmetry(
 def cosy_diagonal_symmetry(cosy_peaks: Sequence[dict[str, Any]]) -> QcCheckResult:
     """Standalone wrapper over `check_cosy_diagonal_symmetry()`."""
     return check_cosy_diagonal_symmetry(cosy_peaks)
+
+
+# ---------------------------------------------------------------------------
+# Verdict aggregation (D-02) + top-level orchestration (D-08's
+# `lucy nus qc <peaks-dir>` contract).
+# ---------------------------------------------------------------------------
+
+
+def aggregate_verdict(checks: Sequence[QcCheckResult]) -> QcVerdict:
+    """D-02: FAIL if any critical check failed; PARTIAL if only soft checks failed; else PASS.
+
+    The single auditable aggregation point -- driven off each
+    `QcCheckResult.critical` flag, consistent with `CRITICAL_CHECKS`/`SOFT_CHECKS`.
+    """
+    if any(not check.passed and check.critical for check in checks):
+        return QcVerdict.FAIL
+    if any(not check.passed and not check.critical for check in checks):
+        return QcVerdict.PARTIAL
+    return QcVerdict.PASS
+
+
+def run_qc_checks(peaks_dir: Path | str, config: QcConfig | None = None) -> QcReport:
+    """Headless QC-01 gate: six checks against `<peaks-dir>`, D-02 aggregation.
+
+    Globs HSQC/HMBC/COSY by keyword (never a hardcoded experiment-number
+    suffix), reads the trusted 1D lists via `QcReferenceData.resolve()`,
+    runs all six checks, and returns a `QcReport`. A missing HSQC/COSY
+    experiment type is not silently skipped: the HSQC-dependent critical
+    checks report `"insufficient_reference_data"` (non-passing) rather than
+    being omitted, and a missing COSY list yields a trivially-passing soft
+    symmetry check (nothing to be asymmetric about). Any per-file JSON load
+    error blocks a PASS verdict -- malformed input is never silently
+    treated as clean (T-99-01).
+    """
+    resolved_dir = Path(peaks_dir).resolve()
+    config = config or QcConfig.default()
+    ref = QcReferenceData.resolve(resolved_dir, config)
+    peaks_by_type, errors = _load_peaks(resolved_dir)
+
+    hsqc = peaks_by_type.get("HSQC")
+    cosy = peaks_by_type.get("COSY")
+
+    if hsqc is None:
+        insufficient = "insufficient_reference_data: no HSQC peak list found in <peaks-dir>"
+        checks_hsqc_dependent = [
+            QcCheckResult(
+                name="quaternary_exclusion", passed=False, critical=True, details=insufficient
+            ),
+            QcCheckResult(
+                name="ppm_calibration", passed=False, critical=True, details=insufficient
+            ),
+            QcCheckResult(
+                name="hsqc_coverage", passed=False, critical=True, details=insufficient
+            ),
+        ]
+        edited_sign_check = QcCheckResult(
+            name="edited_sign_consistency", passed=True, critical=False, details="no HSQC peaks"
+        )
+    else:
+        checks_hsqc_dependent = [
+            check_quaternary_exclusion(hsqc, ref, config),
+            check_ppm_calibration(hsqc, config),
+            check_hsqc_coverage(hsqc, ref, config),
+        ]
+        edited_sign_check = check_edited_sign_consistency(hsqc, config)
+
+    ridge_check = check_signal_to_ridge(peaks_by_type, config)
+    cosy_check = (
+        check_cosy_diagonal_symmetry(cosy, config)
+        if cosy is not None
+        else QcCheckResult(
+            name="cosy_diagonal_symmetry",
+            passed=True,
+            critical=False,
+            details="no COSY peak list found",
+        )
+    )
+
+    checks = [*checks_hsqc_dependent, ridge_check, edited_sign_check, cosy_check]
+    verdict = aggregate_verdict(checks)
+
+    # T-99-01: any per-file load error blocks a PASS verdict -- a malformed
+    # or unparsable input file is never allowed to hide behind a clean-looking
+    # verdict computed from whatever peaks happened to load successfully.
+    if errors and verdict == QcVerdict.PASS:
+        verdict = QcVerdict.FAIL
+
+    thresholds_used = {
+        "c13_tol": config.c13_tol,
+        "h1_tol": config.h1_tol,
+        "ridge_fraction_fail": config.ridge_fraction_fail,
+        "hsqc_coverage_floor": config.hsqc_coverage_floor,
+        "edited_sign_tol": config.edited_sign_tol,
+        "cosy_symmetry_floor": config.cosy_symmetry_floor,
+    }
+    return QcReport(verdict=verdict, checks=checks, thresholds_used=thresholds_used, errors=errors)
