@@ -1,12 +1,7 @@
-"""QC-01 stubs: the six individual QC check functions.
+"""QC-01: the six individual QC check functions.
 
-RED-by-skip (Wave 0, Phase 99 Plan 01): `lucy_ng.nus.qc` does not exist yet
--- ships in Plan 02. Each test is `@pytest.mark.skip`-decorated (never
-executed, so its body's `from lucy_ng.nus.qc import ...` is collection-safe
-even though the module doesn't exist yet) -- the same convention Phase 98
-Plan 01 established (`test_reconstruct_orchestration.py`). One class per
-check (per D-02's critical/soft split), each documenting the intended
-callable name so the contract is fixed before implementation.
+Implemented in Plan 02 (`lucy_ng.nus.qc`). One class per check (per D-02's
+critical/soft split), each documenting the intended callable name.
 
 Critical checks (D-02, any violation -> FAIL): quaternary exclusion, ppm
 calibration, signal-to-ridge, HSQC coverage.
@@ -15,8 +10,6 @@ COSY diagonal symmetry.
 """
 
 from __future__ import annotations
-
-import pytest
 
 
 class TestQuaternaryExclusion:
@@ -28,7 +21,6 @@ class TestQuaternaryExclusion:
     known_quaternary_shifts, tol=0.5) -> QcCheckResult`.
     """
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_clean_passes(self, clean_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.quaternary_exclusion`)."""
         import json
@@ -39,7 +31,6 @@ class TestQuaternaryExclusion:
         result = quaternary_exclusion(peaks, [142.00, 135.86, 79.35, 36.23, 37.86])
         assert result.passed is True
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.quaternary_exclusion`)."""
         import json
@@ -59,7 +50,6 @@ class TestPpmCalibration:
     tol=DEFAULT_CALIBRATION_TOL) -> QcCheckResult`.
     """
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_clean_passes(self, clean_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.qc_check_ppm_calibration`)."""
         import json
@@ -71,7 +61,6 @@ class TestPpmCalibration:
         result = qc_check_ppm_calibration(shifts)
         assert result.passed is True
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.qc_check_ppm_calibration`)."""
         import json
@@ -94,7 +83,6 @@ class TestSignalToRidge:
     axis_key, threshold=0.5) -> QcCheckResult`.
     """
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_clean_passes(self, clean_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.signal_to_ridge`)."""
         import json
@@ -105,7 +93,6 @@ class TestSignalToRidge:
         result = signal_to_ridge(peaks, "h1a_ppm")
         assert result.passed is True
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.signal_to_ridge`)."""
         import json
@@ -127,7 +114,6 @@ class TestHsqcCoverage:
     protonated_reference_shifts, floor=0.8) -> QcCheckResult`.
     """
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_clean_passes(self, clean_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.hsqc_coverage`)."""
         import json
@@ -142,7 +128,6 @@ class TestHsqcCoverage:
         result = hsqc_coverage(peaks, protonated)
         assert result.passed is True
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.hsqc_coverage`)."""
         import json
@@ -167,7 +152,6 @@ class TestEditedSignConsistency:
     `lucy_ng.nus.qc.edited_sign_consistency(hsqc_peaks) -> QcCheckResult`.
     """
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_clean_passes(self, clean_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.edited_sign_consistency`)."""
         import json
@@ -178,7 +162,6 @@ class TestEditedSignConsistency:
         result = edited_sign_consistency(peaks)
         assert result.passed is True
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.edited_sign_consistency`)."""
         import json
@@ -200,7 +183,6 @@ class TestCosyDiagonalSymmetry:
     tol=0.05) -> QcCheckResult`.
     """
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_clean_passes(self, clean_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.cosy_diagonal_symmetry`)."""
         import json
@@ -211,7 +193,6 @@ class TestCosyDiagonalSymmetry:
         result = cosy_diagonal_symmetry(peaks)
         assert result.passed is True
 
-    @pytest.mark.skip(reason="Wave 0 stub — implemented in Plan 02")
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
         """Implementing plan: Plan 02 (`lucy_ng.nus.qc.cosy_diagonal_symmetry`)."""
         import json
