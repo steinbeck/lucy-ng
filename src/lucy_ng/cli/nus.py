@@ -362,3 +362,251 @@ def qc(
 
     if report.verdict.value == "FAIL":
         raise SystemExit(1)
+
+
+@nus.command("pipeline")
+@click.argument("expdir", type=click.Path(exists=True))
+@click.option(
+    "--iterations",
+    type=int,
+    default=500,
+    show_default=True,
+    help=(
+        "SMILE -maxIter upper bound, forwarded to NusRunner.reconstruct() "
+        "(RECON-05)."
+    ),
+)
+@click.option(
+    "--threshold",
+    type=float,
+    default=0.8,
+    show_default=True,
+    help="SMILE -thresh value (noise-threshold convergence check).",
+)
+@click.option(
+    "--virtual-echo/--no-virtual-echo",
+    "virtual_echo",
+    default=True,
+    show_default=True,
+    help=(
+        "Request virtual-echo/Echo-AntiEcho (-EA) reconstruction when the "
+        "FnMODE recipe allows it (echo-antiecho experiments only; ignored "
+        "for QF/magnitude-mode FnMODEs)."
+    ),
+)
+@click.option(
+    "--f2-p0",
+    type=float,
+    default=0.0,
+    show_default=True,
+    help="F2 (direct-dimension) zero-order phase override (D-02, PROVISIONAL default).",
+)
+@click.option(
+    "--f2-p1",
+    type=float,
+    default=0.0,
+    show_default=True,
+    help="F2 (direct-dimension) first-order phase override (D-02).",
+)
+@click.option(
+    "--f1-p0",
+    type=float,
+    default=90.0,
+    show_default=True,
+    help="F1 (indirect-dimension) zero-order phase override (D-02, PROVISIONAL default).",
+)
+@click.option(
+    "--f1-p1",
+    type=float,
+    default=0.0,
+    show_default=True,
+    help="F1 (indirect-dimension) first-order phase override (D-02).",
+)
+@click.option(
+    "--ridge-fail",
+    type=float,
+    default=None,
+    help="Override the signal-to-ridge FAIL threshold (D-04, default 0.5).",
+)
+@click.option(
+    "--coverage-floor",
+    type=float,
+    default=None,
+    help="Override the HSQC-coverage FAIL floor (D-04, default 0.8).",
+)
+@click.option(
+    "--c13-tol",
+    type=float,
+    default=None,
+    help="Override the 13C tolerance in ppm (D-04, default 0.5).",
+)
+@click.option(
+    "--h1-tol",
+    type=float,
+    default=None,
+    help="Override the 1H tolerance in ppm (D-04, default 0.05).",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+    help="Output format.",
+)
+def pipeline(
+    expdir: str,
+    iterations: int,
+    threshold: float,
+    virtual_echo: bool,
+    f2_p0: float,
+    f2_p1: float,
+    f1_p0: float,
+    f1_p1: float,
+    ridge_fail: float | None,
+    coverage_floor: float | None,
+    c13_tol: float | None,
+    h1_tol: float | None,
+    output_format: str,
+) -> None:
+    """Run the full NUS pipeline on EXPDIR: reconstruct -> peak-pick -> QC -> write.
+
+    EXPDIR is a Bruker NUS experiment directory (contains `ser`, `nuslist`,
+    `acqus`, `acqu2s`). Wires params -> schedule -> reconstruct
+    (`NusRunner.reconstruct()`, Phase 98, unchanged) -> peak-pick
+    (`nus.bridge`, Phase 99) -> QC (`nus.qc.run_qc_checks()` -- the SAME
+    code path `lucy nus qc` calls standalone, D-08) -> write-boundary
+    enforcement in one process (D-07):
+
+    \b
+    - PASS/PARTIAL: writes the verdict-annotated consumable peaks to
+      `analysis/nmr_peaks/*.json` (D-05 metadata block, D-06 confidence).
+      PARTIAL additionally prints a warning naming the soft violations.
+    - FAIL: writes nothing to `analysis/nmr_peaks/`; quarantines the
+      verdict-annotated peaks + the QC report to
+      `analysis/nus_recon/<expN>/qc_failed/` and exits non-zero (QC-03,
+      extending the FIX-10 constraint-hardness-guard spirit to
+      reconstruction-derived peaks). `case.md` is not touched -- this is
+      the single pipeline-boundary barrier (D-07).
+    """
+    from lucy_ng.models.nus import QcVerdict
+    from lucy_ng.nus.bridge import bridge_peak_pick, build_spectrum2d, write_peak_json
+    from lucy_ng.nus.params import read_nus_params
+    from lucy_ng.nus.qc import run_qc_checks
+    from lucy_ng.nus.runner import NusRunner
+    from lucy_ng.readers.bruker import _detect_experiment_type
+
+    resolved = Path(expdir).resolve()
+    config = _build_qc_config(ridge_fail, coverage_floor, c13_tol, h1_tol)
+
+    params = read_nus_params(resolved)
+    experiment_type = _detect_experiment_type(
+        params.pulse_program, params.f1_nucleus, params.f2_nucleus
+    )
+
+    result = NusRunner().reconstruct(
+        resolved,
+        max_iter=iterations,
+        threshold=threshold,
+        virtual_echo=virtual_echo,
+        f1_p0=f1_p0,
+        f1_p1=f1_p1,
+        f2_p0=f2_p0,
+        f2_p1=f2_p1,
+    )
+    if not result.processed_spectrum:
+        click.echo(
+            f"NUS pipeline: reconstruction reported no processed spectrum "
+            f"(backend={result.backend!r}).",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    spectrum = build_spectrum2d(Path(result.processed_spectrum), params, experiment_type)
+    recon_meta = {"backend": result.backend, "iterations": result.smile_iterations}
+    stage_dir = Path(result.stage_dir)
+
+    # STAGED pass (verdict-less): peaks must exist before QC can grade them
+    # (the causal-ordering fix, Plan 03's bridge_peak_pick() docstring).
+    staged_payload = bridge_peak_pick(
+        spectrum, experiment=experiment_type, qc_report=None, recon_meta=recon_meta
+    )
+    staged_dir = stage_dir / "staged"
+    write_peak_json(staged_dir, experiment_type, staged_payload)
+
+    # QC gate -- the SAME code path `lucy nus qc` calls standalone (D-08).
+    report = run_qc_checks(staged_dir, config)
+
+    nmr_peaks_dir = resolved / "analysis" / "nmr_peaks"
+    written: list[str] = []
+    quarantine: str | None = None
+
+    if report.verdict == QcVerdict.FAIL:
+        # bridge_peak_pick() intentionally refuses to derive a confidence
+        # value for a FAIL verdict (D-06 -- FAIL peaks are never
+        # consumable, so there is no honest confidence to emit; re-calling
+        # it with qc_report=report would raise ValueError). Quarantine the
+        # staged (verdict-less) payload with its "reconstruction" block
+        # replaced by the real FAIL verdict/violated-checks instead.
+        final_payload = dict(staged_payload)
+        final_payload["reconstruction"] = {
+            "backend": recon_meta["backend"],
+            "iterations": recon_meta["iterations"],
+            "qc_verdict": report.verdict.value,
+            "violated_checks": report.violated_checks(),
+            "thresholds_used": dict(report.thresholds_used),
+        }
+        final_payload["caveat"] = (
+            f"Reconstructed via {recon_meta['backend']}. QC verdict: FAIL. "
+            f"Violated checks: {', '.join(report.violated_checks())}."
+        )
+        quarantine_dir = stage_dir / "qc_failed"
+        out_path = write_peak_json(quarantine_dir, experiment_type, final_payload)
+        (quarantine_dir / "qc_report.json").write_text(json.dumps(report.to_dict(), indent=2))
+        quarantine = str(out_path)
+        click.echo(
+            f"QC verdict FAIL -- critical violations: "
+            f"{', '.join(report.critical_violations())}. Peaks quarantined to "
+            f"{quarantine_dir}; nothing written to {nmr_peaks_dir}.",
+            err=True,
+        )
+    else:
+        # CAUSAL RE-BUILD: peak positions are deterministic for the same
+        # spectrum, so this reproduces identical cross-peaks but now
+        # stamps the verdict-derived D-05/D-06 metadata/confidence -- the
+        # step-3 staged (verdict-less) payload above is never written to
+        # the consumable location.
+        final_payload = bridge_peak_pick(
+            spectrum, experiment=experiment_type, qc_report=report, recon_meta=recon_meta
+        )
+        out_path = write_peak_json(nmr_peaks_dir, experiment_type, final_payload)
+        written.append(str(out_path))
+        if report.verdict == QcVerdict.PARTIAL:
+            click.echo(
+                f"QC verdict PARTIAL -- violated checks: "
+                f"{', '.join(report.violated_checks())}. Peaks written to {out_path}.",
+                err=True,
+            )
+
+    if output_format == "json":
+        click.echo(
+            json.dumps(
+                {
+                    "verdict": report.verdict.value,
+                    "written": written,
+                    "quarantine": quarantine,
+                    "report": report.to_dict(),
+                },
+                indent=2,
+            )
+        )
+    else:
+        click.echo(f"Experiment: {experiment_type}")
+        click.echo(f"QC verdict: {report.verdict.value}")
+        if written:
+            click.echo(f"Written: {', '.join(written)}")
+        if quarantine:
+            click.echo(f"Quarantined: {quarantine}")
+
+    if report.verdict == QcVerdict.FAIL:
+        raise SystemExit(1)

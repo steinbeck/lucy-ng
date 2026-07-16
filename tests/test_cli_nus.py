@@ -138,9 +138,10 @@ class TestImportSafety:
     def test_nus_group_help_lists_only_implemented_subcommands(self) -> None:
         """D-02: no dead pipeline stubs registered.
 
-        Phase 98 Plan 06 added `reconstruct`; Phase 99 Plan 04 Task 1 adds
-        `qc` (standalone QC-02 gate, D-08) -- real, not a stub. `pipeline`
-        ships in Task 2.
+        Phase 98 Plan 06 added `reconstruct`; Phase 99 Plan 04 adds `qc`
+        (standalone QC-02 gate, D-08) and `pipeline` (the full
+        reconstruct -> peak-pick -> QC -> write chain, D-07) -- both real,
+        not stubs.
         """
         assert set(nus.commands) == {
             "check",
@@ -148,6 +149,7 @@ class TestImportSafety:
             "schedule",
             "reconstruct",
             "qc",
+            "pipeline",
         }
 
         runner = CliRunner()
@@ -158,3 +160,4 @@ class TestImportSafety:
         assert "schedule" in result.output
         assert "reconstruct" in result.output
         assert "qc" in result.output
+        assert "pipeline" in result.output

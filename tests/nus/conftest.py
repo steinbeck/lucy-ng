@@ -230,6 +230,146 @@ def mock_run_stage(monkeypatch: pytest.MonkeyPatch) -> dict:
 
 
 @pytest.fixture
+def mock_pipeline_stages(monkeypatch: pytest.MonkeyPatch) -> Callable[..., object]:
+    """Factory: monkeypatch `lucy nus pipeline`'s three external-dependency
+    seams for CLI tests (Phase 99 Plan 04) -- `NusRunner.reconstruct()`
+    (no real NMRPipe+SMILE binary needed), `read_nus_params()` (no real
+    Bruker `acqus`/`acqu2s` needed), and `build_spectrum2d()` (no real
+    reconstructed `.ft2` needed, replaced by a deterministic synthetic
+    `Spectrum2D` with one explicit strong peak, mirroring
+    `tests/nus/test_bridge.py`'s synthetic-peak pattern) -- while keeping
+    `bridge_peak_pick()` (Plan 03) and `write_peak_json()` genuinely real,
+    so D-05/D-06/D-07's write-boundary logic in `cli/nus.py::pipeline`
+    itself is exercised for real.
+
+    `run_qc_checks()` is also monkeypatched to return a caller-supplied
+    verdict/violated-checks combination directly -- QC-01/QC-02's six
+    check algorithms are already proven real against real fixture data in
+    `tests/nus/test_qc_checks.py`/`test_qc_regression.py` (Plan 02); this
+    plan's own scope is the CLI wiring + write/quarantine boundary, not a
+    second proof of the check algorithms.
+
+    Usage: ``mock_pipeline_stages(verdict="FAIL", violated=["quaternary_exclusion"])``
+    returns the `QcReport` the pipeline will receive, for assertion reuse.
+    """
+
+    def _setup(
+        verdict: str,
+        violated: list[str] | None = None,
+    ) -> object:
+        import numpy as np
+
+        from lucy_ng.models import Spectrum2D
+        from lucy_ng.models.nus import (
+            NusAcquisitionParams,
+            NusReconstructionResult,
+            QcCheckResult,
+            QcReport,
+            QcVerdict,
+        )
+
+        params = NusAcquisitionParams(
+            pulse_program="hsqcedetgpsisp2.3",
+            f2_nucleus="1H",
+            f2_sfo1=500.13,
+            f2_sw_h=8000.0,
+            f2_td=2048,
+            byte_order=0,
+            dtype_code=0,
+            decim=32.0,
+            dspfvs=20,
+            grpdly=67.98,
+            nus_amount_pct=25,
+            nus_seed=1,
+            f1_nucleus="13C",
+            f1_sfo1=125.77,
+            f1_sw_h=25000.0,
+            f1_o1=10000.0,
+            f1_td=256,
+            fnmode_f1=6,
+            nus_td=256,
+        )
+        monkeypatch.setattr(
+            "lucy_ng.nus.params.read_nus_params", lambda expdir: params
+        )
+
+        def _fake_reconstruct(
+            self: object, expdir: str | Path, **kwargs: object
+        ) -> NusReconstructionResult:
+            expdir = Path(expdir)
+            stage_dir = expdir / "analysis" / "nus_recon" / expdir.name
+            stage_dir.mkdir(parents=True, exist_ok=True)
+            return NusReconstructionResult(
+                success=True,
+                backend="mock_backend",
+                fnmode_f1=6,
+                stage_dir=str(stage_dir),
+                stage_outputs={},
+                processed_spectrum=str(stage_dir / "processed.ft2"),
+                smile_iterations=10,
+            )
+
+        monkeypatch.setattr(
+            "lucy_ng.nus.runner.NusRunner.reconstruct", _fake_reconstruct
+        )
+
+        rng = np.random.default_rng(11)
+        n1, n2 = 32, 48
+        data = rng.normal(0.0, 50.0, size=(n1, n2))
+        f1_scale = np.linspace(200.0, 0.0, n1, dtype=np.float64)
+        f2_scale = np.linspace(10.0, 0.0, n2, dtype=np.float64)
+        f1_idx = int(np.argmin(np.abs(f1_scale - 69.06)))
+        f2_idx = int(np.argmin(np.abs(f2_scale - 0.99)))
+        data[f1_idx, f2_idx] = 1.0e6
+        spectrum = Spectrum2D(
+            data=data,
+            f1_ppm_scale=f1_scale,
+            f2_ppm_scale=f2_scale,
+            f1_nucleus="13C",
+            f2_nucleus="1H",
+            experiment_type="HSQC",
+            frequency=500.13,
+        )
+        monkeypatch.setattr(
+            "lucy_ng.nus.bridge.build_spectrum2d",
+            lambda processed_ft2, params, experiment_type: spectrum,
+        )
+
+        critical_names = {
+            "quaternary_exclusion", "ppm_calibration", "signal_to_ridge", "hsqc_coverage",
+        }
+        violated = violated or []
+        checks = [
+            QcCheckResult(
+                name=name,
+                passed=name not in violated,
+                critical=name in critical_names,
+                details="mocked",
+            )
+            for name in (
+                "quaternary_exclusion",
+                "ppm_calibration",
+                "signal_to_ridge",
+                "hsqc_coverage",
+                "edited_sign_consistency",
+                "cosy_diagonal_symmetry",
+            )
+        ]
+        report = QcReport(
+            verdict=QcVerdict(verdict),
+            checks=checks,
+            thresholds_used={"c13_tol": 0.5},
+            errors=[],
+        )
+        monkeypatch.setattr(
+            "lucy_ng.nus.qc.run_qc_checks", lambda peaks_dir, config=None: report
+        )
+        return report
+
+    return _setup
+
+
+@pytest.fixture
 def mock_subprocess_run(monkeypatch: pytest.MonkeyPatch) -> dict:
     """Monkeypatch `subprocess.run` with a configurable-returncode recorder.
 
