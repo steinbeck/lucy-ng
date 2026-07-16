@@ -17,6 +17,7 @@ collectable on a machine with no NMRPipe and before those modules exist.
 
 from __future__ import annotations
 
+import json
 import subprocess
 from collections.abc import Callable
 from pathlib import Path
@@ -130,6 +131,76 @@ def make_truncated_intermediate(tmp_path: Path) -> Callable[..., Path]:
         # Non-zero size but all-zero bytes -- deliberately too short/blank
         # to be a legitimate NMRPipe data file.
         path.write_bytes(b"\x00" * 8)
+        return path
+
+    return _make
+
+
+@pytest.fixture
+def make_valid_ft2(tmp_path: Path) -> Callable[..., Path]:
+    """Factory: write a real, nmrglue-readable minimal NMRPipe `.ft2` file.
+
+    Unlike `make_valid_intermediate` (arbitrary non-zero bytes -- fine for
+    RECON-04's exit-0/non-empty checks, which never actually parse the
+    file), Phase 99's `nus/bridge.py::build_spectrum2d()` genuinely reads
+    the `.ft2` header via `ng.pipe.read()`/`ng.pipe.guess_udic()`, so its
+    tests need a real, minimally-valid NMRPipe 2D data file. Built via
+    `ng.fileiobase.create_blank_udic(2)` + `ng.pipe.create_dic()` +
+    `ng.pipe.write()` -- small (8x16 real-valued float32 by default),
+    round-trips cleanly through `ng.pipe.read()`.
+
+    Optionally writes a `processed_ppm_axis.json` sidecar next to the
+    `.ft2` file (99-PATTERNS.md Pattern 1's F1-axis-override path) when
+    ``calibrated_f1_ppm_axis`` is given.
+    """
+
+    def _make(
+        name: str = "processed",
+        f1_size: int = 8,
+        f2_size: int = 16,
+        f1_car_ppm: float = 100.0,
+        f1_obs_mhz: float = 125.0,
+        f2_car_ppm: float = 4.0,
+        f2_obs_mhz: float = 500.0,
+        calibrated_f1_ppm_axis: list | None = None,
+    ) -> Path:
+        import nmrglue as ng
+        import numpy as np
+
+        udic = ng.fileiobase.create_blank_udic(2)
+        udic[0].update(
+            car=f1_car_ppm * f1_obs_mhz,
+            complex=False,
+            freq=True,
+            time=False,
+            label="13C",
+            obs=f1_obs_mhz,
+            size=f1_size,
+            sw=f1_obs_mhz * 8,
+            encoding="states",
+        )
+        udic[1].update(
+            car=f2_car_ppm * f2_obs_mhz,
+            complex=False,
+            freq=True,
+            time=False,
+            label="1H",
+            obs=f2_obs_mhz,
+            size=f2_size,
+            sw=f2_obs_mhz * 8,
+            encoding="direct",
+        )
+        data = np.random.default_rng(0).random((f1_size, f2_size)).astype(np.float32)
+        dic = ng.pipe.create_dic(udic)
+        path = tmp_path / f"{name}.ft2"
+        ng.pipe.write(str(path), dic, data, overwrite=True)
+
+        if calibrated_f1_ppm_axis is not None:
+            sidecar = path.parent / "processed_ppm_axis.json"
+            sidecar.write_text(
+                json.dumps({"calibrated_ppm_axis": calibrated_f1_ppm_axis})
+            )
+
         return path
 
     return _make
