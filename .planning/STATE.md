@@ -4,8 +4,8 @@ milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
 status: executing
 stopped_at: Phase 99 context gathered
-last_updated: "2026-07-16T16:29:33.460Z"
-last_activity: 2026-07-16 -- Phase 99 planning complete
+last_updated: "2026-07-16T16:31:08.218Z"
+last_activity: 2026-07-16 -- Phase 99 execution started
 progress:
   total_phases: 4
   completed_phases: 2
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-12)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 99 — peak pick bridge + qc gate + cli
+**Current focus:** Phase 99 — Peak-Pick Bridge + QC Gate + CLI
 
 ## Current Position
 
-Phase: 99
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-07-16 -- Phase 99 planning complete
+Phase: 99 (Peak-Pick Bridge + QC Gate + CLI) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 99
+Last activity: 2026-07-16 -- Phase 99 execution started
 
 Progress: [██████████] 100%
 
