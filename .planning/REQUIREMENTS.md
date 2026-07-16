@@ -29,12 +29,12 @@ Requirements for this milestone. Each maps to exactly one roadmap phase (see Tra
 
 - [x] **QC-01**: An automated QC gate cross-checks every reconstructed correlation against the trusted 1D shift data (protonated-carbon HSQC coverage, quaternary-carbon exclusion, edited-sign self-consistency, COSY diagonal symmetry, ppm calibration, signal-to-ridge ratio) and emits a machine-readable PASS/PARTIAL/FAIL report — no human in the loop.
 - [x] **QC-02**: The QC gate reports FAIL on the existing known-bad t1-ridge home-IST peak lists (regression floor) and PASS on a clean reconstruction — proving it discriminates.
-- [ ] **QC-03**: The CASE handoff refuses to start when the QC gate reports FAIL, extending the v9.0 constraint-hardness guard (FIX-10) to reconstruction-derived peaks so a fabricated cross-peak can never silently become a hard LSD constraint.
+- [x] **QC-03**: The CASE handoff refuses to start when the QC gate reports FAIL, extending the v9.0 constraint-hardness guard (FIX-10) to reconstruction-derived peaks so a fabricated cross-peak can never silently become a hard LSD constraint.
 
 ### Peak-pick bridge & CLI (PICK)
 
 - [x] **PICK-01**: A peak-pick bridge builds a `Spectrum2D` in memory and reuses the existing `PeakPicker2D` via a direct Python call (mirroring `_perform_ranking()`), writing `analysis/nmr_peaks/*.json` byte-for-byte in the existing schema (HSQC edited-sign, HMBC, COSY) so the downstream CASE pipeline is unchanged.
-- [ ] **PICK-02**: `lucy nus pipeline <expdir>` runs the whole chain end-to-end (params → schedule → reconstruct → process → peak-pick → QC) as one reusable command usable for any NUS CASE run, not a C20H32O2-only script; all `lucy nus` subcommands support `--format json`.
+- [x] **PICK-02**: `lucy nus pipeline <expdir>` runs the whole chain end-to-end (params → schedule → reconstruct → process → peak-pick → QC) as one reusable command usable for any NUS CASE run, not a C20H32O2-only script; all `lucy nus` subcommands support `--format json`.
 - [x] **PICK-03**: Reconstruction-quality metadata (backend, iterations, QC verdict) is embedded in the emitted peak JSON, replacing the current blanket `"confidence": "low"`.
 
 ### Cross-platform portability (PORT)

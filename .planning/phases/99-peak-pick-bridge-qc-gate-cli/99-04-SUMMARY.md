@@ -126,3 +126,10 @@ None - no external service configuration required.
 ---
 *Phase: 99-peak-pick-bridge-qc-gate-cli*
 *Completed: 2026-07-16*
+
+## Self-Check: PASSED
+
+All 5 modified files verified present on disk (`src/lucy_ng/cli/nus.py`,
+`tests/nus/conftest.py`, `tests/nus/test_cli_pipeline.py`,
+`tests/nus/test_write_boundary.py`, `tests/test_cli_nus.py`); all three
+commit hashes (`211f04a`, `c69e711`, `ae58123`) verified present in git log.
