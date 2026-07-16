@@ -30,6 +30,30 @@ _NUS_FIXTURES_ROOT = Path(__file__).parent.parent / "fixtures" / "nus"
 
 _FIXTURE_NAMES = {"exp2_cosy", "exp3_hsqc", "exp4_hmbc"}
 
+# Phase 99 (Peak-Pick Bridge + QC Gate + CLI) Wave 0 fixture directories --
+# real known-bad home-IST peak lists (QC-02 FAIL side) and hand-authored
+# synthetic clean peak lists (QC-02 PASS side, no real clean reconstruction
+# exists until Phase 100). Pure pathlib, no lucy_ng import required.
+_KNOWN_BAD_PEAKS_DIR = _NUS_FIXTURES_ROOT / "known_bad_peaks"
+_CLEAN_PEAKS_DIR = _NUS_FIXTURES_ROOT / "clean_peaks_synthetic"
+
+# The 5 confirmed-quaternary 13C shifts (NUS-RECONSTRUCTION-GUIDE.md §8/§10)
+# re-exported for QC-02/QC-01 tests -- a subset of nus/postprocess.py's
+# GUIDE_S10_C13 20-shift list.
+KNOWN_QUATERNARY_SHIFTS = [142.00, 135.86, 79.35, 36.23, 37.86]
+
+
+@pytest.fixture
+def known_bad_peaks_dir() -> Path:
+    """Resolve `tests/fixtures/nus/known_bad_peaks` (QC-02 FAIL-side fixture)."""
+    return _KNOWN_BAD_PEAKS_DIR
+
+
+@pytest.fixture
+def clean_peaks_dir() -> Path:
+    """Resolve `tests/fixtures/nus/clean_peaks_synthetic` (QC-02 PASS-side fixture)."""
+    return _CLEAN_PEAKS_DIR
+
 
 @pytest.fixture
 def nus_fixture_dir() -> Callable[[str], Path]:
