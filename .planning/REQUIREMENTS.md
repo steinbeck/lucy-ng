@@ -81,10 +81,10 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NUS-01..05 | Phase 97 | Pending |
-| RECON-01..05 | Phase 98 | Pending |
-| QC-01..03 | Phase 99 | Pending |
-| PICK-01..03 | Phase 99 | Pending |
+| NUS-01..05 | Phase 97 | Complete |
+| RECON-01..05 | Phase 98 | Complete |
+| QC-01..03 | Phase 99 | Complete |
+| PICK-01..03 | Phase 99 | Complete |
 | PORT-01..02 | Phase 100 | Pending |
 | VAL-01..02 | Phase 100 | Pending |
 
