@@ -33,9 +33,9 @@ Requirements for this milestone. Each maps to exactly one roadmap phase (see Tra
 
 ### Peak-pick bridge & CLI (PICK)
 
-- [ ] **PICK-01**: A peak-pick bridge builds a `Spectrum2D` in memory and reuses the existing `PeakPicker2D` via a direct Python call (mirroring `_perform_ranking()`), writing `analysis/nmr_peaks/*.json` byte-for-byte in the existing schema (HSQC edited-sign, HMBC, COSY) so the downstream CASE pipeline is unchanged.
+- [x] **PICK-01**: A peak-pick bridge builds a `Spectrum2D` in memory and reuses the existing `PeakPicker2D` via a direct Python call (mirroring `_perform_ranking()`), writing `analysis/nmr_peaks/*.json` byte-for-byte in the existing schema (HSQC edited-sign, HMBC, COSY) so the downstream CASE pipeline is unchanged.
 - [ ] **PICK-02**: `lucy nus pipeline <expdir>` runs the whole chain end-to-end (params → schedule → reconstruct → process → peak-pick → QC) as one reusable command usable for any NUS CASE run, not a C20H32O2-only script; all `lucy nus` subcommands support `--format json`.
-- [ ] **PICK-03**: Reconstruction-quality metadata (backend, iterations, QC verdict) is embedded in the emitted peak JSON, replacing the current blanket `"confidence": "low"`.
+- [x] **PICK-03**: Reconstruction-quality metadata (backend, iterations, QC verdict) is embedded in the emitted peak JSON, replacing the current blanket `"confidence": "low"`.
 
 ### Cross-platform portability (PORT)
 

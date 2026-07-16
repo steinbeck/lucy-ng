@@ -108,7 +108,7 @@ the 5-agent team.
 **Plans**: 4 plans (3 waves)
 - [x] 99-01-PLAN.md — Nyquist Wave 0: QcVerdict/QcCheckResult/QcReport models + known-bad & synthetic-clean fixtures + RED-by-skip stubs (wave 1)
 - [x] 99-02-PLAN.md — nus/qc.py: 6 checks + aggregate_verdict + run_qc_checks + 3-tier prot/quaternary resolver (QC-01/QC-02, wave 2)
-- [ ] 99-03-PLAN.md — nus/bridge.py: Spectrum2D→PeakPicker2D bridge + per-experiment schema + metadata block + shared edited-sign helper (PICK-01/PICK-03, wave 2)
+- [x] 99-03-PLAN.md — nus/bridge.py: Spectrum2D→PeakPicker2D bridge + per-experiment schema + metadata block + shared edited-sign helper (PICK-01/PICK-03, wave 2)
 - [ ] 99-04-PLAN.md — cli/nus.py: lucy nus qc + pipeline commands + D-07 write-boundary enforcement (PICK-02/QC-03, wave 3)
 
 #### Phase 100: Cross-Platform Hardening + End-to-End Validation
@@ -129,5 +129,5 @@ the 5-agent team.
 |-------|-----------------|--------|-----------|
 | 97. Backend Integration + Params/Schedule | 5/5 | Complete    | 2026-07-12 |
 | 98. Reconstruction + Processing | 6/6 | Complete    | 2026-07-13 |
-| 99. Peak-Pick Bridge + QC Gate + CLI | 2/4 | In Progress|  |
+| 99. Peak-Pick Bridge + QC Gate + CLI | 3/4 | In Progress|  |
 | 100. Cross-Platform Hardening + End-to-End Validation | 0/TBD | Not started | - |
