@@ -27,8 +27,8 @@ Requirements for this milestone. Each maps to exactly one roadmap phase (see Tra
 
 ### Quality gate (QC)
 
-- [ ] **QC-01**: An automated QC gate cross-checks every reconstructed correlation against the trusted 1D shift data (protonated-carbon HSQC coverage, quaternary-carbon exclusion, edited-sign self-consistency, COSY diagonal symmetry, ppm calibration, signal-to-ridge ratio) and emits a machine-readable PASS/PARTIAL/FAIL report — no human in the loop.
-- [ ] **QC-02**: The QC gate reports FAIL on the existing known-bad t1-ridge home-IST peak lists (regression floor) and PASS on a clean reconstruction — proving it discriminates.
+- [x] **QC-01**: An automated QC gate cross-checks every reconstructed correlation against the trusted 1D shift data (protonated-carbon HSQC coverage, quaternary-carbon exclusion, edited-sign self-consistency, COSY diagonal symmetry, ppm calibration, signal-to-ridge ratio) and emits a machine-readable PASS/PARTIAL/FAIL report — no human in the loop.
+- [x] **QC-02**: The QC gate reports FAIL on the existing known-bad t1-ridge home-IST peak lists (regression floor) and PASS on a clean reconstruction — proving it discriminates.
 - [ ] **QC-03**: The CASE handoff refuses to start when the QC gate reports FAIL, extending the v9.0 constraint-hardness guard (FIX-10) to reconstruction-derived peaks so a fabricated cross-peak can never silently become a hard LSD constraint.
 
 ### Peak-pick bridge & CLI (PICK)
