@@ -13,6 +13,7 @@ NOT the value that governs sampling-schedule length -- only `acqu2s`'s
 make that split unambiguous.
 """
 
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -230,4 +231,107 @@ class NusReconstructionResult(BaseModel):
             lines.append(f"  Processed spectrum: {self.processed_spectrum}")
         if self.smile_iterations is not None:
             lines.append(f"  SMILE iterations: {self.smile_iterations}")
+        return "\n".join(lines)
+
+
+class QcVerdict(str, Enum):
+    """Aggregate QC gate verdict (Phase 99, D-01/D-02).
+
+    A plain str-Enum so JSON serialization emits the bare string (e.g.
+    `"PASS"`), never the Python repr (`"QcVerdict.PASS"`) -- matching the
+    project's plain-string-choice convention (`click.Choice(["text",
+    "json"])`) and required by T-99-02's mitigation (Phase-99 threat model).
+    """
+
+    PASS = "PASS"
+    PARTIAL = "PARTIAL"
+    FAIL = "FAIL"
+
+
+class QcCheckResult(BaseModel):
+    """Result of a single QC check (Phase 99, QC-01).
+
+    `critical` marks whether this check participates in D-02's critical
+    tier (any violation -> FAIL) or the soft tier (violation -> PARTIAL).
+    `value`/`threshold` carry the computed metric and the threshold it was
+    compared against, when the check produces a numeric metric (e.g.
+    `ridge_fraction`); both are `None` for boolean-only checks.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    name: str
+    passed: bool
+    critical: bool
+    details: str = ""
+    value: float | None = None
+    threshold: float | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to JSON-serializable dictionary."""
+        return {
+            "name": self.name,
+            "passed": self.passed,
+            "critical": self.critical,
+            "details": self.details,
+            "value": self.value,
+            "threshold": self.threshold,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "QcCheckResult":
+        """Create from dictionary."""
+        return cls(**d)
+
+
+class QcReport(BaseModel):
+    """Aggregate QC gate report (Phase 99, QC-01/D-02).
+
+    `errors` carries per-file JSON-parse errors (Security V5, RESEARCH.md)
+    encountered while reading peak-list files -- these are reported, never
+    silently swallowed, but do not by themselves force a FAIL verdict.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    verdict: QcVerdict
+    checks: list[QcCheckResult]
+    thresholds_used: dict[str, float] = {}
+    errors: list[str] = []
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to JSON-serializable dictionary."""
+        return {
+            "verdict": self.verdict.value,
+            "checks": [c.to_dict() for c in self.checks],
+            "thresholds_used": dict(self.thresholds_used),
+            "errors": list(self.errors),
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "QcReport":
+        """Create from dictionary."""
+        data = dict(d)
+        data["verdict"] = QcVerdict(data["verdict"])
+        data["checks"] = [QcCheckResult.from_dict(c) for c in data.get("checks", [])]
+        return cls(**data)
+
+    def violated_checks(self) -> list[str]:
+        """Return names of all failed checks (critical and soft)."""
+        return [c.name for c in self.checks if not c.passed]
+
+    def critical_violations(self) -> list[str]:
+        """Return names of failed checks in the critical tier only (D-02)."""
+        return [c.name for c in self.checks if not c.passed and c.critical]
+
+    def summary(self) -> str:
+        """Return a human-readable summary of the QC report."""
+        lines = [f"QC Report: {self.verdict.value}"]
+        if self.checks:
+            lines.append(f"  Checks run: {len(self.checks)}")
+            violated = self.violated_checks()
+            if violated:
+                lines.append(f"  Violated: {', '.join(violated)}")
+        if self.errors:
+            lines.append(f"  Errors: {'; '.join(self.errors)}")
         return "\n".join(lines)
