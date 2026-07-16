@@ -40,7 +40,7 @@ key-decisions:
   - "QcReport models mirror NusReconstructionResult's exact convention (ConfigDict, to_dict/from_dict, summary()) plus two convenience methods (violated_checks/critical_violations) anticipating D-02's critical/soft aggregation"
   - "Adopted Phase-98's @pytest.mark.skip stub convention (imports inside skipped bodies) instead of module-level pytest.importorskip, after discovering importorskip collapses each stub file into a single collection-time skip rather than collecting each test individually"
 
-requirements-completed: [QC-01, QC-02, PICK-03]
+requirements-completed: []  # QC-01/QC-02/PICK-03 remain Pending — this Wave 0 plan is scaffold-only (models + fixtures + RED-by-skip stubs); they go GREEN in Plans 02-04, mirroring Phase 98 Plan 01's RECON-01..05 precedent
 
 # Metrics
 duration: 17min
