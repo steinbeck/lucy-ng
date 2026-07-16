@@ -18,8 +18,8 @@ collectable on a machine with no NMRPipe and before those modules exist.
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import pytest
 

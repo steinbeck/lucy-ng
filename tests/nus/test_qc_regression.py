@@ -25,8 +25,9 @@ def test_known_bad_dir_fails(known_bad_peaks_dir) -> None:
 
     Implementing plan: Plan 02 (`lucy_ng.nus.qc.run_qc_checks`).
     """
-    from lucy_ng.models.nus import QcVerdict
     from lucy_ng.nus.qc import run_qc_checks
+
+    from lucy_ng.models.nus import QcVerdict
 
     report = run_qc_checks(known_bad_peaks_dir)
     assert report.verdict == QcVerdict.FAIL
@@ -41,8 +42,9 @@ def test_synthetic_clean_dir_passes(clean_peaks_dir) -> None:
 
     Implementing plan: Plan 02 (`lucy_ng.nus.qc.run_qc_checks`).
     """
-    from lucy_ng.models.nus import QcVerdict
     from lucy_ng.nus.qc import run_qc_checks
+
+    from lucy_ng.models.nus import QcVerdict
 
     report = run_qc_checks(clean_peaks_dir)
     assert report.verdict == QcVerdict.PASS

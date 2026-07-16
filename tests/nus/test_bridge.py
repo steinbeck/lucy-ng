@@ -26,8 +26,9 @@ def test_build_spectrum2d_from_ft2(tmp_path) -> None:
 
     Implementing plan: Plan 03 (`lucy_ng.nus.bridge.build_spectrum2d`).
     """
-    from lucy_ng.models import Spectrum2D
     from lucy_ng.nus.bridge import build_spectrum2d
+
+    from lucy_ng.models import Spectrum2D
 
     spectrum = build_spectrum2d(tmp_path / "processed.ft2", params=None, experiment_type="HSQC")
     assert isinstance(spectrum, Spectrum2D)

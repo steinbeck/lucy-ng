@@ -42,8 +42,9 @@ def test_confidence_derived_from_verdict(tmp_path) -> None:
 
     Implementing plan: Plan 03/04 (`lucy_ng.nus.bridge` confidence mapping, D-06).
     """
-    from lucy_ng.models.nus import QcVerdict
     from lucy_ng.nus.bridge import confidence_from_verdict
+
+    from lucy_ng.models.nus import QcVerdict
 
     assert confidence_from_verdict(QcVerdict.PASS) in {"high", "medium"}
     assert confidence_from_verdict(QcVerdict.PARTIAL) == "low"
