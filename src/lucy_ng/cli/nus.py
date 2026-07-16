@@ -8,24 +8,60 @@ bodies so that the core ``lucy`` CLI stays importable without the optional
 
 Phase 97 implemented the ``check``/``params``/``schedule`` subcommands
 (backend detection + pure-Python acquisition/schedule parsing). Phase 98
-(Plan 06) adds ``reconstruct`` -- the whole-pipeline CLI wrapper around
+(Plan 06) added ``reconstruct`` -- the whole-pipeline CLI wrapper around
 ``lucy_ng.nus.runner.NusRunner`` -- following the exact same deferred-import
-convention. The full processing pipeline (``pipeline``, wiring in Phase 99's
-peak-pick bridge) remains deliberately NOT registered here (D-02: no dead
-stubs).
+convention. Phase 99 (Plan 04) adds ``qc`` (the standalone QC-02 gate,
+D-08's ``lucy nus qc <peaks-dir>`` contract) and ``pipeline`` (the full
+params -> schedule -> reconstruct -> process -> peak-pick -> QC chain,
+D-07's write/quarantine boundary) -- both following the same deferred-import
+convention; ``case.md`` and the CASE pipeline are not touched by either.
 """
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
+
+if TYPE_CHECKING:
+    from lucy_ng.nus.qc import QcConfig
 
 
 @click.group()
 def nus() -> None:
     """NUS (Non-Uniform Sampling) 2D reconstruction commands."""
+
+
+def _build_qc_config(
+    ridge_fail: float | None,
+    coverage_floor: float | None,
+    c13_tol: float | None,
+    h1_tol: float | None,
+) -> QcConfig:
+    """Build a `QcConfig` from optional CLI threshold overrides (D-04).
+
+    `None` values keep `QcConfig.default()`'s seed thresholds; only
+    explicitly-passed flags override -- shared by `qc` and `pipeline` so
+    the two commands' threshold-override semantics never diverge.
+    """
+    from lucy_ng.nus.qc import QcConfig
+
+    defaults = QcConfig.default()
+    return QcConfig(
+        c13_tol=c13_tol if c13_tol is not None else defaults.c13_tol,
+        h1_tol=h1_tol if h1_tol is not None else defaults.h1_tol,
+        ridge_fraction_fail=(
+            ridge_fail if ridge_fail is not None else defaults.ridge_fraction_fail
+        ),
+        hsqc_coverage_floor=(
+            coverage_floor if coverage_floor is not None else defaults.hsqc_coverage_floor
+        ),
+        edited_sign_tol=defaults.edited_sign_tol,
+        cosy_symmetry_floor=defaults.cosy_symmetry_floor,
+        known_quaternary_shifts=defaults.known_quaternary_shifts,
+    )
 
 
 @nus.command("check")
@@ -251,3 +287,78 @@ def reconstruct(
         click.echo(f"Success: {result.success}")
         click.echo(f"Stage dir: {result.stage_dir}")
         click.echo(f"Processed spectrum: {result.processed_spectrum}")
+
+
+@nus.command("qc")
+@click.argument("peaks_dir", type=click.Path(exists=True))
+@click.option(
+    "--ridge-fail",
+    type=float,
+    default=None,
+    help="Override the signal-to-ridge FAIL threshold (D-04, default 0.5).",
+)
+@click.option(
+    "--coverage-floor",
+    type=float,
+    default=None,
+    help="Override the HSQC-coverage FAIL floor (D-04, default 0.8).",
+)
+@click.option(
+    "--c13-tol",
+    type=float,
+    default=None,
+    help="Override the 13C tolerance in ppm (D-04, default 0.5).",
+)
+@click.option(
+    "--h1-tol",
+    type=float,
+    default=None,
+    help="Override the 1H tolerance in ppm (D-04, default 0.05).",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+    help="Output format.",
+)
+def qc(
+    peaks_dir: str,
+    ridge_fail: float | None,
+    coverage_floor: float | None,
+    c13_tol: float | None,
+    h1_tol: float | None,
+    output_format: str,
+) -> None:
+    """Run the headless QC gate (QC-01/QC-02) against PEAKS_DIR.
+
+    PEAKS_DIR is any directory containing reconstructed HSQC/HMBC/COSY
+    cross-peak JSON files (keyword-glob matched, e.g. `HSQC_exp3.json` or
+    `HSQC.json` -- never a hardcoded experiment-number suffix, D-08) plus
+    the trusted 1D reference lists (`13C_exp*.json`/`1H_exp1.json`, D-03).
+    Cross-checks every reconstructed correlation via six named checks
+    (D-02: quaternary-carbon exclusion, ppm calibration, signal-to-ridge,
+    HSQC coverage critical; edited-sign self-consistency, COSY diagonal
+    symmetry soft) and exits non-zero on a FAIL verdict (QC-03).
+    """
+    from lucy_ng.nus.qc import run_qc_checks
+
+    resolved = Path(peaks_dir).resolve()
+    config = _build_qc_config(ridge_fail, coverage_floor, c13_tol, h1_tol)
+    report = run_qc_checks(resolved, config)
+
+    if output_format == "json":
+        click.echo(json.dumps(report.to_dict(), indent=2))
+    else:
+        click.echo(f"QC verdict: {report.verdict.value}")
+        violated = report.violated_checks()
+        if violated:
+            click.echo(f"Violated checks: {', '.join(violated)}")
+        else:
+            click.echo("All checks passed.")
+        if report.errors:
+            click.echo(f"Errors: {'; '.join(report.errors)}")
+
+    if report.verdict.value == "FAIL":
+        raise SystemExit(1)
