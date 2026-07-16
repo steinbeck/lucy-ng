@@ -376,14 +376,16 @@ Not directly applicable — this phase's "state of the art" question (CS/IST NUS
 
 **If this table is empty:** N/A — see entries above; all five need explicit planner attention, none block planning outright.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **What is the correct quarantine/write-boundary implementation shape — a `QcGate` class the `pipeline` command calls, or inline logic in `cli/nus.py::pipeline`?**
+> Both questions are resolved by the Phase-99 plan set: Q1 → Plan 04 follows Rec 1 (qc.py pure/verdict-only, write+quarantine branching in `cli/nus.py::pipeline`); Q2 → Plan 02 follows Rec 2 (keyword glob `*HSQC*`/`*HMBC*`/`*COSY*`, enforced by the `! grep "_exp[0-9]"` acceptance gate). Retained below for provenance.
+
+1. **(RESOLVED) What is the correct quarantine/write-boundary implementation shape — a `QcGate` class the `pipeline` command calls, or inline logic in `cli/nus.py::pipeline`?**
    - What we know: D-07 fixes the *policy* (write PASS/PARTIAL, quarantine+exit-1 on FAIL) and fixes *where* it lives (pipeline boundary, not `NusRunner`).
    - What's unclear: whether `nus/qc.py` should own the write-boundary function itself (e.g. `qc.write_or_quarantine(report, peaks, ...)`) or whether that logic belongs purely in the CLI command body (matching the `reconstruct` command's current thin-wrapper style).
    - Recommendation: keep `nus/qc.py` pure (compute `QcReport`, no file I/O beyond reading reference JSON); put the write/quarantine branching in `cli/nus.py::pipeline` — matches the existing `reconstruct` command's convention of thin CLI + fat library.
 
-2. **Should `lucy nus qc <peaks-dir>` accept a directory of already-existing peak JSON files (D-08's literal contract) or a single experiment's JSON file?**
+2. **(RESOLVED) Should `lucy nus qc <peaks-dir>` accept a directory of already-existing peak JSON files (D-08's literal contract) or a single experiment's JSON file?**
    - What we know: D-08 says "standalone `lucy nus qc <peaks-dir>`... independently runnable against arbitrary peak lists" and the QC-02 regression target is a *directory* containing `HSQC_exp3.json`/`HMBC_exp4.json`/`COSY_exp2.json` together (checks like coverage need all three cross-referenced, e.g. a carbon confirmed quaternary by HSQC absence might still show HMBC correlations).
    - What's unclear: exact glob pattern for locating the three experiment types within an arbitrary directory (filename convention isn't fully fixed — the known-bad fixtures use `{TYPE}_exp{N}.json`, but a fresh `pipeline` run's fixture naming should be verified for consistency).
    - Recommendation: accept a directory, glob-match on experiment-type keywords in filenames (`*HSQC*`/`*hsqc*`, similarly HMBC/COSY) rather than a hardcoded `_expN` suffix, so `lucy nus qc` works regardless of experiment numbering.
