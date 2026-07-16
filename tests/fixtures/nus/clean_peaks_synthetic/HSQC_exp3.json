@@ -1,0 +1,143 @@
+{
+ "experiment": "HSQC edited (exp3, hsqcedetgpsp.3) — synthetic clean",
+ "caveat": "Hand-authored synthetic clean fixture (Phase 99, QC-02 PASS side). Respects NUS-RECONSTRUCTION-GUIDE.md §8: one correlation per protonated carbon, zero correlations at known-quaternary shifts, self-consistent edited signs, no ridge.",
+ "n_cross_peaks": 17,
+ "cross_peaks": [
+  {
+   "c13_ppm": 69.06,
+   "h1_ppm": 1.05,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 67.06,
+   "h1_ppm": 1.9,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction, diastereotopic CH2"
+  },
+  {
+   "c13_ppm": 67.06,
+   "h1_ppm": 3.65,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction, diastereotopic CH2"
+  },
+  {
+   "c13_ppm": 51.63,
+   "h1_ppm": 1.5,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction, diastereotopic CH2"
+  },
+  {
+   "c13_ppm": 51.63,
+   "h1_ppm": 1.6,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction, diastereotopic CH2"
+  },
+  {
+   "c13_ppm": 37.19,
+   "h1_ppm": 1.15,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 35.23,
+   "h1_ppm": 1.75,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 34.21,
+   "h1_ppm": 1.68,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 33.67,
+   "h1_ppm": 1.72,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 30.66,
+   "h1_ppm": 1.6,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 29.77,
+   "h1_ppm": 1.58,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 27.93,
+   "h1_ppm": 0.85,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 27.15,
+   "h1_ppm": 1.63,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 25.96,
+   "h1_ppm": 0.95,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 23.43,
+   "h1_ppm": 1.2,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 22.63,
+   "h1_ppm": 1.63,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  },
+  {
+   "c13_ppm": 21.78,
+   "h1_ppm": 1.65,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "high",
+   "note": "synthetic clean reconstruction"
+  }
+ ]
+}

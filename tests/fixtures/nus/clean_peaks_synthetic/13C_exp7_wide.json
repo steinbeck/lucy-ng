@@ -1,0 +1,28 @@
+{
+  "count": 20,
+  "noise_sigma": 1614.9560745117187,
+  "negative_detected": false,
+  "snr_floor_used": 5.0,
+  "peaks": [
+    {"ppm": 142.0, "intensity": 13950.79, "snr": 8.64},
+    {"ppm": 135.86, "intensity": 10728.56, "snr": 6.64},
+    {"ppm": 79.35, "intensity": 8445.64, "snr": 5.23},
+    {"ppm": 69.06, "intensity": 9200.11, "snr": 5.7},
+    {"ppm": 67.06, "intensity": 9600.22, "snr": 5.94},
+    {"ppm": 51.63, "intensity": 8800.33, "snr": 5.45},
+    {"ppm": 37.86, "intensity": 8100.44, "snr": 5.02},
+    {"ppm": 37.19, "intensity": 8300.55, "snr": 5.14},
+    {"ppm": 36.23, "intensity": 8500.66, "snr": 5.26},
+    {"ppm": 35.23, "intensity": 8700.77, "snr": 5.39},
+    {"ppm": 34.21, "intensity": 8900.88, "snr": 5.51},
+    {"ppm": 33.67, "intensity": 9100.99, "snr": 5.63},
+    {"ppm": 30.66, "intensity": 9300.1, "snr": 5.76},
+    {"ppm": 29.77, "intensity": 9500.21, "snr": 5.88},
+    {"ppm": 27.93, "intensity": 9700.32, "snr": 6.01},
+    {"ppm": 27.15, "intensity": 9900.43, "snr": 6.13},
+    {"ppm": 25.96, "intensity": 10100.54, "snr": 6.26},
+    {"ppm": 23.43, "intensity": 10300.65, "snr": 6.38},
+    {"ppm": 22.63, "intensity": 10500.76, "snr": 6.5},
+    {"ppm": 21.78, "intensity": 10700.87, "snr": 6.63}
+  ]
+}

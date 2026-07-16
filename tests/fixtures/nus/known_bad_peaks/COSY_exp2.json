@@ -1,0 +1,56 @@
+{
+ "experiment": "COSY (exp2, cosygpmfppqf)",
+ "caveat": "NUS 25-33% data, no NUS reconstruction tool available; reconstructed by home-grown per-column IST. Residual t1 ridges present. All 2D correlations are BEST-EFFORT / LOW confidence. Tolerances: 13C match +/-0.5 ppm to nearest assigned shift; 1H match +/-0.05 ppm to nearest 1H-1D cluster.",
+ "n_cross_peaks": 7,
+ "cross_peaks": [
+  {
+   "h1a_ppm": 5.32,
+   "h1b_ppm": 1.57,
+   "rel_intensity": 0.34,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS COSY"
+  },
+  {
+   "h1a_ppm": 5.32,
+   "h1b_ppm": 1.6,
+   "rel_intensity": 0.33,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS COSY"
+  },
+  {
+   "h1a_ppm": 5.32,
+   "h1b_ppm": 1.62,
+   "rel_intensity": 0.14,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS COSY"
+  },
+  {
+   "h1a_ppm": 5.32,
+   "h1b_ppm": 1.54,
+   "rel_intensity": 0.13,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS COSY"
+  },
+  {
+   "h1a_ppm": 5.32,
+   "h1b_ppm": 2.13,
+   "rel_intensity": 0.09,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS COSY"
+  },
+  {
+   "h1a_ppm": 5.32,
+   "h1b_ppm": 1.64,
+   "rel_intensity": 0.08,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS COSY"
+  },
+  {
+   "h1a_ppm": 5.32,
+   "h1b_ppm": 1.95,
+   "rel_intensity": 0.06,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS COSY"
+  }
+ ]
+}

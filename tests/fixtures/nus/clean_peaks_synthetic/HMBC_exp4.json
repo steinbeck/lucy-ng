@@ -1,0 +1,27 @@
+{
+ "experiment": "HMBC (exp4, hmbcetgpl3nd) — synthetic clean",
+ "caveat": "Hand-authored synthetic clean fixture (Phase 99, QC-02 PASS side). Respects NUS-RECONSTRUCTION-GUIDE.md §8: legitimate long-range correlations to both protonated and quaternary carbons, no dominant single-axis ridge.",
+ "n_cross_peaks": 20,
+ "cross_peaks": [
+  {"c13_ppm": 142.0, "h1_ppm": 1.65, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 142.0, "h1_ppm": 1.72, "rel_intensity": 0.85, "rank_in_carbon": 2, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 142.0, "h1_ppm": 0.95, "rel_intensity": 0.6, "rank_in_carbon": 3, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 135.86, "h1_ppm": 5.32, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 135.86, "h1_ppm": 2.1, "rel_intensity": 0.7, "rank_in_carbon": 2, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 135.86, "h1_ppm": 2.35, "rel_intensity": 0.55, "rank_in_carbon": 3, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 79.35, "h1_ppm": 3.65, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 79.35, "h1_ppm": 1.9, "rel_intensity": 0.65, "rank_in_carbon": 2, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 36.23, "h1_ppm": 0.85, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 36.23, "h1_ppm": 1.05, "rel_intensity": 0.75, "rank_in_carbon": 2, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 37.86, "h1_ppm": 1.15, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 37.86, "h1_ppm": 1.2, "rel_intensity": 0.8, "rank_in_carbon": 2, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 69.06, "h1_ppm": 1.05, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 67.06, "h1_ppm": 3.65, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 51.63, "h1_ppm": 1.5, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 37.19, "h1_ppm": 1.15, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 35.23, "h1_ppm": 1.75, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 34.21, "h1_ppm": 1.68, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 33.67, "h1_ppm": 1.72, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"c13_ppm": 30.66, "h1_ppm": 1.6, "rel_intensity": 1.0, "rank_in_carbon": 1, "suspected_1J_artifact": false, "confidence": "high", "note": "synthetic clean reconstruction"}
+ ]
+}

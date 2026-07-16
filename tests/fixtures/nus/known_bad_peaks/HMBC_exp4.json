@@ -1,0 +1,583 @@
+{
+ "experiment": "HMBC (exp4, hmbcetgpl3nd)",
+ "caveat": "NUS 25-33% data, no NUS reconstruction tool available; reconstructed by home-grown per-column IST. Residual t1 ridges present. All 2D correlations are BEST-EFFORT / LOW confidence. Tolerances: 13C match +/-0.5 ppm to nearest assigned shift; 1H match +/-0.05 ppm to nearest 1H-1D cluster.",
+ "n_cross_peaks": 64,
+ "cross_peaks": [
+  {
+   "c13_ppm": 142.0,
+   "h1_ppm": 1.57,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 142.0,
+   "h1_ppm": 1.17,
+   "rel_intensity": 0.74,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 142.0,
+   "h1_ppm": 1.62,
+   "rel_intensity": 0.71,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 142.0,
+   "h1_ppm": 1.81,
+   "rel_intensity": 0.64,
+   "rank_in_carbon": 4,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 142.0,
+   "h1_ppm": 3.45,
+   "rel_intensity": 0.51,
+   "rank_in_carbon": 5,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 142.0,
+   "h1_ppm": 3.34,
+   "rel_intensity": 0.47,
+   "rank_in_carbon": 6,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 142.0,
+   "h1_ppm": 1.95,
+   "rel_intensity": 0.37,
+   "rank_in_carbon": 7,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 135.86,
+   "h1_ppm": 0.99,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 135.86,
+   "h1_ppm": 1.62,
+   "rel_intensity": 0.43,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 135.86,
+   "h1_ppm": 2.0,
+   "rel_intensity": 0.37,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 135.86,
+   "h1_ppm": 1.57,
+   "rel_intensity": 0.29,
+   "rank_in_carbon": 4,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 79.35,
+   "h1_ppm": 2.0,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 79.35,
+   "h1_ppm": 1.57,
+   "rel_intensity": 0.68,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 79.35,
+   "h1_ppm": 1.62,
+   "rel_intensity": 0.66,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 79.35,
+   "h1_ppm": 0.96,
+   "rel_intensity": 0.31,
+   "rank_in_carbon": 4,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 69.06,
+   "h1_ppm": 0.99,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 67.06,
+   "h1_ppm": 0.99,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 67.06,
+   "h1_ppm": 1.95,
+   "rel_intensity": 0.34,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 67.06,
+   "h1_ppm": 1.6,
+   "rel_intensity": 0.33,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 51.63,
+   "h1_ppm": 0.99,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 37.86,
+   "h1_ppm": 1.17,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 37.86,
+   "h1_ppm": 0.99,
+   "rel_intensity": 0.99,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 37.19,
+   "h1_ppm": 0.96,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 36.23,
+   "h1_ppm": 0.96,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 35.23,
+   "h1_ppm": 1.17,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 35.23,
+   "h1_ppm": 0.96,
+   "rel_intensity": 0.83,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 35.23,
+   "h1_ppm": 1.62,
+   "rel_intensity": 0.42,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 34.21,
+   "h1_ppm": 0.96,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 34.21,
+   "h1_ppm": 1.57,
+   "rel_intensity": 0.62,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 34.21,
+   "h1_ppm": 1.15,
+   "rel_intensity": 0.41,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 34.21,
+   "h1_ppm": 1.95,
+   "rel_intensity": 0.37,
+   "rank_in_carbon": 4,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 33.67,
+   "h1_ppm": 0.99,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 33.67,
+   "h1_ppm": 1.57,
+   "rel_intensity": 0.43,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 33.67,
+   "h1_ppm": 1.15,
+   "rel_intensity": 0.29,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 30.66,
+   "h1_ppm": 0.99,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 30.66,
+   "h1_ppm": 1.57,
+   "rel_intensity": 0.52,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 30.66,
+   "h1_ppm": 1.81,
+   "rel_intensity": 0.3,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 30.66,
+   "h1_ppm": 1.95,
+   "rel_intensity": 0.25,
+   "rank_in_carbon": 4,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 29.77,
+   "h1_ppm": 0.99,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 29.77,
+   "h1_ppm": 1.57,
+   "rel_intensity": 0.72,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 29.77,
+   "h1_ppm": 1.17,
+   "rel_intensity": 0.64,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 29.77,
+   "h1_ppm": 1.81,
+   "rel_intensity": 0.39,
+   "rank_in_carbon": 4,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 29.77,
+   "h1_ppm": 3.45,
+   "rel_intensity": 0.31,
+   "rank_in_carbon": 5,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 29.77,
+   "h1_ppm": 2.0,
+   "rel_intensity": 0.24,
+   "rank_in_carbon": 6,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 27.93,
+   "h1_ppm": 0.96,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 27.93,
+   "h1_ppm": 1.62,
+   "rel_intensity": 0.73,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 27.93,
+   "h1_ppm": 1.57,
+   "rel_intensity": 0.31,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 27.93,
+   "h1_ppm": 1.95,
+   "rel_intensity": 0.2,
+   "rank_in_carbon": 4,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 27.93,
+   "h1_ppm": 2.0,
+   "rel_intensity": 0.19,
+   "rank_in_carbon": 5,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 27.15,
+   "h1_ppm": 0.96,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 27.15,
+   "h1_ppm": 1.62,
+   "rel_intensity": 0.6,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 25.96,
+   "h1_ppm": 0.96,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 23.43,
+   "h1_ppm": 0.99,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 23.43,
+   "h1_ppm": 1.62,
+   "rel_intensity": 0.35,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 23.43,
+   "h1_ppm": 1.79,
+   "rel_intensity": 0.19,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 22.63,
+   "h1_ppm": 1.95,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 22.63,
+   "h1_ppm": 1.57,
+   "rel_intensity": 0.37,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 22.63,
+   "h1_ppm": 1.62,
+   "rel_intensity": 0.32,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 22.63,
+   "h1_ppm": 1.17,
+   "rel_intensity": 0.24,
+   "rank_in_carbon": 4,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 21.78,
+   "h1_ppm": 1.95,
+   "rel_intensity": 1.0,
+   "rank_in_carbon": 1,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 21.78,
+   "h1_ppm": 1.57,
+   "rel_intensity": 0.37,
+   "rank_in_carbon": 2,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 21.78,
+   "h1_ppm": 1.62,
+   "rel_intensity": 0.32,
+   "rank_in_carbon": 3,
+   "suspected_1J_artifact": true,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 21.78,
+   "h1_ppm": 1.17,
+   "rel_intensity": 0.24,
+   "rank_in_carbon": 4,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  },
+  {
+   "c13_ppm": 21.78,
+   "h1_ppm": 0.99,
+   "rel_intensity": 0.2,
+   "rank_in_carbon": 5,
+   "suspected_1J_artifact": false,
+   "confidence": "low",
+   "note": "IST-reconstructed NUS HMBC"
+  }
+ ]
+}

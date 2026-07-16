@@ -1,0 +1,17 @@
+{
+ "experiment": "COSY (exp2, cosygpmfppqf) — synthetic clean",
+ "caveat": "Hand-authored synthetic clean fixture (Phase 99, QC-02 PASS side). Real aliphatic COSY network with diagonal-symmetric pairs, not a single-coordinate ridge (contrast with the OH-ridge-at-5.32 known-bad fixture).",
+ "n_cross_peaks": 10,
+ "cross_peaks": [
+  {"h1a_ppm": 1.05, "h1b_ppm": 1.15, "rel_intensity": 0.8, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"h1a_ppm": 1.15, "h1b_ppm": 1.05, "rel_intensity": 0.8, "confidence": "high", "note": "synthetic clean reconstruction, mirror pair"},
+  {"h1a_ppm": 1.5, "h1b_ppm": 1.6, "rel_intensity": 0.7, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"h1a_ppm": 1.6, "h1b_ppm": 1.5, "rel_intensity": 0.7, "confidence": "high", "note": "synthetic clean reconstruction, mirror pair"},
+  {"h1a_ppm": 1.65, "h1b_ppm": 1.72, "rel_intensity": 0.6, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"h1a_ppm": 1.72, "h1b_ppm": 1.65, "rel_intensity": 0.6, "confidence": "high", "note": "synthetic clean reconstruction, mirror pair"},
+  {"h1a_ppm": 1.9, "h1b_ppm": 3.65, "rel_intensity": 0.5, "confidence": "high", "note": "synthetic clean reconstruction, geminal CH2 pair"},
+  {"h1a_ppm": 3.65, "h1b_ppm": 1.9, "rel_intensity": 0.5, "confidence": "high", "note": "synthetic clean reconstruction, mirror pair"},
+  {"h1a_ppm": 0.85, "h1b_ppm": 0.95, "rel_intensity": 0.65, "confidence": "high", "note": "synthetic clean reconstruction"},
+  {"h1a_ppm": 0.95, "h1b_ppm": 0.85, "rel_intensity": 0.65, "confidence": "high", "note": "synthetic clean reconstruction, mirror pair"}
+ ]
+}

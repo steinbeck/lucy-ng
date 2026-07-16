@@ -1,0 +1,28 @@
+{
+  "count": 20,
+  "noise_sigma": 489852.0592875,
+  "negative_detected": false,
+  "snr_floor_used": 5.0,
+  "peaks": [
+    {"ppm": 5.32, "intensity": 8334944.25, "snr": 17.02},
+    {"ppm": 4.13, "intensity": 6200000.0, "snr": 12.66},
+    {"ppm": 3.88, "intensity": 3080158.69, "snr": 6.29},
+    {"ppm": 3.65, "intensity": 3200000.0, "snr": 6.53},
+    {"ppm": 2.35, "intensity": 2900000.0, "snr": 5.92},
+    {"ppm": 2.1, "intensity": 2800000.0, "snr": 5.72},
+    {"ppm": 1.9, "intensity": 2700000.0, "snr": 5.51},
+    {"ppm": 1.75, "intensity": 2600000.0, "snr": 5.31},
+    {"ppm": 1.72, "intensity": 2550000.0, "snr": 5.21},
+    {"ppm": 1.68, "intensity": 2500000.0, "snr": 5.1},
+    {"ppm": 1.65, "intensity": 2450000.0, "snr": 5.0},
+    {"ppm": 1.63, "intensity": 2400000.0, "snr": 4.9},
+    {"ppm": 1.6, "intensity": 2350000.0, "snr": 4.8},
+    {"ppm": 1.58, "intensity": 2300000.0, "snr": 4.7},
+    {"ppm": 1.5, "intensity": 2250000.0, "snr": 4.59},
+    {"ppm": 1.2, "intensity": 2200000.0, "snr": 4.49},
+    {"ppm": 1.15, "intensity": 2150000.0, "snr": 4.39},
+    {"ppm": 1.05, "intensity": 2100000.0, "snr": 4.29},
+    {"ppm": 0.95, "intensity": 2050000.0, "snr": 4.18},
+    {"ppm": 0.85, "intensity": 2000000.0, "snr": 4.08}
+  ]
+}

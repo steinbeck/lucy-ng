@@ -1,0 +1,223 @@
+{
+ "experiment": "HSQC edited (exp3, hsqcedetgpsp.3)",
+ "caveat": "NUS 25-33% data, no NUS reconstruction tool available; reconstructed by home-grown per-column IST. Residual t1 ridges present. All 2D correlations are BEST-EFFORT / LOW confidence. Tolerances: 13C match +/-0.5 ppm to nearest assigned shift; 1H match +/-0.05 ppm to nearest 1H-1D cluster.",
+ "n_cross_peaks": 27,
+ "cross_peaks": [
+  {
+   "c13_ppm": 69.06,
+   "h1_ppm": 0.99,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 69.06,
+   "h1_ppm": 1.17,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 67.06,
+   "h1_ppm": 1.95,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 67.06,
+   "h1_ppm": 3.68,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 51.63,
+   "h1_ppm": 1.54,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 37.86,
+   "h1_ppm": 1.7,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 37.86,
+   "h1_ppm": 1.54,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 37.19,
+   "h1_ppm": 1.7,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 37.19,
+   "h1_ppm": 1.17,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 36.23,
+   "h1_ppm": 2.0,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 36.23,
+   "h1_ppm": 1.7,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 35.23,
+   "h1_ppm": 1.79,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 35.23,
+   "h1_ppm": 0.99,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 34.21,
+   "h1_ppm": 1.7,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 33.67,
+   "h1_ppm": 1.7,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 30.66,
+   "h1_ppm": 1.62,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 29.77,
+   "h1_ppm": 1.62,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 27.93,
+   "h1_ppm": 0.96,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 27.93,
+   "h1_ppm": 0.8,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 27.15,
+   "h1_ppm": 1.62,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 25.96,
+   "h1_ppm": 0.99,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 25.96,
+   "h1_ppm": 2.0,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 23.43,
+   "h1_ppm": 1.17,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 23.43,
+   "h1_ppm": 0.96,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 22.63,
+   "h1_ppm": 1.62,
+   "edited_sign": "positive(CH_or_CH3)",
+   "multiplicity_hint": "CH_or_CH3",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 22.63,
+   "h1_ppm": 1.17,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  },
+  {
+   "c13_ppm": 21.78,
+   "h1_ppm": 1.62,
+   "edited_sign": "negative(CH2)",
+   "multiplicity_hint": "CH2",
+   "confidence": "low",
+   "note": "edited-sign from IST EA reconstruction, unreliable per-point"
+  }
+ ]
+}
