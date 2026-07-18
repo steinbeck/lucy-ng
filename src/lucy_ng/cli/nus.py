@@ -78,13 +78,18 @@ def check(output_format: str) -> None:
 
     Reports whether the required external tools (nmrPipe, bruk2pipe,
     nusExpand.tcl) are on PATH and whether the SMILE plugin capability probe
-    succeeds. Exits 1 when the backend is not usable.
+    succeeds, plus the PORT-01 platform preflight section (arch, Rosetta
+    translation status, csh/tcsh availability). Exits 1 when the backend is
+    not usable OR a critical platform issue is present (D-05); a soft-only
+    Rosetta warning never triggers exit 1.
     """
     from lucy_ng.nus.backends import get_backend
 
     backend = get_backend()
     diagnosis = backend.diagnose()
+    platform_info = diagnosis.get("platform", {})
     usable = diagnosis["status"] == "available"
+    critical_platform_issues = platform_info.get("critical_platform_issues", [])
 
     if output_format == "json":
         click.echo(json.dumps(diagnosis, indent=2))
@@ -101,7 +106,21 @@ def check(output_format: str) -> None:
                 )
             click.echo(f"  {diagnosis['hint']}")
 
-    if not usable:
+        click.echo("Platform:")
+        click.echo(
+            f"  arch={platform_info.get('arch')} os={platform_info.get('os')} "
+            f"rosetta_translated={platform_info.get('rosetta_translated')}"
+        )
+        click.echo(
+            f"  csh_available={platform_info.get('csh_available')} "
+            f"tcsh_available={platform_info.get('tcsh_available')}"
+        )
+        for warning in platform_info.get("soft_platform_warnings", []):
+            click.echo(f"  Warning: {warning}")
+        for issue in critical_platform_issues:
+            click.echo(f"  Critical: {issue}", err=True)
+
+    if not usable or critical_platform_issues:
         raise SystemExit(1)
 
 
@@ -200,6 +219,17 @@ def schedule(expdir: str, output_format: str) -> None:
     help="SMILE -thresh value (noise-threshold convergence check).",
 )
 @click.option(
+    "--n-sigma",
+    "n_sigma",
+    type=int,
+    default=5,
+    show_default=True,
+    help=(
+        "SMILE -nSigma noise-threshold convergence value (D-04 tuning-budget "
+        "knob, forwarded to NusRunner.reconstruct())."
+    ),
+)
+@click.option(
     "--virtual-echo/--no-virtual-echo",
     "virtual_echo",
     default=True,
@@ -250,6 +280,7 @@ def reconstruct(
     expdir: str,
     iterations: int,
     threshold: float,
+    n_sigma: int,
     virtual_echo: bool,
     f2_p0: float,
     f2_p1: float,
@@ -264,21 +295,28 @@ def reconstruct(
     FT/phase/baseline fully automatically (RECON-01), enforcing the
     F2-before-F1 hard ordering gate (RECON-02) and FnMODE-aware branching
     (RECON-03) via `NusRunner.reconstruct()`. Intermediates are written to
-    `analysis/nus_recon/<expN>/` under EXPDIR and kept (D-03).
+    `analysis/nus_recon/<expN>/` under EXPDIR and kept (D-03). Aborts before
+    any stage runs if `lucy nus check` would report a critical platform/
+    backend gap (PORT-01 preflight gate).
     """
     from lucy_ng.nus.runner import NusRunner
 
     resolved = Path(expdir).resolve()
-    result = NusRunner().reconstruct(
-        resolved,
-        max_iter=iterations,
-        threshold=threshold,
-        virtual_echo=virtual_echo,
-        f1_p0=f1_p0,
-        f1_p1=f1_p1,
-        f2_p0=f2_p0,
-        f2_p1=f2_p1,
-    )
+    try:
+        result = NusRunner().reconstruct(
+            resolved,
+            max_iter=iterations,
+            threshold=threshold,
+            n_sigma=n_sigma,
+            virtual_echo=virtual_echo,
+            f1_p0=f1_p0,
+            f1_p1=f1_p1,
+            f2_p0=f2_p0,
+            f2_p1=f2_p1,
+        )
+    except RuntimeError as e:
+        click.echo(f"NUS reconstruct: {e}", err=True)
+        raise SystemExit(1) from e
 
     if output_format == "json":
         click.echo(json.dumps(result.to_dict(), indent=2))
@@ -384,6 +422,17 @@ def qc(
     help="SMILE -thresh value (noise-threshold convergence check).",
 )
 @click.option(
+    "--n-sigma",
+    "n_sigma",
+    type=int,
+    default=5,
+    show_default=True,
+    help=(
+        "SMILE -nSigma noise-threshold convergence value (D-04 tuning-budget "
+        "knob, forwarded to NusRunner.reconstruct())."
+    ),
+)
+@click.option(
     "--virtual-echo/--no-virtual-echo",
     "virtual_echo",
     default=True,
@@ -458,6 +507,7 @@ def pipeline(
     expdir: str,
     iterations: int,
     threshold: float,
+    n_sigma: int,
     virtual_echo: bool,
     f2_p0: float,
     f2_p1: float,
@@ -504,16 +554,21 @@ def pipeline(
         params.pulse_program, params.f1_nucleus, params.f2_nucleus
     )
 
-    result = NusRunner().reconstruct(
-        resolved,
-        max_iter=iterations,
-        threshold=threshold,
-        virtual_echo=virtual_echo,
-        f1_p0=f1_p0,
-        f1_p1=f1_p1,
-        f2_p0=f2_p0,
-        f2_p1=f2_p1,
-    )
+    try:
+        result = NusRunner().reconstruct(
+            resolved,
+            max_iter=iterations,
+            threshold=threshold,
+            n_sigma=n_sigma,
+            virtual_echo=virtual_echo,
+            f1_p0=f1_p0,
+            f1_p1=f1_p1,
+            f2_p0=f2_p0,
+            f2_p1=f2_p1,
+        )
+    except RuntimeError as e:
+        click.echo(f"NUS pipeline: {e}", err=True)
+        raise SystemExit(1) from e
     if not result.processed_spectrum:
         click.echo(
             f"NUS pipeline: reconstruction reported no processed spectrum "

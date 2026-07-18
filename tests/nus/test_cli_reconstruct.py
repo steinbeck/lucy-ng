@@ -54,7 +54,7 @@ def test_reconstruct_help_lists_knob_flags() -> None:
 
 
 def test_flags_thread_through_to_smile_invocation(
-    mock_run_stage, nus_fixture_dir, tmp_path
+    mock_run_stage, nus_fixture_dir, tmp_path, monkeypatch
 ) -> None:
     """CLI flag values (`--iterations`, `--threshold`, `--no-virtual-echo`)
     must thread through, unmodified, to the underlying
@@ -65,6 +65,27 @@ def test_flags_thread_through_to_smile_invocation(
     from click.testing import CliRunner
 
     from lucy_ng.cli.nus import nus
+    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+
+    # Neutralize the PORT-01 preflight gate (this dev machine has no real
+    # NMRPipe+SMILE on PATH) so the CLI's real NusRunner().reconstruct(...)
+    # passes the gate and still reaches run_stage/SMILE dispatch.
+    monkeypatch.setattr(
+        NmrPipeSmileBackend,
+        "diagnose",
+        classmethod(
+            lambda cls: {
+                "status": "available",
+                "missing_tools": [],
+                "smile_available": True,
+                "hint": "",
+                "platform": {
+                    "critical_platform_issues": [],
+                    "soft_platform_warnings": [],
+                },
+            }
+        ),
+    )
 
     runner = CliRunner()
     expdir = _copy_fixture(nus_fixture_dir, tmp_path, "exp3_hsqc")

@@ -407,14 +407,36 @@ class NusRunner:
             `process_indirect()`'s output.
 
         Raises:
-            RuntimeError: If the F2 processing plan cannot be resolved
-                (raised BEFORE any subprocess dispatch -- RECON-02 hard
-                gate), or propagated from any stage's `run_stage()` failure.
+            RuntimeError: If a critical platform/backend gap is reported by
+                `self.backend.diagnose()` (raised BEFORE any subprocess
+                dispatch -- PORT-01 preflight gate), if the F2 processing
+                plan cannot be resolved (raised BEFORE any subprocess
+                dispatch -- RECON-02 hard gate), or propagated from any
+                stage's `run_stage()` failure.
             FileNotFoundError: Propagated from `read_nus_params`/
                 `read_nus_schedule` if `expdir` does not exist.
             NotImplementedError: Propagated if `params.fnmode_f1` has no
                 known stage-order/reconstruction recipe.
         """
+        # PORT-01 preflight gate: the FIRST statement of reconstruct() --
+        # must raise BEFORE any subprocess/stage dispatch, and before even
+        # reading params/schedule. Mirrors the RECON-02 F2-plan gate's
+        # "resolve a diagnosis -> check for critical issues -> raise
+        # RuntimeError before any subprocess" shape (D-05: critical =
+        # fail-loud block, soft = warn only). `.get(...)` used defensively
+        # so a diagnose() dict without the "platform" key (e.g. a minimal
+        # test double) still works.
+        diagnosis = self.backend.diagnose()
+        platform_info = diagnosis.get("platform", {})
+        critical = list(diagnosis.get("missing_tools", [])) + list(
+            platform_info.get("critical_platform_issues", [])
+        )
+        if critical:
+            raise RuntimeError(
+                f"Critical platform/backend issue(s), aborting before any "
+                f"stage runs (PORT-01 preflight gate): {critical}"
+            )
+
         expdir = Path(expdir).resolve()
         params = read_nus_params(expdir)
         schedule = read_nus_schedule(expdir)

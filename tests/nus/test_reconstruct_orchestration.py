@@ -47,6 +47,18 @@ class _RecordingBackend:
         self._calls = calls
         self._f2_processed_holder = f2_processed_holder
 
+    def diagnose(self) -> dict:
+        """Clean, gate-passing diagnose() (PORT-01) -- lets the PORT-01
+        preflight gate pass so these tests exercise the F2-before-F1
+        ordering/orchestration logic, not the new preflight gate."""
+        return {
+            "status": "available",
+            "missing_tools": [],
+            "smile_available": True,
+            "hint": "",
+            "platform": {"critical_platform_issues": [], "soft_platform_warnings": []},
+        }
+
     def convert(self, expdir, params, schedule, stage_dir, *, timeout=600):
         self._calls.append("convert")
         return stage_dir / "converted.fid"
@@ -84,6 +96,17 @@ def test_f2_before_f1_gate_raises_before_any_subprocess(
 
     expdir = _copy_fixture(nus_fixture_dir, tmp_path, "exp3_hsqc")
     runner = NusRunner()
+    # Neutralize the PORT-01 preflight gate (a clean, gate-passing diagnose())
+    # so it is the F2-plan-specific RuntimeError that actually fires here,
+    # not this dev machine's real (missing-tools) diagnose() output.
+    monkeypatch.setattr(
+        runner.backend,
+        "diagnose",
+        lambda: {
+            "missing_tools": [],
+            "platform": {"critical_platform_issues": []},
+        },
+    )
     monkeypatch.setattr(runner, "_resolve_f2_plan", lambda params: None)
 
     with pytest.raises(RuntimeError, match="F2"):
