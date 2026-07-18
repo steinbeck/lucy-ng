@@ -123,7 +123,7 @@ the 5-agent team.
   4. A fresh `/lucy-ng:case C20H32O2` run on the newly reconstructed peak lists converges on a small, rankable solution set — proving the reconstruction fixed the connectivity gap that timed out the original 2026-07-09 run at ~10⁶ candidates.
 **Plans**: 3 plans (2 waves)
 - [x] 100-01-PLAN.md — nus/platform_check.py detect_platform() + additive diagnose() 'platform' key + NusRunner.reconstruct() fail-loud preflight gate + lucy nus check platform section + --n-sigma flag (PORT-01, wave 1)
-- [ ] 100-02-PLAN.md — docs/NUS-PORTABILITY.md matrix (macOS-arm64/Linux/Windows-WSL2) + CLAUDE.md NMRPipe+SMILE prerequisite + README link + doc test (PORT-02, wave 1)
+- [x] 100-02-PLAN.md — docs/NUS-PORTABILITY.md matrix (macOS-arm64/Linux/Windows-WSL2) + CLAUDE.md NMRPipe+SMILE prerequisite + README link + doc test (PORT-02, wave 1)
 - [ ] 100-03-PLAN.md — VAL end-to-end: install backend → reconstruct exp2/3/4 → §8/QC grade (D-04 tuning budget) → fresh /lucy-ng:case C20H32O2 convergence → VALIDATION.md (VAL-01/VAL-02, wave 2, autonomous:false)
 
 ### Progress
@@ -133,4 +133,4 @@ the 5-agent team.
 | 97. Backend Integration + Params/Schedule | 5/5 | Complete    | 2026-07-12 |
 | 98. Reconstruction + Processing | 6/6 | Complete    | 2026-07-13 |
 | 99. Peak-Pick Bridge + QC Gate + CLI | 4/4 | Complete    | 2026-07-16 |
-| 100. Cross-Platform Hardening + End-to-End Validation | 1/3 | In Progress|  |
+| 100. Cross-Platform Hardening + End-to-End Validation | 2/3 | In Progress|  |
