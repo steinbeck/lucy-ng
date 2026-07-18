@@ -48,6 +48,8 @@ import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from lucy_ng.nus.platform_check import detect_platform
+
 if TYPE_CHECKING:
     from lucy_ng.models.nus import NusAcquisitionParams, NusSchedule
     from lucy_ng.nus.runner import FnModeRecipe
@@ -136,8 +138,14 @@ class NmrPipeSmileBackend:
               - smile_available: bool
               - hint: actionable install/source guidance (non-empty,
                 contains an install URL)
+              - platform: PORT-01 additive key -- `detect_platform()`'s
+                output dict (arch/os/rosetta_translated/csh_available/
+                tcsh_available/critical_platform_issues/
+                soft_platform_warnings). Merged in without altering any of
+                the four keys above (D-05: extend, do not rewrite).
         """
         missing = cls.missing_tools()
+        platform_info = detect_platform()
         if not missing:
             smile_ok = cls.smile_plugin_available()
             return {
@@ -155,6 +163,7 @@ class NmrPipeSmileBackend:
                         f"installation. Install docs: {_INSTALL_URL}"
                     )
                 ),
+                "platform": platform_info,
             }
         # Distinct diagnostic: is nmrPipe present anywhere common but not
         # on PATH? (mirrors LSDRunner.SEARCH_PATHS fallback, adapted to
@@ -175,6 +184,7 @@ class NmrPipeSmileBackend:
                 if hint_found
                 else f"NMRPipe not found. Install (free registration required): {_INSTALL_URL}"
             ),
+            "platform": platform_info,
         }
 
     @staticmethod
