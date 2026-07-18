@@ -259,6 +259,21 @@ It is auto-discovered at `data/reference/lucy-ng-derep.db`. DOI:
 [10.6084/m9.figshare.31073554](https://doi.org/10.6084/m9.figshare.31073554). See
 [docs/INSTALLATION.md](docs/INSTALLATION.md#reference-database) for detail.
 
+### NMRPipe + SMILE (NUS reconstruction)
+
+Automatic reconstruction of non-uniformly-sampled (NUS) 2D spectra (`lucy nus reconstruct`
+/ `pipeline`) uses NMRPipe with the SMILE plugin as its backend. Install NMRPipe (native
+`mac11_arm64`/Linux build) **and** the separate SMILE companion plugin
+(`plugin.smile.tZ`) from https://www.ibbr.umd.edu/nmrpipe/install, source its environment
+script, and add its `bin/` directory to `PATH`. Verify with:
+
+```bash
+lucy nus check     # must report the backend "available"
+```
+
+See [docs/NUS-PORTABILITY.md](docs/NUS-PORTABILITY.md) for the full per-platform matrix
+(macOS Apple Silicon native / Linux native / Windows WSL2 gap).
+
 ---
 
 ## Scientific Background

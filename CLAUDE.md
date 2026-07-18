@@ -24,6 +24,7 @@ Needed to run the full test suite and the dereplication/prediction paths locally
 
 - **LSD solver** — `lucy lsd check` must report both `LSD` and `outlsd` on PATH. Download from http://eos.univ-reims.fr/LSD/, extract, add the `bin/` directory to PATH.
 - **Reference database** — `lucy database download` fetches the pre-built SQLite DB (~830 MB compressed → ~2.8 GB) to `data/reference/lucy-ng-derep.db`. Verify with `lucy database info data/reference/lucy-ng-derep.db`. See *Database Reference* below.
+- **NMRPipe + SMILE** — `lucy nus check` must report the backend `available` (and the new platform section clear of critical issues). Install NMRPipe (native `mac11_arm64`/Linux build) **and** the separate SMILE companion plugin (`plugin.smile.tZ`) from https://www.ibbr.umd.edu/nmrpipe/install, source its environment script, add `bin/` to PATH. See `docs/NUS-PORTABILITY.md` for the full per-platform matrix (macOS-arm64-native / Linux-native / Windows-WSL2-gap).
 
 ### Project structure
 
