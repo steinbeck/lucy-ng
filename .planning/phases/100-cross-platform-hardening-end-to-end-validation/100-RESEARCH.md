@@ -404,9 +404,9 @@ Note: this existing test only exercises `NusRunner.reconstruct()` on exp3 (HSQC)
 
 **If this table is empty:** N/A — see above; three low-to-medium-risk assumptions logged, none blocking.
 
-## Open Questions
+## Open Questions (all RESOLVED at planning)
 
-1. **What exact CLI surface does the D-04 tuning-budget sweep use?**
+1. **What exact CLI surface does the D-04 tuning-budget sweep use?** — **RESOLVED (Plan 100-01 Task 2):** the planner ADDS the `--n-sigma` flag to `lucy nus reconstruct`/`pipeline` (forwarded to `NusRunner.reconstruct(n_sigma=...)`), so the entire D-04 tuning budget is CLI-drivable via `lucy nus pipeline` — no separate tuning script.
    - What we know: `--iterations`/`--threshold`/`--virtual-echo`/phase flags already exist on `lucy nus reconstruct`/`pipeline`; `-nSigma` does not have a CLI flag yet (Pitfall 7).
    - What's unclear: whether the planner wants to add a `--n-sigma` flag as part of this phase, or drive the sweep via direct Python calls to `NusRunner().reconstruct(n_sigma=...)` in a one-off script/notebook that is not committed as permanent CLI surface.
    - Recommendation: Add `--n-sigma` as a CLI flag (small, consistent extension mirroring the existing flag pattern) so the entire D-04 sweep is drivable via the same `lucy nus pipeline` command a human would naturally reach for — avoids a separate, undocumented "tuning script" needing its own maintenance.
@@ -416,7 +416,7 @@ Note: this existing test only exercises `NusRunner.reconstruct()` on exp3 (HSQC)
    - What's unclear: nothing operationally blocking — the automated suite is safe. The only open item is whether the planner wants a symbolic "preserve the external originals" step (e.g. an explicit archive copy under the external `C20H32O2/analysis/` tree) as part of the VAL-01 plan, purely for human-auditable project history outside git.
    - Recommendation: No test-fixture changes needed. Add a one-line plan step to archive-copy (not move) the external known-bad files before running `lucy nus pipeline` for real, purely as a courtesy/history-preservation step — not a blocking requirement.
 
-3. **Does the local NMRPipe install actually work headlessly (no X11/XQuartz needed) for the CLI-only stages lucy-ng invokes?**
+3. **Does the local NMRPipe install actually work headlessly (no X11/XQuartz needed) for the CLI-only stages lucy-ng invokes?** — **RESOLVED (Plan 100-03 Task 1 how-to-verify):** the XQuartz contingency is operationalized as an install-checkpoint fallback — if any CLI binary fails to launch with an X11-library error, install XQuartz and retry, without treating a linkage error as a platform blocker before trying it.
    - What we know: official docs mention XQuartz/X11 setup as part of the general install walkthrough, but this is documented in the context of `nmrDraw` (the GUI viewer), which lucy-ng never invokes — only `nmrPipe`, `bruk2pipe`, `nusExpand.tcl` (all CLI/scriptable tools) are used.
    - What's unclear: whether the base `install.com` script itself has a hard X11-library-linkage dependency even for the non-GUI binaries (some older NMRPipe utility binaries historically linked X11 libraries even when not displaying anything), which would need X11 present in some minimal form even in a "no GUI use" scenario.
    - Recommendation: During the actual install (D-01's manual step), if any binary fails to launch with an X11-library-not-found error, install XQuartz anyway even though `nmrDraw` itself is out of scope — cheap mitigation, do not treat a linkage error as a genuine platform blocker before trying it.
