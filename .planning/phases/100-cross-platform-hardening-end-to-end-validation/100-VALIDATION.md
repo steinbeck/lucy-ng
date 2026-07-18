@@ -1,8 +1,8 @@
 ---
 phase: 100
 slug: cross-platform-hardening-end-to-end-validation
-status: draft
-nyquist_compliant: false
+status: approved
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-07-18
 ---
@@ -38,9 +38,9 @@ created: 2026-07-18
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 100-01-01 | 01 | 1 | PORT-01 | — | preflight blocks reconstruct/pipeline on missing backend binary before any external stage runs | unit (mocked platform/subprocess) | `pytest tests/nus/test_preflight.py -q` | ❌ W0 | ⬜ pending |
-| 100-01-02 | 01 | 1 | PORT-01 | — | soft Rosetta/x86 condition warns, does not block | unit (mocked `sysctl.proc_translated`/`platform.machine`) | `pytest tests/nus/test_preflight.py -q` | ❌ W0 | ⬜ pending |
-| 100-02-01 | 02 | 1 | PORT-02 | — | `docs/NUS-PORTABILITY.md` exists with all three platform rows + WSL2 marked untested | doc-existence assertion | `pytest tests/nus/test_portability_doc.py -q` | ❌ W0 | ⬜ pending |
+| 100-01-01 | 01 | 1 | PORT-01 | — | `detect_platform()` classifies native-arm64 / x86-under-Rosetta / Intel; `diagnose()` gains additive `"platform"` key | unit (mocked `platform.machine`/`sysctl.proc_translated`/`shutil.which`) | `pytest tests/nus/test_platform_check.py -q` | ❌ W0 | ⬜ pending |
+| 100-01-02 | 01 | 1 | PORT-01 | — | preflight gate in `reconstruct()` blocks on critical (missing binary / no csh), warns on soft (Rosetta); `lucy nus check` surfaces both; 4 existing tests repaired | unit (mocked diagnose/subprocess) | `pytest tests/nus/test_platform_preflight_gate.py tests/nus/test_cli_check.py tests/nus/test_reconstruct_orchestration.py tests/nus/test_cli_reconstruct.py -q` | ❌ W0 | ⬜ pending |
+| 100-02-01 | 02 | 1 | PORT-02 | — | `docs/NUS-PORTABILITY.md` exists with all three platform rows + WSL2 marked untested | doc-existence + content assertion | `pytest tests/nus/test_portability_doc.py -q` | ❌ W0 | ⬜ pending |
 | 100-03-01 | 03 | 2 | VAL-01 | — | real exp2/3/4 reconstruction clears §8 via QC PASS or soft-only PARTIAL | manual / backend-gated | `lucy nus pipeline <expdir>` + `lucy nus qc` | N/A | ⬜ pending |
 | 100-03-02 | 03 | 2 | VAL-02 | — | fresh `/lucy-ng:case C20H32O2` terminates with a finite rankable set | manual / agentic | `/lucy-ng:case C20H32O2` | N/A | ⬜ pending |
 
@@ -50,7 +50,9 @@ created: 2026-07-18
 
 ## Wave 0 Requirements
 
-- [ ] `tests/nus/test_preflight.py` — PORT-01 preflight logic with mocked `platform.machine()`, `sysctl.proc_translated`, `shutil.which`, `csh` presence (native arm64 / x86-under-Rosetta / missing-binary / missing-csh matrix)
+- [ ] `tests/nus/test_platform_check.py` — `detect_platform()` with mocked `platform.machine()`, `sysctl.proc_translated`, `shutil.which` (native arm64 / x86-under-Rosetta / Intel matrix)
+- [ ] `tests/nus/test_platform_preflight_gate.py` — the `reconstruct()` preflight gate (critical-block / soft-warn) with mocked `diagnose()`; plus repairs to `test_reconstruct_orchestration.py` + `test_cli_reconstruct.py` (give `_RecordingBackend` a `diagnose()`, monkeypatch class-level `NmrPipeSmileBackend.diagnose`)
+- [ ] `tests/nus/test_cli_check.py` — `lucy nus check` platform section, `--format json` shape
 - [ ] `tests/nus/test_portability_doc.py` — assert `docs/NUS-PORTABILITY.md` exists and contains the three platform rows + the "documented, untested" WSL2 marker
 - [ ] Existing `tests/nus/conftest.py` fixtures (known-bad QC-02 regression dir is already repo-committed at `tests/fixtures/nus/known_bad_peaks/` — VAL-01 overwriting the external C20H32O2 files does NOT break these)
 
