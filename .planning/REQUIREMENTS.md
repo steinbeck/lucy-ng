@@ -39,7 +39,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase (see Tra
 
 ### Cross-platform portability (PORT)
 
-- [ ] **PORT-01**: `lucy nus check` performs a platform preflight (Apple Silicon `arch`/Rosetta check, `csh`/`tcsh` availability, backend binaries) and reports readiness clearly, so a platform gap is caught before a run rather than mid-pipeline.
+- [x] **PORT-01**: `lucy nus check` performs a platform preflight (Apple Silicon `arch`/Rosetta check, `csh`/`tcsh` availability, backend binaries) and reports readiness clearly, so a platform gap is caught before a run rather than mid-pipeline.
 - [ ] **PORT-02**: A portability matrix is documented (macOS Apple Silicon native, Linux native, Windows WSL2/VM gap with concrete workaround steps) — every gap is investigated and written down, not silently accepted.
 
 ### End-to-end validation (VAL)

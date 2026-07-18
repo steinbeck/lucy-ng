@@ -117,3 +117,7 @@ None - no external service configuration required. (NMRPipe+SMILE local install 
 ---
 *Phase: 100-cross-platform-hardening-end-to-end-validation*
 *Completed: 2026-07-18*
+
+## Self-Check: PASSED
+
+All created files verified present on disk; all task/plan commit hashes (757d0a9, b901a18, 4c9ce5c) verified present in git log.
