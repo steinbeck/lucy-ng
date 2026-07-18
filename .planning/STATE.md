@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
 status: executing
-stopped_at: Phase 100 Plan 02 complete (PORT-02 portability matrix docs)
-last_updated: "2026-07-18T12:41:26.619Z"
+stopped_at: Phase 100 Wave 1 complete (PORT-01+PORT-02 shipped, suite 1396 green); paused at Wave 2 / Plan 100-03 human-action checkpoint — awaiting manual NMRPipe+SMILE install for VAL-01/02
+last_updated: "2026-07-18T12:43:50.855Z"
 last_activity: 2026-07-18
 progress:
   total_phases: 4
@@ -163,8 +163,8 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-18T12:39:04.166Z
-Stopped at: Phase 100 Plan 02 complete (PORT-02 portability matrix docs)
+Last session: 2026-07-18T12:43:50.849Z
+Stopped at: Phase 100 Wave 1 complete (PORT-01+PORT-02 shipped, suite 1396 green); paused at Wave 2 / Plan 100-03 human-action checkpoint — awaiting manual NMRPipe+SMILE install for VAL-01/02
 Resume with: Execute Phase 100 Plan 03 (VAL-01/02 real reconstruction + CASE convergence)
 
 ---
