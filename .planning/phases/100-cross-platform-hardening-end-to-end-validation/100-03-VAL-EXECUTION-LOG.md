@@ -49,3 +49,29 @@
 - **Legit code fix to bake in (independent of RAM):** lucy's reconstruction should export `OMP_NUM_THREADS`/`OPENBLAS_NUM_THREADS`/`MKL_NUM_THREADS` caps so `nusPipe`'s nested OMP×BLAS threading cannot blow up on multi-core hosts. (Deferred until SMILE runs end-to-end so the fix is verified live.)
 - **Resolution (needs user):** free RAM headroom — cleanest is a **reboot** (clears ~3.8 GB swap + ~3 GB compressor + baseline creep → fresh baseline ~6–8 GB used → ~16 GB free, SMILE's 6.3 GB fits comfortably), then re-run. Alternatively quit heavy apps. This is the last real blocker; all code/env issues upstream are fixed.
 - **Status:** blocked on RAM headroom (environmental).
+
+#### D-BUG-3 follow-up: parameter isolation (post-reboot, swap=0)
+
+A reboot cleared swap/compressor but SMILE still aborts. Systematic isolation shows the ~5–6.9 GB
+allocation is **independent of every knob available to us**:
+
+| Varied | Values tested | Peak RSS |
+|---|---|---|
+| Direct-dim size | 2048 / 1024 / **256** | ~5.7 / ~6.3 / ~5.0 GB |
+| `OMP_NUM_THREADS` | 8 / 4 / 2 / **1** | ~4.4 / — / ~6.0 / ~6.3 GB |
+| `-maxIter` | **5** / 50 / 500 | 6.45 / 6.86 / ~5.7 GB |
+
+Sampling schedule verified consistent (nuslist = 50 entries, indices 0–199 → 200-point indirect
+grid, matching the data's 200 indirect points; `nus_td` 400 = 200 complex × 2 real). Raw data is
+only ~6 MB, so a ~6.5 GB fixed working set is **disproportionate by ~1000×** — this looks like a
+pathological/fixed allocation in this macOS-arm64 `nusPipe` build, not a tunable.
+
+**Bounded tuning budget is therefore considered EXHAUSTED for SMILE-on-this-host (D-04).**
+Remaining options: (a) free ~3–4 GB more RAM on this Mac and retry (cheapest real shot);
+(b) run the VAL reconstruction on a larger-RAM host (reverses D-01 for the VAL run only);
+(c) honest stop per D-04 — document the limitation, PORT (Plans 01/02) still ships, and name
+RECON-F1 (hmsIST/mddnmr fallback) as the tracked next step.
+
+**Note:** all upstream code/env defects (D-BUG-1, D-BUG-2, install, XQuartz, quarantine) are FIXED
+and committed — the pipeline runs correctly all the way into SMILE. This blocker is the external
+backend's memory behaviour, not lucy-ng code.
