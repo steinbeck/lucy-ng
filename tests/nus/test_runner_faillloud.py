@@ -75,3 +75,43 @@ def test_valid_output_passes(mock_subprocess_run, make_valid_intermediate, tmp_p
     output = make_valid_intermediate(name="converted", suffix=".fid")
 
     run_stage("bruk2pipe", ["bruk2pipe", "-in", "ser"], tmp_path, output)
+
+
+def test_pipeline_stage_success_wires_stdin_to_stdout(tmp_path) -> None:
+    """`run_pipeline_stage()` wires each process's stdout into the next
+    process's stdin (real subprocesses), and the last stage's `-out`-style
+    file is produced -- the multi-process NMRPipe verb-pipeline contract that
+    replaces the (broken) single-call multi-`-fn` form.
+
+    Implementing plan: Phase-100 VAL fix (D-BUG-2).
+    """
+    from lucy_ng.nus.runner import run_pipeline_stage
+
+    out = tmp_path / "out.txt"
+    stages = [
+        ["sh", "-c", "printf 'hello'"],
+        ["sh", "-c", "tr a-z A-Z"],
+        ["sh", "-c", f"cat > {out}"],
+    ]
+    run_pipeline_stage("demo", stages, cwd=tmp_path, expected_output=out)
+    assert out.read_text() == "HELLO"
+
+
+def test_pipeline_stage_midpipe_failure_raises_even_with_output(tmp_path) -> None:
+    """RECON-04 / Pitfall 14 strengthened: a NON-LAST process exiting
+    non-zero must raise even though the final output file exists and is
+    non-empty -- csh-piped NMRPipe stages otherwise silently pass truncated
+    data through. Every process's return code is checked, not just the last.
+
+    Implementing plan: Phase-100 VAL fix (D-BUG-2).
+    """
+    from lucy_ng.nus.runner import run_pipeline_stage
+
+    out = tmp_path / "out.txt"
+    stages = [
+        ["sh", "-c", "printf 'data'"],
+        ["sh", "-c", "cat; exit 5"],  # mid-pipe failure, still forwards stdin
+        ["sh", "-c", f"cat > {out}"],
+    ]
+    with pytest.raises(RuntimeError, match="process 1.*exit 5"):
+        run_pipeline_stage("demo", stages, cwd=tmp_path, expected_output=out)

@@ -34,6 +34,17 @@ def test_f2_direct_chain_runs_before_transpose_before_smile_input(
     argv = mock_run_stage["calls"][-1][1]
     assert "TP" in " ".join(str(a) for a in argv)
 
+    # Structural guard (would have caught the Phase-100 real-data bug):
+    # each NMRPipe verb MUST be its OWN process -- NMRPipe honours only the
+    # first `-fn` per invocation, so SP/ZF/FT/PS/POLY/TP cannot share one
+    # process. Assert the pipeline is per-verb and TP is the last stage.
+    stages = mock_run_stage["pipelines"]["process_direct"]
+    fn_verbs = [s[s.index("-fn") + 1] for s in stages if "-fn" in s]
+    assert fn_verbs == ["SP", "ZF", "FT", "PS", "POLY", "TP"]
+    assert stages[0][:2] == ["nmrPipe", "-in"]  # first stage reads the file
+    assert "-out" in stages[-1] and "-fn" in stages[-1]  # last transposes + writes
+    assert stages[-1][stages[-1].index("-fn") + 1] == "TP"
+
 
 def test_f2_phase_constants_thread_through(mock_run_stage, tmp_path) -> None:
     """`process_direct()`'s deterministic F2 phase constants (p0/p1) must

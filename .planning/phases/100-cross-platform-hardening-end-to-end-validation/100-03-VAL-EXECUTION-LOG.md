@@ -30,11 +30,12 @@
 - **Test:** `tests/nus/test_reconstruct_chain.py::test_echo_antiecho_expand_argv_passes_acqus_paths`.
 - **Commit:** (this commit)
 
-### D-BUG-2 — process_direct/process_indirect chain multiple `-fn` in ONE nmrPipe call (IN PROGRESS)
+### D-BUG-2 — process_direct/process_indirect chain multiple `-fn` in ONE nmrPipe call (FIXED)
 - **Symptom:** SMILE stage fails `SMILE Error: the direct dim must be in freq domain.` The `f2_processed.fid` header shows `DOMAIN: Time Time, Not Transposed` — F2 was never FT'd/transposed.
 - **Root cause:** `process_direct()`/`process_indirect()` (`postprocess.py`) build ONE `nmrPipe -in … -fn SP -fn ZF -fn FT -fn PS -fn POLY -fn TP -out …` invocation. **NMRPipe does not chain multiple `-fn` in one process** — it applies only the first verb (`SP`) and warns "Arguments N..M may be unknown or unused" for the rest. The canonical idiom is a **shell pipeline of one `nmrPipe` process per verb** (`nmrPipe -fn SP | nmrPipe -fn ZF | nmrPipe -fn FT | … | nmrPipe -fn TP -out …`). Mock-only Phase-98 tests recorded the argv and never executed real nmrPipe, so this was invisible.
 - **Verified correct form:** the piped chain produces `2DMODE: States Transposed, DOMAIN: Time Freq` (F2 FT'd + transposed) — exactly SMILE's required input.
-- **Fix (planned):** add a piped-multi-stage executor to `runner.py` (fail-loud per RECON-04) + rewrite `process_direct`/`process_indirect` to emit per-verb argv lists + update `test_processing_order.py` and siblings (they currently pin the wrong single-call form).
-- **Status:** fix in progress.
+- **Fix (done):** added `runner.py::run_pipeline_stage()` — chains one `nmrPipe` process per verb via `subprocess.Popen` (stdin→stdout), and checks the return code of EVERY process (strengthens RECON-04/Pitfall-14: a mid-pipe failure no longer passes silently). Rewrote `process_direct`/`process_indirect` (`postprocess.py`) to emit per-verb stage lists. Extended `conftest.py::mock_run_stage` to also patch `run_pipeline_stage` (flattened argv into the same `calls` list + raw stages in `captured["pipelines"]`); strengthened `test_processing_order.py` to assert the per-verb pipeline structure (`fn_verbs == [SP, ZF, FT, PS, POLY, TP]`, TP last); added two `run_pipeline_stage` executor tests (success wiring + mid-pipe fail-loud) to `test_runner_faillloud.py`.
+- **Verified:** full nus suite 95 passed / 1 skipped; ruff/mypy clean for the changed code (one pre-existing B904 in `recipe_for_fnmode`, untouched).
+- **Commit:** (this commit)
 
 <!-- Append further D-BUG-N entries as the real run surfaces them (process_indirect, post-SMILE stages, peak-pick, QC on real data). -->

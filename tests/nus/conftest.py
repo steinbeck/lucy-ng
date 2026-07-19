@@ -217,14 +217,32 @@ def mock_run_stage(monkeypatch: pytest.MonkeyPatch) -> dict:
     Returns the shared `captured` dict; each call appends a
     ``(name, argv, cwd, expected_output)`` tuple to ``captured["calls"]`` so
     tests can assert dispatch order/argv without a real subprocess.
+
+    Also patches `run_pipeline_stage` (the multi-process NMRPipe verb
+    pipeline used by `process_direct`/`process_indirect`). Pipeline calls are
+    recorded into the SAME `calls` list with the per-verb ``stages`` FLATTENED
+    into one argv (so name-order and argv-substring assertions keep working),
+    and the raw per-verb stage lists are also stored in
+    ``captured["pipelines"]`` (a ``name -> stages`` dict) for structure-aware
+    assertions.
     """
-    captured: dict = {"calls": []}
+    captured: dict = {"calls": [], "pipelines": {}}
 
     def _fake_run_stage(name, argv, cwd, expected_output, timeout=600):
         captured["calls"].append((name, argv, cwd, expected_output))
 
+    def _fake_run_pipeline_stage(name, stages, cwd, expected_output, timeout=600):
+        flat = [tok for stage in stages for tok in stage]
+        captured["calls"].append((name, flat, cwd, expected_output))
+        captured["pipelines"][name] = stages
+
     monkeypatch.setattr(
         "lucy_ng.nus.runner.run_stage", _fake_run_stage, raising=False
+    )
+    monkeypatch.setattr(
+        "lucy_ng.nus.runner.run_pipeline_stage",
+        _fake_run_pipeline_stage,
+        raising=False,
     )
     return captured
 

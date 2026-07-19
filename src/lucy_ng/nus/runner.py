@@ -118,6 +118,106 @@ def run_stage(
             )
 
 
+def run_pipeline_stage(
+    name: str,
+    stages: list[list[str]],
+    cwd: Path,
+    expected_output: Path,
+    timeout: int = 600,
+) -> None:
+    """Run a multi-process NMRPipe verb PIPELINE with a fail-loud check.
+
+    NMRPipe does NOT chain multiple ``-fn`` verbs in a single process -- it
+    honours only the first ``-fn`` and warns "Arguments N..M may be unknown
+    or unused" for the rest. The canonical idiom is a shell pipeline of one
+    ``nmrPipe`` process per verb::
+
+        nmrPipe -in x.fid -fn SP ... | nmrPipe -fn ZF -auto \\
+          | nmrPipe -fn FT | ... | nmrPipe -fn TP -ov -out y.fid
+
+    This helper reproduces that pipeline with ``subprocess.Popen`` (never a
+    shell string), wiring each process's stdout to the next process's stdin.
+    The FIRST stage reads its input via its own ``-in`` flag; the LAST stage
+    writes via its own ``-out`` flag.
+
+    RECON-04 / Pitfall 14: csh-piped NMRPipe stages can silently pass through
+    truncated data, so this helper checks the return code of EVERY process in
+    the pipeline (not just the last), then applies the same
+    exists/non-empty/non-all-zero output check as :func:`run_stage`.
+
+    Args:
+        name: Human-readable stage name for error messages.
+        stages: One ``argv`` list per pipelined ``nmrPipe`` process, in order.
+            The first must carry ``-in``; the last must carry ``-out``.
+        cwd: Working directory for every process in the pipeline.
+        expected_output: File the last stage must produce (same checks as
+            :func:`run_stage`).
+        timeout: Maximum seconds for the whole pipeline.
+
+    Raises:
+        RuntimeError: On any non-zero exit code across the pipeline, or on a
+            missing/empty/all-zero ``expected_output``.
+    """
+    if not stages:
+        raise ValueError(f"NUS stage '{name}' pipeline has no stages")
+
+    procs: list[subprocess.Popen[bytes]] = []
+    prev_stdout = None
+    for i, argv in enumerate(stages):
+        is_last = i == len(stages) - 1
+        proc = subprocess.Popen(
+            argv,
+            stdin=prev_stdout,
+            stdout=(None if is_last else subprocess.PIPE),
+            stderr=subprocess.PIPE,
+            cwd=cwd,
+        )
+        # Let the upstream process receive SIGPIPE if this one exits early.
+        if prev_stdout is not None:
+            prev_stdout.close()
+        prev_stdout = proc.stdout
+        procs.append(proc)
+
+    stderrs: list[str] = []
+    try:
+        for proc in procs:
+            _out, err = proc.communicate(timeout=timeout)
+            stderrs.append(err.decode("utf-8", "replace") if err else "")
+    except subprocess.TimeoutExpired:
+        for proc in procs:
+            proc.kill()
+        raise
+
+    for idx, proc in enumerate(procs):
+        if proc.returncode != 0:
+            verb = stages[idx][1:] if len(stages[idx]) > 1 else stages[idx]
+            raise RuntimeError(
+                f"NUS stage '{name}' pipeline process {idx} ({' '.join(verb)}) "
+                f"failed (exit {proc.returncode}): {stderrs[idx][:500]!r}"
+            )
+
+    if not expected_output.exists() or expected_output.stat().st_size == 0:
+        raise RuntimeError(
+            f"NUS stage '{name}' reported success but output file "
+            f"{expected_output} is missing or empty -- refusing to continue "
+            "(csh-piped NMRPipe stages can silently pass through truncated "
+            "data, Pitfall 14)."
+        )
+    if expected_output.suffix in {".fid", ".ft1", ".ft2"}:
+        try:
+            _dic, data = ng.fileio.pipe.read(str(expected_output))
+            all_zero = data.size == 0 or not data.any()
+        except Exception:
+            raw = expected_output.read_bytes()
+            all_zero = len(raw) == 0 or raw == b"\x00" * len(raw)
+        if all_zero:
+            raise RuntimeError(
+                f"NUS stage '{name}' output {expected_output} parses but is "
+                "all-zero/empty data -- treat as a hard failure, not a "
+                "legitimate empty result."
+            )
+
+
 def _ordering_for_fnmode(fnmode: int) -> StageOrder:
     """Resolve the bruk2pipe<->nusExpand.tcl stage order for a given FnMODE.
 

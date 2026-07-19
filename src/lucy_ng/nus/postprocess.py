@@ -114,7 +114,7 @@ def process_direct(
         Path to the transposed, F2-processed FID (`stage_dir/f2_processed.fid`)
         -- this is SMILE's actual input, never a raw time-domain FID.
     """
-    from lucy_ng.nus.runner import run_stage
+    from lucy_ng.nus.runner import run_pipeline_stage
 
     converted_fid = Path(converted_fid)
     stage_dir = Path(stage_dir)
@@ -122,53 +122,47 @@ def process_direct(
 
     f2_processed = stage_dir / "f2_processed.fid"
 
-    argv: list[str] = [
-        "nmrPipe",
-        "-in",
-        str(converted_fid),
-        "-fn",
-        "SP",
-        "-off",
-        "0.5",
-        "-end",
-        "0.98",
-        "-pow",
-        "2",
-        "-c",
-        "1.0",
-        "-fn",
-        "ZF",
-        "-auto",
-        "-fn",
-        "FT",
+    # NMRPipe applies only the FIRST `-fn` per process -- each verb MUST be
+    # its own `nmrPipe` process wired stdin->stdout (run_pipeline_stage).
+    # First stage carries `-in`, last stage carries `-out`.
+    stages: list[list[str]] = [
+        [
+            "nmrPipe",
+            "-in",
+            str(converted_fid),
+            "-fn",
+            "SP",
+            "-off",
+            "0.5",
+            "-end",
+            "0.98",
+            "-pow",
+            "2",
+            "-c",
+            "1.0",
+        ],
+        ["nmrPipe", "-fn", "ZF", "-auto"],
+        ["nmrPipe", "-fn", "FT"],
     ]
     if not magnitude:
-        argv += [
-            "-fn",
-            "PS",
-            "-p0",
-            str(f2_p0),
-            "-p1",
-            str(f2_p1),
-            "-di",
-        ]
-    argv += [
-        "-fn",
-        "POLY",
-        "-auto",
-        "-ord",
-        "2",
-        "-fn",
-        "TP",
-        "-verb",
-        "-ov",
-        "-out",
-        str(f2_processed),
-    ]
+        stages.append(
+            [
+                "nmrPipe",
+                "-fn",
+                "PS",
+                "-p0",
+                str(f2_p0),
+                "-p1",
+                str(f2_p1),
+                "-di",
+            ]
+        )
+    stages.append(["nmrPipe", "-fn", "POLY", "-auto", "-ord", "2"])
+    stages.append(["nmrPipe", "-fn", "TP", "-ov", "-out", str(f2_processed)])
 
-    run_stage(
+    run_pipeline_stage(
         "process_direct",
-        argv,
+        stages,
         cwd=stage_dir,
         expected_output=f2_processed,
         timeout=timeout,
@@ -221,7 +215,7 @@ def process_indirect(
     Returns:
         Path to the final processed spectrum (`stage_dir/processed.ft2`).
     """
-    from lucy_ng.nus.runner import run_stage
+    from lucy_ng.nus.runner import run_pipeline_stage
 
     reconstructed_fid = Path(reconstructed_fid)
     stage_dir = Path(stage_dir)
@@ -229,38 +223,30 @@ def process_indirect(
 
     processed = stage_dir / "processed.ft2"
 
-    argv: list[str] = [
-        "nmrPipe",
-        "-in",
-        str(reconstructed_fid),
-        "-fn",
-        "ZF",
-        "-auto",
-        "-fn",
-        "FT",
+    # One `nmrPipe` process per verb (NMRPipe honours only the first `-fn`
+    # per process); first stage carries `-in`, last carries `-out`.
+    stages: list[list[str]] = [
+        ["nmrPipe", "-in", str(reconstructed_fid), "-fn", "ZF", "-auto"],
+        ["nmrPipe", "-fn", "FT"],
     ]
     if not magnitude:
-        argv += [
-            "-fn",
-            "PS",
-            "-p0",
-            str(f1_p0),
-            "-p1",
-            str(f1_p1),
-            "-di",
-        ]
-    argv += [
-        "-fn",
-        "TP",
-        "-verb",
-        "-ov",
-        "-out",
-        str(processed),
-    ]
+        stages.append(
+            [
+                "nmrPipe",
+                "-fn",
+                "PS",
+                "-p0",
+                str(f1_p0),
+                "-p1",
+                str(f1_p1),
+                "-di",
+            ]
+        )
+    stages.append(["nmrPipe", "-fn", "TP", "-ov", "-out", str(processed)])
 
-    run_stage(
+    run_pipeline_stage(
         "process_indirect",
-        argv,
+        stages,
         cwd=stage_dir,
         expected_output=processed,
         timeout=timeout,
