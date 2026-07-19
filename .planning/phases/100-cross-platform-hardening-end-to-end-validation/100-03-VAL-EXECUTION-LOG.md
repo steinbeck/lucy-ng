@@ -39,3 +39,13 @@
 - **Commit:** (this commit)
 
 <!-- Append further D-BUG-N entries as the real run surfaces them (process_indirect, post-SMILE stages, peak-pick, QC on real data). -->
+
+### D-BUG-3 — SMILE aborts under memory pressure (ENVIRONMENTAL — awaiting RAM headroom)
+- **Symptom:** SMILE stage runs (`nusPipe` at ~100% CPU, all 2048/1024 direct columns scanned), then aborts:
+  `OMP: Error #34: System unable to allocate necessary resources for OMP thread ... Resource temporarily unavailable ... NMRPipe System Message: Cannot allocate memory ... Abort trap`.
+- **Root cause:** NOT thread count. Verified: OMP=8/4/2/**1** all abort at ~6.0–6.3 GB RSS; halving the F2 direct dimension (ZF 2048→1024) did **not** reduce the ~6 GB. SMILE's working set here is ~6.3 GB and largely fixed. The dev Mac has **24 GB total but ~18 GB baseline-used** (other apps + macOS wired 6.3 GB + compressor ~3 GB), leaving only ~5.5 GB free with swap already ~3.8/5 GB used. SMILE's 6.3 GB exceeds free RAM → the abort. The "OMP thread" wording is misleading — the underlying failure is `Cannot allocate memory`.
+- **Compounding hazard found & handled:** each SMILE run killed by a foreground per-command timeout left an **orphaned `nusPipe`** child holding 0.5–4.4 GB; several accumulated and starved memory. Mitigation: SMILE MUST run as a to-completion background job (never a timeout-killed foreground), and orphans must be reaped (`pkill -9 -f nusPipe`).
+- **Also found (non-fatal, deferred):** this SMILE build reports `Warning from nusPipe: Argument 19 may be unknown or unused: '-EA'` — lucy passes `-EA` (echo-antiecho) but this version does not recognise it. Non-fatal (warning), but echo-antiecho handling should be re-checked once SMILE runs to completion.
+- **Legit code fix to bake in (independent of RAM):** lucy's reconstruction should export `OMP_NUM_THREADS`/`OPENBLAS_NUM_THREADS`/`MKL_NUM_THREADS` caps so `nusPipe`'s nested OMP×BLAS threading cannot blow up on multi-core hosts. (Deferred until SMILE runs end-to-end so the fix is verified live.)
+- **Resolution (needs user):** free RAM headroom — cleanest is a **reboot** (clears ~3.8 GB swap + ~3 GB compressor + baseline creep → fresh baseline ~6–8 GB used → ~16 GB free, SMILE's 6.3 GB fits comfortably), then re-run. Alternatively quit heavy apps. This is the last real blocker; all code/env issues upstream are fixed.
+- **Status:** blocked on RAM headroom (environmental).
