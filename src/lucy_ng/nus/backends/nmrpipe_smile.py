@@ -351,6 +351,18 @@ class NmrPipeSmileBackend:
                 str(ser_full),
                 "-sample",
                 str(expdir / "nuslist"),
+                # `-mode bruker` re-derives the input X/Y sizes from the
+                # Bruker `acqus`/`acqu2s` (`getSampleParmBruker`, reading
+                # `acqus(TD)`/`acqu2s(TD)`). nusExpand.tcl looks these up by
+                # the bare names `acqus`/`acqu2s` relative to its *cwd*, which
+                # is `stage_dir` -- NOT `expdir` -- so without explicit paths
+                # it fails with "Error Extracting Input Sizes from acqus and
+                # acqu2s". Pass the real expdir paths so size extraction works
+                # regardless of cwd (found via the Phase-100 real-data run).
+                "-acqus",
+                str(expdir / "acqus"),
+                "-acqu2s",
+                str(expdir / "acqu2s"),
             ]
             run_stage(
                 "nusExpand.tcl",

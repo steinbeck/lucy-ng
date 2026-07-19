@@ -42,6 +42,37 @@ def test_echo_antiecho_convert_dispatches_expand_then_bruk2pipe(
     assert stage_names.index("nusExpand.tcl") < stage_names.index("bruk2pipe")
 
 
+def test_echo_antiecho_expand_argv_passes_acqus_paths(
+    mock_run_stage, nus_fixture_dir, tmp_path
+) -> None:
+    """`-mode bruker` nusExpand.tcl re-derives input sizes from the Bruker
+    `acqus`/`acqu2s` by bare name relative to its cwd (`stage_dir`), NOT
+    `expdir` -- so `convert()` MUST pass explicit `-acqus`/`-acqu2s` expdir
+    paths or nusExpand fails with "Error Extracting Input Sizes from acqus
+    and acqu2s" (found via the Phase-100 real-data C20H32O2 run).
+
+    Implementing plan: Plan 03 (`nus/backends/nmrpipe_smile.py::convert`),
+    Phase-100 VAL fix.
+    """
+    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+    from lucy_ng.nus.params import read_nus_params
+    from lucy_ng.nus.schedule import read_nus_schedule
+
+    expdir = nus_fixture_dir("exp3_hsqc")
+    params = read_nus_params(expdir)
+    schedule = read_nus_schedule(expdir)
+
+    NmrPipeSmileBackend.convert(expdir, params, schedule, stage_dir=tmp_path)
+
+    expand_argv = next(
+        call[1] for call in mock_run_stage["calls"] if call[0] == "nusExpand.tcl"
+    )
+    assert "-acqus" in expand_argv
+    assert "-acqu2s" in expand_argv
+    assert expand_argv[expand_argv.index("-acqus") + 1] == str(expdir / "acqus")
+    assert expand_argv[expand_argv.index("-acqu2s") + 1] == str(expdir / "acqu2s")
+
+
 def test_qf_convert_dispatches_bruk2pipe_then_expand(
     mock_run_stage, nus_fixture_dir, tmp_path
 ) -> None:
