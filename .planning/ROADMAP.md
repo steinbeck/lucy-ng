@@ -54,7 +54,7 @@ the 5-agent team.
 - [x] **Phase 97: Backend Integration + Params/Schedule** — `lucy nus check` backend detection (LSD precedent) + pure-Python `NusAcquisitionParams`/`NusSchedule` parsing, fixture-tested against real C20H32O2 data (completed 2026-07-12)
 - [x] **Phase 98: Reconstruction + Processing** — real NMRPipe+SMILE subprocess chain (bruk2pipe → nusExpand.tcl → SMILE → FT/phase/baseline), FnMODE-aware, fail-loud wrapper (completed 2026-07-13)
 - [x] **Phase 99: Peak-Pick Bridge + QC Gate + CLI** — bridge to existing `PeakPicker2D`, mandatory automated QC gate (PASS/PARTIAL/FAIL) blocking CASE handoff on FAIL, full `lucy nus` CLI group (completed 2026-07-16)
-- [ ] **Phase 100: Cross-Platform Hardening + End-to-End Validation** — portability matrix, C20H32O2 exp2/3/4 reconstruction passing the §8 gate, `/lucy-ng:case C20H32O2` convergence
+- [x] **Phase 100: Cross-Platform Hardening + End-to-End Validation** — portability matrix, C20H32O2 exp2/3/4 reconstruction passing the §8 gate, `/lucy-ng:case C20H32O2` convergence (completed 2026-07-20)
 
 ### Phase Details
 
@@ -150,4 +150,4 @@ the 5-agent team.
 | 97. Backend Integration + Params/Schedule | 5/5 | Complete    | 2026-07-12 |
 | 98. Reconstruction + Processing | 6/6 | Complete    | 2026-07-13 |
 | 99. Peak-Pick Bridge + QC Gate + CLI | 4/4 | Complete    | 2026-07-16 |
-| 100. Cross-Platform Hardening + End-to-End Validation | 2/3 | In Progress|  |
+| 100. Cross-Platform Hardening + End-to-End Validation | 3/3 | Complete   | 2026-07-20 |

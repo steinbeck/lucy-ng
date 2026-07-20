@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Automatic NUS 2D Reconstruction
 status: executing
-stopped_at: Phase 100 Wave 1 complete (PORT-01+PORT-02 shipped, suite 1396 green); paused at Wave 2 / Plan 100-03 human-action checkpoint — awaiting manual NMRPipe+SMILE install for VAL-01/02
-last_updated: "2026-07-18T12:43:50.855Z"
+stopped_at: "Phase 100 closed with honest stop (D-04): PORT-01/02 shipped; VAL-01/02 not achieved — SMILE ~6.5GB memory abort on this host, tuning budget exhausted, RECON-F1 tracked as next step"
+last_updated: "2026-07-20T13:00:45.714Z"
 last_activity: 2026-07-18
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 18
-  completed_plans: 17
-  percent: 75
+  completed_plans: 18
+  percent: 100
 ---
 
 # lucy-ng State
@@ -163,8 +163,8 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-18T12:43:50.849Z
-Stopped at: Phase 100 Wave 1 complete (PORT-01+PORT-02 shipped, suite 1396 green); paused at Wave 2 / Plan 100-03 human-action checkpoint — awaiting manual NMRPipe+SMILE install for VAL-01/02
+Last session: 2026-07-20T13:00:45.707Z
+Stopped at: Phase 100 closed with honest stop (D-04): PORT-01/02 shipped; VAL-01/02 not achieved — SMILE ~6.5GB memory abort on this host, tuning budget exhausted, RECON-F1 tracked as next step
 Resume with: Execute Phase 100 Plan 03 (VAL-01/02 real reconstruction + CASE convergence)
 
 ---
