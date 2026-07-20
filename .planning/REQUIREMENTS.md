@@ -85,8 +85,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | RECON-01..05 | Phase 98 | Complete |
 | QC-01..03 | Phase 99 | Complete |
 | PICK-01..03 | Phase 99 | Complete |
-| PORT-01..02 | Phase 100 | Pending |
-| VAL-01..02 | Phase 100 | Pending |
+| PORT-01..02 | Phase 100 | Complete |
+| VAL-01..02 | Phase 100 | **NOT ACHIEVED** — honest stop per D-04 (SMILE memory abort on the validation host; bounded tuning budget exhausted). Tracked next step: RECON-F1. See `phases/100-.../VALIDATION.md`. |
 
 **Coverage:**
 - v10.0 requirements: 20 total

@@ -54,7 +54,7 @@ the 5-agent team.
 - [x] **Phase 97: Backend Integration + Params/Schedule** — `lucy nus check` backend detection (LSD precedent) + pure-Python `NusAcquisitionParams`/`NusSchedule` parsing, fixture-tested against real C20H32O2 data (completed 2026-07-12)
 - [x] **Phase 98: Reconstruction + Processing** — real NMRPipe+SMILE subprocess chain (bruk2pipe → nusExpand.tcl → SMILE → FT/phase/baseline), FnMODE-aware, fail-loud wrapper (completed 2026-07-13)
 - [x] **Phase 99: Peak-Pick Bridge + QC Gate + CLI** — bridge to existing `PeakPicker2D`, mandatory automated QC gate (PASS/PARTIAL/FAIL) blocking CASE handoff on FAIL, full `lucy nus` CLI group (completed 2026-07-16)
-- [x] **Phase 100: Cross-Platform Hardening + End-to-End Validation** — portability matrix, C20H32O2 exp2/3/4 reconstruction passing the §8 gate, `/lucy-ng:case C20H32O2` convergence (completed 2026-07-20)
+- [~] **Phase 100: Cross-Platform Hardening + End-to-End Validation** — **PARTIAL (closed 2026-07-20).** PORT-01/PORT-02 delivered (platform preflight + portability matrix, both verified). **VAL-01/VAL-02 NOT achieved** — honest stop per CONTEXT decision D-04: SMILE aborts with a ~5–7 GB `Cannot allocate memory` on this host and the bounded tuning budget is exhausted; success criteria 3 and 4 are therefore NOT true. Tracked next step: **RECON-F1**. See the limitation note under *Phase Details* + `phases/100-.../VALIDATION.md`.
 
 ### Phase Details
 
