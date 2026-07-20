@@ -17,9 +17,14 @@ only warn.
 
 | Platform | Native NMRPipe build | csh/tcsh | `lucy nus check` readiness signal | Status |
 |----------|----------------------|----------|-------------------------------------|--------|
-| **macOS Apple Silicon (native)** | Yes — `mac11_arm64` | Present by default (`/bin/csh`, `/bin/tcsh`) | `status: available`, `platform.rosetta_translated: false`, no critical or soft issues | **Supported, verified locally** (this dev machine: arm64, macOS 26.5, `sysctl.proc_translated=0`) |
+| **macOS Apple Silicon (native)** | Yes — `mac_arm64` | Present by default (`/bin/csh`, `/bin/tcsh`) | `status: available`, `platform.rosetta_translated: false`, no critical or soft issues | **Supported, install verified locally** (this dev machine: arm64, macOS 26.5, `sysctl.proc_translated=0`). Reconstruction blocked here only by SMILE's RAM appetite — see *Memory requirement* |
 | **Linux (native)** | Yes — native Linux builds distributed on the same install page | Present on essentially every distro (install via package manager if missing) | `status: available`, `platform.os: Linux`, no critical issues | **Supported** (historical 32-bit-library caveat on some older distros — see Pitfalls below) |
 | **Windows (WSL2 gap)** | **No** — no native NMRPipe build has been distributed since v8.9 | **No** native `csh`/`tcsh` on Windows | `status: not_installed` (no binaries on PATH) AND a critical `csh`/`tcsh`-missing platform issue — both fire and hard-block `reconstruct`/`pipeline` with no Windows-specific code required | **Gap — documented workaround only, see below** |
+
+**Applies to every supported row:** the reconstruction additionally requires **XQuartz/X11**
+(`nusExpand.tcl` runs under an X11-linked `nmrWish.exe`) and **≥ 8 GB free RAM** for the
+SMILE step. Neither is covered by `lucy nus check`'s current probes — see the dedicated
+sections below.
 
 The Windows row is not silently accepted: the generic PORT-01 checks (missing backend
 binary, missing `csh`) already fail correctly on a native Windows host with **no
@@ -47,28 +52,104 @@ NMRPipe tarballs — do not assume it is bundled.
 
 ## macOS Apple Silicon: install walkthrough
 
-1. Download the native `mac11_arm64` NMRPipe build **and** the separate SMILE companion
-   plugin (`plugin.smile.tZ`) from <https://www.ibbr.umd.edu/nmrpipe/install>.
-2. Extract both into the same NMRPipe installation tree.
-3. Source the architecture-specific environment script,
-   `nmrInit.mac11_arm64.com` (a manual, registration-adjacent step that edits your shell
-   startup file — not automatable, and not attempted by this codebase; a fresh
-   login/shell may be required for the sourced environment to take effect).
-4. Add the NMRPipe `bin/` directory to `PATH`.
-5. Verify with:
+> **Verified end-to-end on macOS 26.5 / Apple Silicon (arm64) during the Phase-100
+> validation run.** The steps below replace earlier documentation-derived guesses with
+> what actually works; deviations from the upstream install page are called out.
+
+1. Download the NMRPipe distribution (`NMRPipeX.tZ`) **and** the separate SMILE companion
+   plugin (`plugin.smile.tZ`) from <https://www.ibbr.umd.edu/nmrpipe/install>. Both are
+   available without a licence click-through from the site's archive area.
+2. Create an install directory (e.g. `~/NMRPipe`) and extract `NMRPipeX.tZ` into it, then
+   extract `plugin.smile.tZ` **into the same tree** so `nusPipe` and `lib/smile/*.dylib`
+   land in `nmrbin.mac_arm64/` alongside `nmrPipe`.
+3. Run the official installer from the install root. It needs `install.com` **and**
+   `binval.com` in the *current working directory* (it looks for `./binval.com`, not
+   `com/binval.com`):
+
+   ```bash
+   cd ~/NMRPipe
+   cp com/binval.com com/install.com .
+   csh ./install.com +nounpack +nopost +nocshrc
+   ```
+
+   This generates `com/nmrInit.mac_arm64.com` with the correct `NMRBASE`/`NMRBIN`.
+   Note the binary type is **`mac_arm64`**, not `mac11_arm64`.
+4. **Clear the Gatekeeper quarantine** on the binaries and their libraries — otherwise
+   macOS refuses to load them with *"code signature not valid for use in process: library
+   load disallowed by system policy"*:
+
+   ```bash
+   find ~/NMRPipe/nmrbin.mac_arm64 -print0 | xargs -0 xattr -c
+   ```
+
+5. Source the generated init script (`~/NMRPipe/com/nmrInit.mac_arm64.com`) — it is a
+   **csh** script, so `csh`/`tcsh` must be present (they ship with macOS). It sets
+   `NMRBASE`, `NMRBIN`, `NMRTXT` and prepends the binary and `com/` directories to `PATH`.
+   For a non-csh shell, capture its environment once
+   (`csh -c 'source …; env'`) and export the `NMR*`/`PATH` values.
+   You may also need `DYLD_FALLBACK_LIBRARY_PATH` pointing at
+   `nmrbin.mac_arm64/lib/smile` so `nusPipe` resolves its `@rpath` dylibs.
+6. **Install XQuartz** — see the hard-dependency section below. This is *not* optional.
+7. Verify with:
 
    ```bash
    lucy nus check     # must report backend "available" and the platform
                        # section clear of any critical issues
    ```
 
-   If `lucy nus check` reports `smile_plugin_missing`, revisit step 1 — the SMILE
+   If `lucy nus check` reports `smile_plugin_missing`, revisit step 1/2 — the SMILE
    plugin was not installed (see the gotcha above).
 
-Only `nmrDraw` (the GUI spectrum viewer) is documented as macOS-problematic upstream, and
-lucy-ng never invokes it — only the CLI/scriptable tools `nmrPipe`, `bruk2pipe`, and
-`nusExpand.tcl` are used by the reconstruction pipeline, all of which run natively on
-Apple Silicon with no Rosetta or virtualization required.
+`nmrPipe`, `bruk2pipe` and `nusPipe` are native arm64 Mach-O binaries and run with no
+Rosetta or virtualization.
+
+## XQuartz (X11) is a HARD dependency of the reconstruction path
+
+> **Correction to the upstream framing.** Upstream docs discuss X11/XQuartz mainly in the
+> context of the `nmrDraw` GUI, which lucy-ng never invokes — so earlier revisions of this
+> document treated XQuartz as an optional, try-it-if-something-fails mitigation. **That is
+> wrong.** The Phase-100 run showed:
+
+`nusExpand.tcl` — a mandatory step of the NUS reconstruction chain — is executed by
+NMRPipe's Tcl/Tk interpreter `nmrWish.exe`, which is **link-time bound to
+`/opt/X11/lib/libX11.6.dylib`**. Without XQuartz, `nmrWish.exe` cannot start at all and
+the reconstruction fails at the expansion stage with a `dyld: Library not loaded` error —
+even though no GUI is ever displayed.
+
+```bash
+brew install --cask xquartz     # requires admin rights
+```
+
+Install it on **any** host that runs the reconstruction, headless or not.
+
+## Memory requirement: SMILE needs several GB of FREE RAM
+
+Measured during the Phase-100 validation run on real Bruker NUS data (2D HSQC, 200-point
+indirect grid): the SMILE step (`nusPipe`) allocated a **~5–7 GB resident working set** and
+aborted when the machine could not satisfy it, with a misleading message:
+
+```
+OMP: Error #34: System unable to allocate necessary resources for OMP thread
+OMP: System error #35: Resource temporarily unavailable
+NMRPipe System Message: Cannot allocate memory
+```
+
+The underlying failure is plain memory exhaustion, *not* a thread-count problem. Measured
+systematically, this allocation was **independent of** the direct-dimension size
+(2048/1024/256 points), of `OMP_NUM_THREADS` (8/4/2/1), and of `-maxIter` (5/50/500) —
+i.e. it is not tunable from the caller side. Since the raw data is only a few MB, this is
+disproportionate and may be specific to this macOS-arm64 `nusPipe` build.
+
+**Practical guidance:**
+
+- Budget **≥ 8 GB genuinely free RAM** for the SMILE step; a 24 GB machine with a typical
+  desktop workload (browser, Dropbox, editors) may not have enough headroom.
+- Lowering `OMP_NUM_THREADS` does **not** avoid it, but capping thread counts
+  (`OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `MKL_NUM_THREADS`) is still sensible hygiene
+  on multi-core hosts, since `nusPipe` links both OpenMP and OpenBLAS.
+- Never abort a running SMILE job with a short per-command timeout: the killed wrapper
+  leaves an **orphaned `nusPipe`** process holding multiple GB. Reap strays with
+  `pkill -9 -f nusPipe` before retrying.
 
 ## Windows / WSL2 workaround
 
@@ -130,8 +211,14 @@ only duplicate behavior the generic checks already provide correctly.
   32-bit compatibility libraries for certain NMRPipe binaries. If `lucy nus check`
   reports a binary present on `PATH` but the binary fails to execute, check your distro's
   32-bit compatibility package availability.
-- **X11/XQuartz:** upstream install docs mention X11/XQuartz setup in the context of
-  `nmrDraw` (the GUI viewer), which lucy-ng never invokes. If any CLI-only tool
-  (`nmrPipe`, `bruk2pipe`, `nusExpand.tcl`) unexpectedly fails to launch with an
-  X11-library-linkage error, installing XQuartz anyway is a cheap mitigation to try
-  before treating it as a genuine platform blocker.
+- **X11/XQuartz — SUPERSEDED, see the hard-dependency section above.** This entry
+  previously described XQuartz as an optional mitigation relevant only to the `nmrDraw`
+  GUI. The Phase-100 real-data run disproved that: `nusExpand.tcl` runs under
+  `nmrWish.exe`, which is link-time bound to `libX11`, so **XQuartz is required on the
+  reconstruction path** even for fully headless use.
+- **SMILE memory footprint — see the memory-requirement section above.** Budget ≥ 8 GB
+  free RAM; the failure mode is an `OMP`/`Cannot allocate memory` abort that reads like a
+  thread-count problem but is not.
+- **Gatekeeper quarantine:** freshly downloaded NMRPipe binaries/dylibs carry
+  `com.apple.quarantine` and are refused at load time with a *"code signature not valid"*
+  error until cleared (`xattr -c`). See the install walkthrough.

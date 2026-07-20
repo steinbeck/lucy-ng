@@ -124,7 +124,24 @@ the 5-agent team.
 **Plans**: 3 plans (2 waves)
 - [x] 100-01-PLAN.md — nus/platform_check.py detect_platform() + additive diagnose() 'platform' key + NusRunner.reconstruct() fail-loud preflight gate + lucy nus check platform section + --n-sigma flag (PORT-01, wave 1)
 - [x] 100-02-PLAN.md — docs/NUS-PORTABILITY.md matrix (macOS-arm64/Linux/Windows-WSL2) + CLAUDE.md NMRPipe+SMILE prerequisite + README link + doc test (PORT-02, wave 1)
-- [ ] 100-03-PLAN.md — VAL end-to-end: install backend → reconstruct exp2/3/4 → §8/QC grade (D-04 tuning budget) → fresh /lucy-ng:case C20H32O2 convergence → VALIDATION.md (VAL-01/VAL-02, wave 2, autonomous:false)
+- [~] 100-03-PLAN.md — VAL end-to-end: install backend → reconstruct exp2/3/4 → §8/QC grade (D-04 tuning budget) → fresh /lucy-ng:case C20H32O2 convergence → VALIDATION.md (VAL-01/VAL-02, wave 2, autonomous:false) — **HONEST STOP per D-04, see limitation below**
+
+> **⚠ Phase-100 limitation (VAL-01/VAL-02 NOT achieved) — recorded per CONTEXT decision D-04.**
+> The NMRPipe+SMILE backend was installed natively on Apple Silicon and the reconstruction
+> chain now runs correctly through `nusExpand.tcl` → `bruk2pipe` → F2 processing and **into**
+> SMILE. Three real defects found by this first-ever real-binary run were fixed and committed
+> (D-BUG-1 nusExpand `acqus` paths; D-BUG-2 `nmrPipe` multi-`-fn` verb chaining — F2 was never
+> FT'd/transposed; plus install/XQuartz/quarantine environment work). **SMILE itself cannot
+> complete on this host:** `nusPipe` reaches a ~5–7 GB working set and aborts with
+> `Cannot allocate memory`, and that allocation is independent of direct-dimension size
+> (2048/1024/256), `OMP_NUM_THREADS` (8/4/2/1) and `-maxIter` (5/50/500) — the bounded D-04
+> tuning budget is therefore **exhausted**. VAL-02 was not reached (no reconstructed peaks;
+> the D-07 write boundary correctly wrote nothing). PORT-01/PORT-02 shipped independently, as
+> D-04 provides for.
+> **Tracked next step: RECON-F1** (hmsIST/mddnmr fallback behind the existing `NusBackend`
+> protocol). Secondary: re-run on a host with ≥ 8 GB free RAM, and expose/raise the hard-coded
+> 600 s `run_stage` timeout. Full evidence: `phases/100-.../VALIDATION.md` +
+> `100-03-VAL-EXECUTION-LOG.md`.
 
 ### Progress
 
