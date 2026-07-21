@@ -1,66 +1,37 @@
-# Requirements: lucy-ng — v10.0 Automatic NUS 2D Reconstruction
+# Requirements: lucy-ng — v10.1 JCAMP-DX 2D Ingestion
 
-**Defined:** 2026-07-12
-**Core Value:** An AI agent can autonomously determine the structure of an unknown organic compound from its NMR spectra — which requires reliable 2D connectivity, so NUS (non-uniformly-sampled) 2D data must be reconstructed with a real, validated method, fully automatically.
+**Defined:** 2026-07-21
+**Core Value:** An AI agent can autonomously determine the structure of an unknown organic compound from its NMR spectra. v10.1 adds a **binary-free ingestion path**: lucy-ng reads already-reconstructed 1D/2D spectra from **JCAMP-DX** and produces the same consumable CASE peak lists, so CASE can run on NUS (or any) data reconstructed anywhere — decoupling CASE from the v10.0 SMILE self-reconstruction blocker.
 
-**Backend decision (locked):** NMRPipe + SMILE as the primary reconstruction backend (native macOS Apple Silicon + Linux, 100% CLI/headless, best literature-validated). Windows is an accepted, documented portability gap (WSL2/VM workaround). The `NusBackend` protocol keeps the architecture backend-agnostic so hmsIST/mddnmr fallbacks or a later NMRFx pivot are additive, not a rewrite. See `.planning/research/SUMMARY.md` § Backend Decision.
+**Relationship to v10.0 (locked):** JCAMP ingestion is a **complementary input path, not a replacement** for v10.0's NUS self-reconstruction (which remains PARTIAL — PORT shipped, VAL blocked by SMILE's memory abort, RECON-F1 tracked). It reuses the entire downstream Phase-99 pipeline (`Spectrum2D` → `PeakPicker2D` → `analysis/nmr_peaks/*.json` → QC gate → CASE) unchanged. Motivating dataset: `~/Dropbox/develop/data/nmrdata/active-lucy-ng-testprojects/C20H32O2-jcamp/` (6 `.dx` files, 2D grids 2048×2048), reconstructed in TopSpin via `mddnmr` compressed sensing (IRLS).
 
-## Milestone v10.0 Requirements
+## Milestone v10.1 Requirements
 
-Requirements for this milestone. Each maps to exactly one roadmap phase (see Traceability).
+### JCAMP-DX reader (JC)
 
-### Backend & Bruker conversion (NUS)
+- [ ] **JC-01**: `lucy` reads a 2D JCAMP-DX NTUPLES file (HSQC/HMBC/COSY) into the existing `Spectrum2D` model — decoding the DIFDUP-compressed per-F1-row `##DATA TABLE=` pages into a full `(n_f1, n_f2)` intensity matrix — with **no external binary**.
+- [ ] **JC-02**: The 2D `Spectrum2D` carries correct **reversed ppm axes** on both dimensions, derived from the NTUPLES metadata (`VAR_DIM`, `FIRST`/`LAST`/`FACTOR`, `.NUCLEUS`, `.OBSERVE FREQUENCY`) and **cross-checked against the trusted 1D reference / §10 ground-truth shifts** — explicitly guarding the WR-04-class Hz-vs-ppm axis error.
+- [ ] **JC-03**: `lucy` reads a 1D JCAMP-DX file (¹H, ¹³C) into the existing `Spectrum1D` model through the same reader module.
+- [ ] **JC-04**: A JCAMP-DX line decoder (DIFDUP/SQZ/PAC) is available to the reader **without depending on nmrglue's private API** (vendored or wrapped behind a stable internal interface), and is covered by a committed, **CI-runnable** unit test on a small real JCAMP fixture — no external binary, so "verified" means verified (addresses the Phase-100 mock-only-verification learning).
 
-- [x] **NUS-01**: `lucy nus check` detects the reconstruction backend (NMRPipe + SMILE) on PATH and fails loud with install guidance when it is missing — mirroring `lucy lsd check`; the backend is a runtime-detected external tool, never a core `pyproject.toml` dependency.
-- [x] **NUS-02**: Bruker acquisition parameters needed for conversion (SFO1, SW_h, TD per dimension, FnMODE, GRPDLY/DECIM, byte order/dtype) are extracted from `acqus`/`acqu2s` into a validated Pydantic model, read per-experiment and never hard-coded.
-- [x] **NUS-03**: The reconstruction sampling schedule is built from the Bruker `nuslist` with correct 0-based indexing and acquisition-order preservation (never sorted/regenerated); a hard-fail assertion `n_sampled == len(nuslist)` is derived from FnMODE (QF == TD vs echo-antiecho == TD/2) before any conversion runs.
-- [x] **NUS-04**: `lucy nus params` and `lucy nus schedule` expose the parsed parameters and schedule as JSON (`--format json`), validated against the real C20H32O2 exp2/exp3/exp4 fixtures.
-- [x] **NUS-05**: Core `lucy` CLI stays dependency-free; any genuinely pip-installable pieces (e.g. QC-plot deps) live behind an optional `[nus]` extra with lazy imports, following the `[webview]` precedent.
+### CLI & peak-pick bridge (JCLI)
 
-### Reconstruction & processing (RECON)
+- [ ] **JCLI-01**: `lucy jcamp <dir-or-files>` runs the full chain (read JCAMP → `Spectrum2D`/`Spectrum1D` → existing `PeakPicker2D` → `analysis/nmr_peaks/*.json` in the existing per-peak schema), reusing the Phase-99 bridge pattern (`build_spectrum2d`-style direct call, **not** a new picker); every subcommand supports `--format json`.
+- [ ] **JCLI-02**: JCAMP-derived peak lists pass through the **unchanged Phase-99 QC gate** (PASS/PARTIAL/FAIL), the edited-HSQC sign (+/−) is preserved so multiplicity derivation still works, and `case.md` + the 5-agent team stay byte-unchanged.
 
-- [x] **RECON-01**: `lucy nus reconstruct <expdir>` runs the full backend chain fully automatically with no GUI step — Bruker→NMRPipe conversion (`bruk2pipe`), NUS expansion (`nusExpand.tcl`), SMILE reconstruction of the indirect (t1) dimension.
-- [x] **RECON-02**: Post-reconstruction processing (apodization, zero-fill, FT, phase correction, baseline) runs with direct-dimension-first (F2 before F1) ordering enforced as a hard pipeline gate, on reversed ppm axes calibrated to match the reliable 1D reference.
-- [x] **RECON-03**: Reconstruction/processing is FnMODE-aware, correctly handling both echo-antiecho phase-sensitive (HSQC/HMBC) and QF magnitude-mode (COSY) experiments from one pipeline, at both 25% and 33% sampling densities.
-- [x] **RECON-04**: Every external-tool invocation runs through a fail-loud subprocess wrapper that checks both exit code and output-file non-emptiness — csh-piped NMRPipe stages do not reliably propagate failures, so a truncated/empty intermediate must never pass silently.
-- [x] **RECON-05**: Reconstruction knobs (iteration count, threshold, virtual-echo toggle) are exposed via CLI flags with sane defaults; the stopping criterion is convergence/residual-based, not a fixed iteration count alone.
+### End-to-end validation (JVAL)
 
-### Quality gate (QC)
-
-- [x] **QC-01**: An automated QC gate cross-checks every reconstructed correlation against the trusted 1D shift data (protonated-carbon HSQC coverage, quaternary-carbon exclusion, edited-sign self-consistency, COSY diagonal symmetry, ppm calibration, signal-to-ridge ratio) and emits a machine-readable PASS/PARTIAL/FAIL report — no human in the loop.
-- [x] **QC-02**: The QC gate reports FAIL on the existing known-bad t1-ridge home-IST peak lists (regression floor) and PASS on a clean reconstruction — proving it discriminates.
-- [x] **QC-03**: The CASE handoff refuses to start when the QC gate reports FAIL, extending the v9.0 constraint-hardness guard (FIX-10) to reconstruction-derived peaks so a fabricated cross-peak can never silently become a hard LSD constraint.
-
-### Peak-pick bridge & CLI (PICK)
-
-- [x] **PICK-01**: A peak-pick bridge builds a `Spectrum2D` in memory and reuses the existing `PeakPicker2D` via a direct Python call (mirroring `_perform_ranking()`), writing `analysis/nmr_peaks/*.json` byte-for-byte in the existing schema (HSQC edited-sign, HMBC, COSY) so the downstream CASE pipeline is unchanged.
-- [x] **PICK-02**: `lucy nus pipeline <expdir>` runs the whole chain end-to-end (params → schedule → reconstruct → process → peak-pick → QC) as one reusable command usable for any NUS CASE run, not a C20H32O2-only script; all `lucy nus` subcommands support `--format json`.
-- [x] **PICK-03**: Reconstruction-quality metadata (backend, iterations, QC verdict) is embedded in the emitted peak JSON, replacing the current blanket `"confidence": "low"`.
-
-### Cross-platform portability (PORT)
-
-- [x] **PORT-01**: `lucy nus check` performs a platform preflight (Apple Silicon `arch`/Rosetta check, `csh`/`tcsh` availability, backend binaries) and reports readiness clearly, so a platform gap is caught before a run rather than mid-pipeline.
-- [x] **PORT-02**: A portability matrix is documented (macOS Apple Silicon native, Linux native, Windows WSL2/VM gap with concrete workaround steps) — every gap is investigated and written down, not silently accepted.
-
-### End-to-end validation (VAL)
-
-- [ ] **VAL-01**: C20H32O2 exp2 (COSY), exp3 (HSQC), exp4 (HMBC) are reconstructed end-to-end and pass the guide's §8 quality gate (clean 1-bond HSQC with correct edited signs, ridge-free HMBC, a real aliphatic COSY network).
-- [ ] **VAL-02**: A fresh `/lucy-ng:case C20H32O2` run on the new peak lists converges on a small, rankable solution set (the milestone's actual success bar) — proving the reconstruction fixed the connectivity gap that timed out the first run at ~10⁶ candidates.
+- [ ] **JVAL-01**: The `C20H32O2-jcamp` dataset is read, peak-picked, and QC-graded to §8-quality peak lists (QC PASS, or soft-only PARTIAL + a brief chemist confirmation) — the first real spectra to clear the gate in this project.
+- [ ] **JVAL-02**: A fresh `/lucy-ng:case C20H32O2` on the JCAMP-derived peak lists converges on a finite, rankable solution set — the milestone's actual success bar (proving the connectivity from externally-reconstructed spectra is usable for CASE).
 
 ## Future Requirements
 
 Acknowledged but deferred — not in this milestone's roadmap.
 
-### Reconstruction backends (RECON+)
-
-- **RECON-F1**: hmsIST / mddnmr CLI fallback backend, wired behind the `NusBackend` protocol, for cases where SMILE demonstrably leaves ridges at low sampling.
-- **RECON-F2**: NMRFx (pure Java, native Windows) spike-comparison and optional primary-backend pivot, if native Windows becomes a hard requirement rather than a documented gap.
-- **RECON-F3**: Generalized schedule/FnMODE abstraction for NUS experiment types beyond COSY/HSQC/HMBC (TOCSY, NOESY-NUS); 3D/4D NUS support.
-
-### Reconstruction UX (RECONUX)
-
-- **RECONUX-F1**: Per-peak reconstruction-confidence scoring feeding LSD constraint weighting directly.
-- **RECONUX-F2**: Webview integration — render reconstructed 2D spectra + QC report in the existing dashboard tabs.
+- **JC-F1**: JCAMP-DX for additional experiment types beyond HSQC/HMBC/COSY/1D (e.g. NOESY-driven constraints, DEPT). The `C20H32O2-jcamp` NOESY `.dx` is present but not consumed by the current CASE constraint model.
+- **JC-F2**: Generalized vendor-format ingestion (Varian/JEOL native, nmrML) behind the same reader abstraction.
+- **JC-F3**: JCAMP-DX **writing** / round-trip export of lucy-ng spectra.
+- **RECON-F1** (carried from v10.0): hmsIST / mddnmr CLI fallback backend for in-lucy-ng NUS self-reconstruction — the tracked path to close v10.0's VAL. Note the v10.1 JCAMP data was itself produced by `mddnmr`, so this remains the natural next reconstruction step.
 
 ## Out of Scope
 
@@ -68,12 +39,11 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| From-scratch Python CS/IST reconstruction algorithm | High correctness risk; re-derives the exact class of bug (hand-rolled per-column IST) this milestone exists to fix. No mature pip package does it for NMR. |
-| TopSpin headless reconstruction in the automated path | No source confirms a true zero-display headless mode; both AU-program and TopSpin Python Interface paths need a running GUI instance. Manual human escape hatch only. |
-| Native Windows NMRPipe support | No maintained native build since v8.9. Accepted, documented gap (WSL2/VM). Not a blocker per milestone scope. |
-| Deep-learning-based reconstruction | GPU dependency, poor portability, immature for small-molecule 2D validation. |
-| Non-Bruker vendor NUS formats (Varian/JEOL) | Bruker-only remains the project-wide scope. |
-| Reprocessing the uniformly-sampled experiments (exp5 NOESY, exp1/6/7 1D) | Not NUS — no reconstruction needed. |
+| NUS self-reconstruction inside lucy-ng | That is v10.0 (PARTIAL) / RECON-F1. v10.1 consumes spectra reconstructed elsewhere; it does not reconstruct. |
+| JCAMP-DX writing / export | Read-only ingestion this milestone (see JC-F3). |
+| 3D / nD JCAMP | 2D + 1D only; the CASE model consumes 2D correlations + 1D shifts. |
+| Non-JCAMP vendor formats (Varian/JEOL native, nmrML) | JCAMP-DX is the one interchange format in scope now (see JC-F2). |
+| Changes to `PeakPicker2D`, the QC gate, or `case.md` | Reuse the unchanged Phase-99 downstream; v10.1 only adds a new front-end reader + bridge. |
 
 ## Traceability
 
@@ -81,18 +51,10 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NUS-01..05 | Phase 97 | Complete |
-| RECON-01..05 | Phase 98 | Complete |
-| QC-01..03 | Phase 99 | Complete |
-| PICK-01..03 | Phase 99 | Complete |
-| PORT-01..02 | Phase 100 | Complete |
-| VAL-01..02 | Phase 100 | **NOT ACHIEVED** — honest stop per D-04 (SMILE memory abort on the validation host; bounded tuning budget exhausted). Tracked next step: RECON-F1. See `phases/100-.../VALIDATION.md`. |
+| JC-01..04 | TBD | Pending |
+| JCLI-01..02 | TBD | Pending |
+| JVAL-01..02 | TBD | Pending |
 
 **Coverage:**
-- v10.0 requirements: 20 total
-- Mapped to phases: 20/20 ✓
-- Unmapped: 0
-
----
-*Requirements defined: 2026-07-12*
-*Last updated: 2026-07-12 after roadmap creation — mapped to Phases 97-100 (100% coverage, no orphans).*
+- v10.1 requirements: 8 total
+- Mapped to phases: 0/8 (roadmap pending)
