@@ -17,7 +17,8 @@
 - ✅ [v9.1 CASE Final-Answer Correctness & Verification Gates](milestones/v9.1-ROADMAP.md) - Phases 86-89 (shipped 2026-06-29)
 - ✅ [v9.2 CASE Web-View](milestones/v9.2-ROADMAP.md) - Phases 90-92 (shipped 2026-07-07)
 - ✅ [v9.3 CASE Web-View Stage 2](milestones/v9.3-ROADMAP.md) - Phases 93-96 (shipped 2026-07-12)
-- **v10.0 Automatic NUS 2D Reconstruction** - Phases 97-100 (in progress)
+- 🟡 **v10.0 Automatic NUS 2D Reconstruction** - Phases 97-100 (PARTIAL, paused 2026-07-20 — PORT shipped, VAL blocked by SMILE memory abort, RECON-F1 tracked)
+- 🚧 **v10.1 JCAMP-DX 2D Ingestion** - Phases 101-103 (in progress)
 
 ---
 
@@ -151,3 +152,72 @@ the 5-agent team.
 | 98. Reconstruction + Processing | 6/6 | Complete    | 2026-07-13 |
 | 99. Peak-Pick Bridge + QC Gate + CLI | 4/4 | Complete    | 2026-07-16 |
 | 100. Cross-Platform Hardening + End-to-End Validation | 3/3 | Complete   | 2026-07-20 |
+
+---
+
+## v10.1 JCAMP-DX 2D Ingestion
+
+**Goal:** Lucy-ng reads already-reconstructed 1D/2D NMR spectra from JCAMP-DX files and produces
+the consumable CASE peak lists — with **no external binaries** — so CASE can run on NUS (or any)
+data reconstructed elsewhere (TopSpin/mddnmr, nmrXiv, any vendor JCAMP export). This is a
+**complementary input path, not a replacement** for v10.0's NUS self-reconstruction (which
+remains PARTIAL — PORT shipped, VAL blocked by SMILE's memory abort, RECON-F1 tracked). It
+reuses the entire downstream Phase-99 pipeline (`Spectrum2D`/`Spectrum1D` → `PeakPicker2D` →
+`analysis/nmr_peaks/*.json` → QC gate → CASE) **unchanged**. Because there is no external
+binary, the reader is fully CI-testable — a deliberate contrast to v10.0, whose external SMILE
+binary could not be CI-tested and whose mock-only "verification" missed real bugs (D-BUG-1/2).
+Motivating dataset: `C20H32O2-jcamp` (6 `.dx` files, 2D grids 2048×2048), reconstructed in
+TopSpin via `mddnmr` compressed sensing (IRLS) — independently proving CS reconstruction
+succeeds on this exact sample.
+
+### Phases
+
+- [ ] **Phase 101: JCAMP-DX Reader** — pure-Python 2D NTUPLES DIFDUP decoder into `Spectrum2D` + 1D reader into `Spectrum1D`, no external binary, verified ppm axes, CI-runnable fixture test
+- [ ] **Phase 102: CLI + Peak-Pick Bridge + QC Reuse** — `lucy jcamp` command reusing the Phase-99 bridge pattern and the unchanged QC gate, `case.md` byte-unchanged
+- [ ] **Phase 103: End-to-End Validation (C20H32O2-jcamp)** — real dataset read, peak-picked, QC-graded to §8 quality, and a fresh `/lucy-ng:case C20H32O2` run converges on a rankable solution set
+
+### Phase Details
+
+#### Phase 101: JCAMP-DX Reader
+
+**Goal**: Lucy-ng can decode both 1D and 2D JCAMP-DX spectra — including the DIFDUP-compressed NTUPLES pages nmrglue itself cannot assemble — into the existing `Spectrum1D`/`Spectrum2D` models, with no external binary and with ppm axes proven correct rather than assumed.
+**Depends on**: Phase 100 (v10.0 PARTIAL close — base codebase; JCAMP reader is independent of the NUS `nus/` package)
+**Requirements**: JC-01, JC-02, JC-03, JC-04
+**Success Criteria** (what must be TRUE):
+  1. A 2D JCAMP-DX NTUPLES file (HSQC/HMBC/COSY) is decoded into a full `(n_f1, n_f2)` intensity matrix and loaded into a `Spectrum2D` model — the DIFDUP-compressed per-F1-row `##DATA TABLE=` pages are assembled by lucy-ng's own thin 2D-assembly layer, closing the exact gap where nmrglue returns `None`.
+  2. The decoded `Spectrum2D`'s ppm axes are reversed and correct on both dimensions, derived from the NTUPLES metadata (`VAR_DIM`, `FIRST`/`LAST`/`FACTOR`, `.NUCLEUS`, `.OBSERVE FREQUENCY`) and explicitly cross-checked against the trusted 1D reference / §10 ground-truth shifts — not eyeballed, guarding against the WR-04-class Hz-vs-ppm axis error.
+  3. A 1D JCAMP-DX file (¹H or ¹³C) decodes through the same reader module into a `Spectrum1D` model.
+  4. A committed, CI-runnable unit test decodes a small real JCAMP fixture via the vendored/wrapped line decoder (DIFDUP/SQZ/PAC) with no external binary and no dependency on nmrglue's private API — passes in CI, so "verified" means verified for this milestone (the Phase-100 mock-only-verification lesson applied).
+**Plans**: TBD
+
+#### Phase 102: CLI + Peak-Pick Bridge + QC Reuse
+
+**Goal**: A JCAMP-DX file or directory can be turned into CASE-consumable, QC-graded peak lists via one command, reusing the Phase-99 bridge and QC gate exactly as they are — zero changes to `case.md` or the 5-agent team.
+**Depends on**: Phase 101
+**Requirements**: JCLI-01, JCLI-02
+**Success Criteria** (what must be TRUE):
+  1. `lucy jcamp <dir-or-files>` runs the full chain — read JCAMP → `Spectrum2D`/`Spectrum1D` → existing `PeakPicker2D` → `analysis/nmr_peaks/*.json` in the existing per-peak schema — reusing the Phase-99 `build_spectrum2d`-style direct-call bridge pattern, not a new picker; every subcommand supports `--format json`.
+  2. JCAMP-derived peak lists pass through the **unchanged** Phase-99 QC gate and receive a PASS/PARTIAL/FAIL verdict exactly like NUS-reconstructed peaks do.
+  3. The edited-HSQC sign (+/−) survives the JCAMP round-trip so downstream multiplicity derivation still works.
+  4. `case.md` and the 5-agent team agent files are byte-unchanged after this phase (verifiable by diff).
+**Plans**: TBD
+
+#### Phase 103: End-to-End Validation (C20H32O2-jcamp)
+
+**Goal**: The `C20H32O2-jcamp` dataset proves the JCAMP ingestion path is not just mechanically correct but usable for real CASE structure elucidation.
+**Depends on**: Phase 102
+**Requirements**: JVAL-01, JVAL-02
+**Success Criteria** (what must be TRUE):
+  1. All six `C20H32O2-jcamp` `.dx` files are read and peak-picked via `lucy jcamp`, producing §8-quality peak lists (clean 1-bond HSQC, ridge-free HMBC, a real aliphatic COSY network) — the first real (non-fixture) spectra to clear this bar via the JCAMP path.
+  2. The QC gate reports PASS, or PARTIAL with only soft-check violations plus a brief chemist confirmation that the PARTIAL result is acceptable.
+  3. A fresh `/lucy-ng:case C20H32O2` run on the JCAMP-derived peak lists converges on a finite, rankable solution set — the milestone's actual success bar, proving the connectivity from externally-reconstructed spectra is usable for CASE.
+**Plans**: TBD
+
+### Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|-----------------|--------|-----------|
+| 101. JCAMP-DX Reader | 0/TBD | Not started | - |
+| 102. CLI + Peak-Pick Bridge + QC Reuse | 0/TBD | Not started | - |
+| 103. End-to-End Validation (C20H32O2-jcamp) | 0/TBD | Not started | - |
+</content>

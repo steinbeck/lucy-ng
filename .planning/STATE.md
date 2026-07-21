@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v10.1
 milestone_name: JCAMP-DX 2D Ingestion
 status: planning
-last_updated: "2026-07-21T08:19:33.499Z"
+last_updated: "2026-07-21T00:00:00.000Z"
 last_activity: 2026-07-21
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,28 +17,36 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-12)
+See: .planning/PROJECT.md (updated 2026-07-21)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 100 — cross-platform-hardening-end-to-end-validation
+**Current focus:** Phase 101 — JCAMP-DX Reader
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started (roadmap created, ready to plan)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-07-21 — Milestone v10.1 started
+Status: Ready to plan — `/gsd-plan-phase 101`
+Last activity: 2026-07-21 — v10.1 roadmap created (phases 101-103, 8/8 requirements mapped)
 
-## Milestone v10.0 Phases
+## Milestone v10.1 Phases
+
+| Phase | Goal | Requirements | Depends on |
+|-------|------|--------------|------------|
+| 101. JCAMP-DX Reader | Pure-Python 2D NTUPLES DIFDUP decoder into `Spectrum2D` + 1D reader into `Spectrum1D`, no external binary, verified ppm axes, CI-runnable fixture test | JC-01..04 | 100 |
+| 102. CLI + Peak-Pick Bridge + QC Reuse | `lucy jcamp` command reusing the Phase-99 bridge pattern and the unchanged QC gate, `case.md` byte-unchanged | JCLI-01..02 | 101 |
+| 103. End-to-End Validation (C20H32O2-jcamp) | Real dataset read, peak-picked, QC-graded to §8 quality, fresh `/lucy-ng:case C20H32O2` converges on a rankable solution set | JVAL-01..02 | 102 |
+
+**Sequencing:** Phase 101 (reader) ships first — pure-Python, no external binary, so it is the highest-confidence and most CI-testable phase; it also carries the milestone's one real technical risk (JC-02 ppm-axis correctness, the same defect class as v10.0's WR-04) so it must be verified against ground truth before anything downstream trusts its output. Phase 102 (CLI + bridge + QC reuse) is mechanically low-risk by design — it reuses the Phase-99 bridge and QC gate byte-for-byte, so its job is wiring, not new logic. Phase 103 (end-to-end validation) is milestone-closing and partly human-gated (chemist confirmation on a soft-PARTIAL, and the `/lucy-ng:case` run itself) — it is where the milestone's actual success bar (CASE convergence) is proven.
+
+## Milestone v10.0 Phases (PARTIAL — historical reference)
 
 | Phase | Goal | Requirements | Depends on |
 |-------|------|--------------|------------|
 | 97. Backend Integration + Params/Schedule | `lucy nus check` backend detection (LSD precedent) + `nus/params.py`/`nus/schedule.py` Bruker parsing, fixture-tested against real C20H32O2 data | NUS-01..05 | — |
 | 98. Reconstruction + Processing | Real NMRPipe+SMILE subprocess chain (bruk2pipe → nusExpand.tcl → SMILE → FT/phase/baseline), FnMODE-aware, fail-loud wrapper | RECON-01..05 | 97 |
 | 99. Peak-Pick Bridge + QC Gate + CLI | `nus/bridge.py` → existing `PeakPicker2D`; mandatory automated QC gate (PASS/PARTIAL/FAIL) blocking CASE handoff on FAIL; full `lucy nus` CLI group | PICK-01..03, QC-01..03 | 98 |
-| 100. Cross-Platform Hardening + End-to-End Validation | Portability matrix (macOS/Linux native, Windows WSL2 gap documented); C20H32O2 exp2/3/4 reconstruction passing §8 gate; `/lucy-ng:case C20H32O2` convergence | PORT-01..02, VAL-01..02 | 99 |
-
-**Sequencing:** Phase 97 (backend detection + pure-Python params/schedule parsing) ships first — zero external-binary dependency, fixture-testable from day one, and front-loads the FnMODE/nuslist bookkeeping correctness (a single hard-coded divisor would silently corrupt one of the three real C20H32O2 experiments). Phase 98 (reconstruction + processing) is the highest-uncertainty phase — needs the real NMRPipe+SMILE binary and answers the milestone's open empirical question (does SMILE clear the quality bar at 25-33% sampling). Phase 99 (peak-pick bridge + QC gate + CLI) is where the crux risk (fabricated cross-peaks becoming hard LSD constraints) gets its mandatory automated defense — the QC gate is its own deliverable, not folded into peak-picking. Phase 100 (cross-platform hardening + validation) is milestone-closing: portability documentation and the actual success criterion (`/lucy-ng:case C20H32O2` convergence) both depend on everything upstream being stable.
+| 100. Cross-Platform Hardening + End-to-End Validation | Portability matrix (macOS/Linux native, Windows WSL2 gap documented); C20H32O2 exp2/3/4 reconstruction passing §8 gate; `/lucy-ng:case C20H32O2` convergence — **PARTIAL**: PORT-01/02 shipped, VAL-01/02 not achieved (SMILE memory abort, RECON-F1 tracked) | PORT-01..02, VAL-01..02 | 99 |
 
 ## Deferred Items
 
@@ -67,6 +75,13 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 |----------|------|--------|------|
 | todo | 2026-06-25-case4-azulene-regiochemistry-enumeration-gap | deferred | NEW 4th defect class from v9.1 UAT-01; di-methyl-ethyl class now searched, exact chamazulene regiochemistry still unreachable. Carried-seed. |
 
+Items acknowledged and deferred at **v10.0 milestone close (PARTIAL) on 2026-07-20**:
+
+| Category | Item | Status | Note |
+|----------|------|--------|------|
+| RECON-F1 | hmsIST/mddnmr fallback backend for in-lucy-ng NUS self-reconstruction | tracked | SMILE cannot complete on the dev host (~6.5 GB memory abort, D-04 tuning budget exhausted). Named next step to close v10.0's VAL-01/02. Note: v10.1's `C20H32O2-jcamp` data was itself produced by `mddnmr`, so this is the natural follow-on. |
+| todo | 2026-06-25-case4-azulene-regiochemistry-enumeration-gap | carried (from v9.1) | Still open; unrelated to NUS/JCAMP scope. |
+
 ## Completed Milestones
 
 | Milestone | Phases | Shipped |
@@ -86,29 +101,40 @@ Items acknowledged and deferred at **v9.1 milestone close on 2026-06-29**:
 | v9.1 CASE Final-Answer Correctness & Verification Gates | 86-89 | 2026-06-29 |
 | v9.2 CASE Web-View | 90-92 | 2026-07-07 |
 | v9.3 CASE Web-View Stage 2 | 93-96 | 2026-07-12 |
+| v10.0 Automatic NUS 2D Reconstruction | 97-100 | PARTIAL 2026-07-20 (PORT shipped; VAL blocked, RECON-F1 tracked) |
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 207 across 12 milestones (11 shipped + 1 abandoned) at v9.2 close
+- Total plans completed: 220 across 13 milestones (11 shipped + 1 abandoned + 1 partial) at v10.0 pause
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
-- v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
-- v10.0: 4 phases planned (97-100); 14 plans complete (Phase 99 now fully closed) — Phase 97 Plan 01 (fixtures + NUS models), 4 min, 2 tasks, 18 files, tests 1219 passing at close; Phase 97 Plan 02 (nus/params.py, NUS-02), 14 min, 1 task, 2 files, tests 1243 passing at close; Phase 97 Plan 03 (nus/schedule.py, NUS-03), 12 min, 1 task, 2 files, tests 1269 passing at close; Phase 97 Plan 04 (nus/backends/nmrpipe_smile.py + registry, NUS-01), 6 min, 2 tasks, 3 files, tests 1289 passing at close; Phase 98 Plan 01 (tests/nus/ Nyquist Wave 0 scaffold — conftest run_stage mock seam + fake-intermediate factories + 7 RED-by-skip RECON stub files), ~18 min, 2 tasks, 9 files, tests/nus/ 24 collected/24 skipped at close (RECON-01..05 remain Pending — GREEN in Plans 02-06); Phase 98 Plan 02 (nus/runner.py run_stage() fail-loud wrapper + FnMODE recipe/_ordering_for_fnmode() + NusReconstructionResult model, RECON-03/RECON-04), ~25 min, 3 tasks, 4 files, tests/nus/ 20 passed/17 skipped at close (RECON-03/RECON-04 now complete; RECON-01/02/05 remain Pending — GREEN in Plans 03-06); Phase 98 Plan 03 (nus/backends/nmrpipe_smile.py::convert()+reconstruct_indirect(), FnMODE-branched bruk2pipe/nusExpand.tcl/SMILE dispatch, RECON-01/02/03), ~45 min, 2 tasks, 2 files, tests/nus/ 27 passed/11 skipped at close (RECON-01/02/03 now complete; RECON-04/05 already complete from Plan 02; the QF/magnitude COSY convert_first branch stays PROVISIONAL per 98-RESEARCH.md A1/A3 pending an implementation-time spike); Phase 98 Plan 04 (nus/postprocess.py::process_direct()+process_indirect() F2/F1 processing stages + ppm_scale()/ppm_axis_for_dimension()/calibrate_against_1d_reference() ppm calibration, RECON-02), ~18 min, 2 tasks, 2 files, tests/nus/ 19 passed/6 skipped at close (RECON-02 complete; all 5 Plan-01 RECON-02 stubs now GREEN); Phase 98 Plan 05 (nus/runner.py::NusRunner.reconstruct() four-stage orchestration + F2-before-F1 hard gate, RECON-01/02), ~20 min, 2 tasks, 3 files, tests/nus/ 22 passed/3 skipped at close (RECON-01/02 now complete; rewrote Plan-01's 3 orchestration stubs to patch at the four-stage-callable boundary since the stub's mock_run_stage/result.output_file shape didn't match the real NusReconstructionResult model; RECON-05/CLI wiring deferred to Plan 06); Phase 98 Plan 06 (cli/nus.py::reconstruct command — RECON-05 knob flags --iterations/--threshold/--virtual-echo + D-02 phase-override flags, --format json), ~15 min, 2 tasks, 3 files, tests/nus/ + tests/test_cli_nus.py 37 passed/1 skipped at close (RECON-05 now complete; **Phase 98 fully closed, RECON-01..05 all complete** -- ready for `/gsd-verify-work 98`); Phase 99 Plan 01 (models/nus.py QcVerdict/QcCheckResult/QcReport contract + committed known-bad/synthetic-clean peak-list fixture pair + six RED-by-skip stub test files, QC-01/QC-02/PICK-03 scaffold), 17 min, 3 tasks, 18 files, tests/nus/ 50 collected (26 existing + 24 new, all new skip cleanly), full suite 1329 passed/32 skipped/1 xfailed at close (zero regressions; QC-01/QC-02/PICK-03 remain Pending — GREEN in Plans 02-04, mirroring Phase 98 Plan 01's RECON-01..05 precedent; corrected the plan's `pytest.importorskip`-at-module-level instruction to Phase-98's established `@pytest.mark.skip`-per-test convention so all 24 new tests collect individually); Phase 99 Plan 02 (nus/qc.py — QcConfig + QcReferenceData D-03 three-tier resolution + six named checks + aggregate_verdict() + run_qc_checks(), QC-01/QC-02), 19 min, 2 tasks, 3 files, tests/nus/test_qc_checks.py + test_qc_regression.py 14/14 activated and green, full suite 1343 passed/18 skipped/1 xfailed at close (zero regressions; QC-01/QC-02 now complete; QC-02 discrimination floor proven directly against the real fixtures — known-bad FAIL via quaternary_exclusion/hsqc_coverage/signal_to_ridge, synthetic-clean PASS with zero violated checks; qc.py stays pure, no file writes); Phase 99 Plan 03 (nus/bridge.py — build_spectrum2d() processed .ft2 → Spectrum2D + bridge_peak_pick() direct PeakPicker2D call transformed into the per-experiment CASE schema + D-05/D-06 metadata/confidence, PICK-01/PICK-03; processing/edited_sign.py importable detect_multiplicity_edited() twin preserving cli/pick.py byte-unchanged), 24 min, 2 tasks, 5 files, tests/nus/test_bridge.py + test_bridge_metadata.py 17/17 activated and green, full suite 1360 passed/14 skipped/1 xfailed at close (zero regressions; PICK-01/PICK-03 now complete; rewrote both files' Wave-0 stub tests since they called `build_spectrum2d(path, params=None, ...)`/`bridge_peak_pick(path, experiment_type=...)` against a `.ft2` never written to disk and a `"verdict"` key superseded by Task 2's own `"qc_verdict"` naming — same class of Wave-0-stub correction as Phase 98 Plans 03/05/06; bridge_peak_pick() accepts optional qc_report/recon_meta so Plan 04's pipeline can call it twice, pre-QC and post-QC); Phase 99 Plan 04 (cli/nus.py — `lucy nus qc <peaks-dir>` standalone QC-02 gate + `lucy nus pipeline <expdir>` params→schedule→reconstruct→staged-peak-pick→run_qc_checks()→causal-rebuild-peak-pick→D-07 write/quarantine boundary, PICK-02/QC-03), 33 min, 2 tasks, 5 files, tests/nus/test_cli_pipeline.py + test_write_boundary.py rewritten from Wave-0 stubs to real assertions (mock_pipeline_stages conftest fixture mocks NusRunner.reconstruct()/read_nus_params()/build_spectrum2d()/run_qc_checks() while keeping bridge_peak_pick()/write_peak_json() real), full suite 1373 passed/8 skipped/1 xfailed at close (zero regressions; PICK-02/QC-03 now complete; FAIL branch hand-builds its quarantine `reconstruction` block from the QcReport rather than re-invoking bridge_peak_pick(), since Plan 03's confidence_from_verdict() intentionally raises on a FAIL verdict; fixed a pre-existing stale `tests/test_cli_nus.py` subcommand-listing assertion and a Wave-0 `p.name`-vs-`p.opts` bug in the `--format json` coverage test. **Phase 99 (Peak-Pick Bridge + QC Gate + CLI) fully complete** — PICK-01..03/QC-01..03 all satisfied, ready for `/gsd-verify-work 99`); Phase 100 Plan 02 (docs/NUS-PORTABILITY.md PORT-02 portability matrix — macOS-arm64-native/Linux-native/Windows-WSL2-gap, SMILE-separate-download gotcha, step-by-step WSL2 workaround marked documented-untested — + CLAUDE.md/README.md prerequisite links), 12 min, 1 task, 4 files, tests/nus/test_portability_doc.py 7/7 passed at close (PORT-02 now complete; PORT-01 (Plan 01) + PORT-02 (Plan 02) together close all PORT requirements — VAL-01/02 remain for Plan 03)
+  - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
+  - v10.0: 4 phases (97-100), 13 plans complete (97: 5, 98: 6, 99: 4, 100: 2 of 3 — VAL plan 100-03 closed with an honest partial-stop, no code shipped from it beyond the VALIDATION.md record); full suite 1396 passing at pause. PORT-01/02 verified; VAL-01/02 not achieved (SMILE memory abort, see VALIDATION.md).
+- v10.1: 0 phases complete (roadmap just created, 2026-07-21) — 3 phases planned (101-103), plan counts TBD pending `/gsd-plan-phase`.
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
 - v9.3 roadmap created (2026-07-07): phases 93-96. Derived from 8 requirements (LOG-01, TAB-01, TBL-01..03, SP1-01, SP2-01, SP-02) with authoritative override: spectra = **real Bruker traces + peak overlay** (not peak-only sticks). Research HIGH confidence across all phases; no research gate needed for any phase.
-- v10.0 roadmap created (2026-07-12): phases 97-100, continuing numbering from the last shipped phase (96). Derived from 20 requirements (NUS-01..05, RECON-01..05, QC-01..03, PICK-01..03, PORT-01..02, VAL-01..02), following the research-converged build order (SUMMARY.md § Implications for Roadmap): backend+params/schedule → reconstruction+processing (highest-uncertainty) → peak-pick bridge+QC gate+CLI (crux-risk mitigation as its own deliverable) → cross-platform hardening+end-to-end validation. 20/20 requirements mapped, no orphans.
+- v10.0 roadmap created (2026-07-12): phases 97-100, continuing numbering from the last shipped phase (96). Derived from 20 requirements (NUS-01..05, RECON-01..05, QC-01..03, PICK-01..03, PORT-01..02, VAL-01..02), following the research-converged build order (SUMMARY.md § Implications for Roadmap): backend+params/schedule → reconstruction+processing (highest-uncertainty) → peak-pick bridge+QC gate+CLI (crux-risk mitigation as its own deliverable) → cross-platform hardening+end-to-end validation. 20/20 requirements mapped, no orphans. Closed 2026-07-20 as PARTIAL (VAL-01/02 blocked by SMILE memory abort; see VALIDATION.md).
+- v10.1 roadmap created (2026-07-21): phases 101-103, continuing numbering from the last v10.0 phase (100). Derived from 8 requirements (JC-01..04, JCLI-01..02, JVAL-01..02) following the suggested three-stage shape from the milestone brief: reader (no external binary, highest-risk = ppm-axis correctness) → CLI/bridge/QC reuse (mechanically low-risk — reuses Phase-99 unchanged) → end-to-end validation on `C20H32O2-jcamp` (partly human-gated). 8/8 requirements mapped, no orphans. v10.0's Phase-100 PARTIAL section is preserved unchanged as historical record; v10.1 does not touch or supersede it.
+
+### Key Design Decisions for v10.1
+
+- [v10.1-roadmap]: **New reader module `src/lucy_ng/readers/jcamp.py`, sibling of `bruker.py`** — a new front-end only; the entire downstream (Phase-99 bridge, `PeakPicker2D`, QC gate, `case.md`) is reused unchanged, per the milestone's explicit "reuse the Phase-99 downstream unchanged" constraint.
+- [v10.1-roadmap]: **No external binary dependency anywhere in this milestone** — pure-Python JCAMP-DX parsing (own DIFDUP/SQZ/PAC decoder, vendored or wrapped rather than depending on nmrglue's private API). This is what makes Phase 101 fully CI-testable with a committed real fixture, directly addressing the Phase-100 meta-learning that mock-only "verified" gave false confidence for an external-tool pipeline (D-BUG-1/D-BUG-2 were both invisible to mocked tests).
+- [v10.1-roadmap]: **JC-02 ppm-axis correctness is the milestone's one real technical risk**, flagged for extra verification emphasis in Phase 101 — same defect class as v10.0's WR-04 (Bruker OFFSET treated as Hz). Must be checked against the trusted 1D reference / §10 ground truth, not eyeballed; carried as an explicit success-criterion clause, not folded silently into JC-01.
+- [v10.1-roadmap]: **JCLI-02's "`case.md` byte-unchanged" is carried as its own Phase-102 success criterion**, mirroring the v10.0 "CASE pipeline unchanged" invariant (Phase 97-99) — verifiable by diff, not by trust.
 
 ### Key Design Decisions for v10.0
 
 - [v10.0-roadmap]: **Backend = NMRPipe+SMILE, runtime-detected external binary** — never a core `pyproject.toml` dependency, mirrors the `LSDRunner`/`lucy lsd check` precedent exactly. Windows is an accepted, documented WSL2/VM gap (Phase 100), not a blocker.
 - [v10.0-roadmap]: **New `nus/` package, sibling of `lsd/`/`webview/`** — pre-CASE "dumb tool"; zero changes to `case.md` or the 5-agent team; the diff to `detection/`, `fragments/`, `lsd/`, `ranking/`, `cli/pick.py` must stay empty (enforceable-by-inspection constraint carried into Phase 97's success criteria).
 - [v10.0-roadmap]: **QC gate is its own phase deliverable (Phase 99), not folded into peak-picking** — it is the mandatory automated defense against fabricated cross-peaks silently becoming hard LSD constraints (the milestone's crux risk per research).
+- [v10.0 D-04 / Phase 100 close]: **SMILE's ~6.5 GB memory abort is independent of every caller-side knob** (direct-dim size, thread count, `-maxIter`) — characterized as a property of this macOS-arm64 `nusPipe` build, not a lucy-ng defect. RECON-F1 (hmsIST/mddnmr) is the tracked fallback; v10.1's JCAMP data happens to have been produced by `mddnmr` externally, making it the natural complementary path shipped first.
 - [Phase 97 Plan 01]: `NusAcquisitionParams.fnmode_f1` validator shares the `REAL_FNMODES`/`COMPLEX_FNMODES`/`VALID_FNMODES` module constants with `nus/schedule.py` (plan 03) so the two never maintain divergent FnMODE allowlists.
 - [Phase 97 Plan 01]: Fixture set expanded beyond D-03's original acqus/acqu2s/nuslist trio to also copy `pdata/1/procs`+`pdata/1/proc2s` per RESEARCH.md's SF/OFFSET-live-in-procs correction — otherwise SF/OFFSET fields would have zero fixture coverage.
 - [Phase 97 Plan 02]: `read_nus_params` uses nmrglue's low-level `read_acqus_file()`/`read_procs_file()` instead of the monolithic `ng.bruker.read()` — the latter unconditionally requires a `fid`/`ser` binary to determine data shape, which the D-03 test fixtures deliberately omit (metadata-only). The low-level readers parse the identical `acqus`/`acqu2s`/`procs`/`proc2s` files with zero binary dependency, correct for both the fixtures and real not-yet-reconstructed NUS directories.
@@ -146,27 +172,29 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 ### Pending Todos
 
-- **[2026-06-25] CASE4 azulene-regiochemistry-enumeration gap** — carried seed; not in v10.0 scope. See `.planning/todos/pending/2026-06-25-case4-azulene-regiochemistry-enumeration-gap.md`.
+- **[2026-06-25] CASE4 azulene-regiochemistry-enumeration gap** — carried seed; not in v10.1 scope. See `.planning/todos/pending/2026-06-25-case4-azulene-regiochemistry-enumeration-gap.md`.
+- **RECON-F1** — hmsIST/mddnmr fallback backend for in-lucy-ng NUS self-reconstruction (tracked from v10.0 close). Not in v10.1 scope (JCAMP ingestion is complementary, not the fallback itself), but noted as the natural next reconstruction-side step given `C20H32O2-jcamp` was itself produced by `mddnmr`.
 
 ### Blockers/Concerns
 
-None. Phase 97 may begin planning immediately (`/gsd-plan-phase 97`).
+None. Phase 101 may begin planning immediately (`/gsd-plan-phase 101`).
 
 ### Strategic Reference
 
-See `background/sherlock-analysis.md` for full Sherlock vs lucy-ng comparison. v9.0 closed the end-to-end mechanism gap; v9.1 closed the three "clean-but-wrong" defect classes. v9.2 adds live observability; v9.3 deepens the inspector with spectra and data tables. v10.0 closes the NUS 2D reconstruction gap that timed out the first C20H32O2 CASE run.
+See `background/sherlock-analysis.md` for full Sherlock vs lucy-ng comparison. v9.0 closed the end-to-end mechanism gap; v9.1 closed the three "clean-but-wrong" defect classes. v9.2 adds live observability; v9.3 deepens the inspector with spectra and data tables. v10.0 closes (partially — PORT shipped, VAL blocked) the NUS 2D reconstruction gap that timed out the first C20H32O2 CASE run. v10.1 opens a complementary, no-external-binary ingestion path (JCAMP-DX) that decouples CASE from the SMILE blocker entirely.
 
 Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions. Native LSD-3.4.9 commands are: MULT, LIST, PROP, BOND, COSY, HMBC, ELIM, DEFF, FEXP, HSQC, ELEM.
 
 ## Session Continuity
 
-Last session: 2026-07-20T13:00:45.707Z
-Stopped at: Phase 100 closed with honest stop (D-04): PORT-01/02 shipped; VAL-01/02 not achieved — SMILE ~6.5GB memory abort on this host, tuning budget exhausted, RECON-F1 tracked as next step
-Resume with: Execute Phase 100 Plan 03 (VAL-01/02 real reconstruction + CASE convergence)
+Last session: 2026-07-21T00:00:00.000Z
+Stopped at: v10.1 roadmap created (phases 101-103; 8/8 requirements mapped, no orphans); ROADMAP.md/REQUIREMENTS.md/STATE.md written
+Resume with: `/gsd-plan-phase 101` (JCAMP-DX Reader — JC-01..04)
 
 ---
-*Last updated: 2026-07-18 — Phase 100 Plan 02 complete (docs/NUS-PORTABILITY.md PORT-02 portability matrix + CLAUDE.md/README.md prerequisite links + tests/nus/test_portability_doc.py); PORT-02 now complete. PORT-01/02 both satisfied — only VAL-01/02 (Plan 03) remain to close Phase 100.*
+*Last updated: 2026-07-21 — v10.1 roadmap created. Phases 101 (JCAMP-DX Reader), 102 (CLI + Peak-Pick Bridge + QC Reuse), 103 (End-to-End Validation, C20H32O2-jcamp). v10.0 stays PARTIAL and untouched as historical record (Phase 100 limitation note preserved in ROADMAP.md).*
 
 ## Operator Next Steps
 
-- Execute Phase 100 Plan 03: `/gsd-execute-phase 100` (VAL-01/02 real C20H32O2 reconstruction + `/lucy-ng:case` convergence)
+- Plan Phase 101: `/gsd-plan-phase 101` (JCAMP-DX Reader — decode 2D NTUPLES DIFDUP pages into `Spectrum2D` + 1D into `Spectrum1D`, verified ppm axes, no external binary, CI-runnable fixture test)
+</content>

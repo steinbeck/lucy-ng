@@ -51,10 +51,16 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| JC-01..04 | TBD | Pending |
-| JCLI-01..02 | TBD | Pending |
-| JVAL-01..02 | TBD | Pending |
+| JC-01 | Phase 101 | Pending |
+| JC-02 | Phase 101 | Pending |
+| JC-03 | Phase 101 | Pending |
+| JC-04 | Phase 101 | Pending |
+| JCLI-01 | Phase 102 | Pending |
+| JCLI-02 | Phase 102 | Pending |
+| JVAL-01 | Phase 103 | Pending |
+| JVAL-02 | Phase 103 | Pending |
 
 **Coverage:**
 - v10.1 requirements: 8 total
-- Mapped to phases: 0/8 (roadmap pending)
+- Mapped to phases: 8/8 ✓ (roadmap created 2026-07-21)
+</content>
