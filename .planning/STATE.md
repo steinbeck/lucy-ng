@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v10.0
-milestone_name: Automatic NUS 2D Reconstruction
-status: executing
-stopped_at: "Phase 100 closed with honest stop (D-04): PORT-01/02 shipped; VAL-01/02 not achieved — SMILE ~6.5GB memory abort on this host, tuning budget exhausted, RECON-F1 tracked as next step"
-last_updated: "2026-07-20T13:00:45.714Z"
-last_activity: 2026-07-18
+milestone: v10.1
+milestone_name: JCAMP-DX 2D Ingestion
+status: planning
+last_updated: "2026-07-21T08:19:33.499Z"
+last_activity: 2026-07-21
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 18
-  completed_plans: 18
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # lucy-ng State
@@ -25,12 +24,10 @@ See: .planning/PROJECT.md (updated 2026-07-12)
 
 ## Current Position
 
-Phase: 100 (cross-platform-hardening-end-to-end-validation) — EXECUTING
-Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-07-18
-
-Progress: [█████████░] 94%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-07-21 — Milestone v10.1 started
 
 ## Milestone v10.0 Phases
 

@@ -10,7 +10,26 @@ Lucy-ng is an AI-agent skill for Computer-Assisted Structure Elucidation (CASE) 
 
 An AI agent can autonomously determine the structure of an unknown organic compound from its NMR spectra, with a multi-agent architecture that prevents unproductive loops and keeps the elucidation on track.
 
-## Current Milestone: v10.0 Automatic NUS 2D Reconstruction — IN PROGRESS 🚧
+## Current Milestone: v10.1 JCAMP-DX 2D Ingestion
+
+**Goal:** lucy-ng reads already-reconstructed 1D/2D NMR spectra from JCAMP-DX files and produces the consumable CASE peak lists — with no external binaries — so CASE can run on NUS (or any) data reconstructed elsewhere (TopSpin/mddnmr, nmrXiv, any vendor JCAMP export).
+
+**Target features:**
+- **JCAMP-DX 2D NTUPLES reader** — decode the DIFDUP-compressed `##DATA TABLE=` pages (one per F1 row) into the existing `Spectrum2D` model; reuse nmrglue's line decoders (vendored to avoid depending on a private API).
+- **Correct ppm axes** — map NTUPLES metadata (`VAR_DIM`, `FIRST`/`LAST`/`FACTOR`, `.NUCLEUS`, `.OBSERVE FREQUENCY`) to reversed ppm axes, cross-checked against the trusted 1D reference / §10 ground truth (the WR-04-class axis risk must be verified, not assumed).
+- **1D path** (¹H/¹³C) through the same reader into `Spectrum1D`.
+- **CLI + bridge** — `lucy jcamp …` → existing `PeakPicker2D` → `analysis/nmr_peaks/*.json` → the **unchanged** Phase-99 QC gate; `case.md` byte-unchanged.
+- **Validation** — the `C20H32O2-jcamp` dataset yields §8-quality peak lists and a fresh `/lucy-ng:case C20H32O2` converges on a finite rankable set.
+
+**Key context:**
+- Motivated by the v10.0 outcome: NUS self-reconstruction (NMRPipe+SMILE) is installed and the pipeline runs correctly *into* SMILE, but SMILE aborts with a ~6 GB `Cannot allocate memory` on the dev host (Phase 100 closed PARTIAL; RECON-F1 tracked). JCAMP ingestion is a **complementary input path, not a replacement** — it bypasses reconstruction by consuming spectra reconstructed elsewhere.
+- The `C20H32O2-jcamp` data (6 `.dx` files, 2D grids 2048×2048) was reconstructed in TopSpin via `mddnmr` compressed sensing (IRLS) — i.e. the RECON-F1 algorithm, run manually — independently proving CS reconstruction succeeds on this exact sample.
+- Feasibility spike done: nmrglue reads the 1D `.dx` files directly and its `_parse_data` decoder handles the 2D DIFDUP pages cleanly; the only gap is that nmrglue returns `None` for 2D NTUPLES assembly.
+- **No external-binary dependency** → a real JCAMP fixture can be committed and run in CI — directly addressing the Phase-100 meta-learning that mock-only "verified" gave false confidence for an external-tool pipeline.
+
+## v10.0 Automatic NUS 2D Reconstruction — PARTIAL 🟡 (paused 2026-07-20)
+
+**Status:** PORT-01/PORT-02 shipped (platform preflight in `lucy nus check` + `docs/NUS-PORTABILITY.md` matrix, both verified). **VAL-01/VAL-02 NOT achieved** — honest stop per CONTEXT decision D-04: NMRPipe+SMILE was installed natively and the pipeline runs correctly through `nusExpand.tcl` → `bruk2pipe` → F2 processing *into* SMILE, but SMILE aborts (~6 GB `Cannot allocate memory`, proven independent of data size / threads / maxIter) on the dev host. **RECON-F1** (hmsIST/mddnmr fallback) is the tracked next step for self-reconstruction. The first real-binary run also found and fixed two genuine Phase-98 defects (nusExpand `-acqus`/`-acqu2s` paths; `nmrPipe` multi-`-fn` verb chaining — F2 was never FT'd/transposed). Full record: `phases/100-cross-platform-hardening-end-to-end-validation/VALIDATION.md`. The original v10.0 goal/features below remain the reference for the deferred self-reconstruction work.
 
 **Goal:** Lucy-ng reconstructs non-uniformly-sampled (NUS) 2D NMR spectra fully automatically and without any GUI step — from Bruker `ser`+`nuslist` through a real compressed-sensing / IST / SMILE reconstruction to clean JSON peak lists — so that CASE runs on NUS data get reliable HSQC/HMBC/COSY connectivity.
 
@@ -317,6 +336,6 @@ Minimum viable spectral data for v1:
 | `CLAUDE_CODE_SUBAGENT_MODEL=inherit` | A stale `=sonnet` override silently forced all subagents to Sonnet 4.6 and drove earlier CASE failures | Good — Opus 4.8 then solved both cases |
 
 ---
-*Last updated: 2026-07-16 — Phase 99 (Peak-Pick Bridge + QC Gate + CLI) COMPLETE & verified (VERIFICATION passed, 5/5 must-haves, PICK-01..03 + QC-01..03 validated; QC-02 discrimination re-proved live — known-bad home-IST fixtures ⇒ FAIL/exit 1, synthetic-clean ⇒ PASS/exit 0; full suite 1373 passed, `case.md`/`cli/pick.py` byte-unchanged). Shipped `nus/bridge.py` (Spectrum2D → existing PeakPicker2D → per-experiment nmr_peaks schema + additive `reconstruction` metadata + verdict-derived confidence), `nus/qc.py` (headless six-check PASS/PARTIAL/FAIL gate, critical/soft split, honest 3-tier prot/quaternary resolver), and `lucy nus qc`/`lucy nus pipeline` (D-07 write/quarantine boundary — FAIL never writes consumable peaks). Real-data clean-PASS + full external NMRPipe+SMILE run deferred to Phase 100/VAL. Next: Phase 100 (Cross-Platform Hardening + End-to-End Validation).*
+*Last updated: 2026-07-21 — Milestone **v10.1 JCAMP-DX 2D Ingestion** started. v10.0 paused PARTIAL (PORT shipped; VAL/self-reconstruction blocked by SMILE memory abort, RECON-F1 tracked). v10.1 adds a no-external-binary path: read already-reconstructed spectra from JCAMP-DX → existing PeakPicker2D + Phase-99 QC gate → CASE. Prior footer: Phase 99 (Peak-Pick Bridge + QC Gate + CLI) COMPLETE & verified (VERIFICATION passed, 5/5 must-haves, PICK-01..03 + QC-01..03 validated; QC-02 discrimination re-proved live — known-bad home-IST fixtures ⇒ FAIL/exit 1, synthetic-clean ⇒ PASS/exit 0; full suite 1373 passed, `case.md`/`cli/pick.py` byte-unchanged). Shipped `nus/bridge.py` (Spectrum2D → existing PeakPicker2D → per-experiment nmr_peaks schema + additive `reconstruction` metadata + verdict-derived confidence), `nus/qc.py` (headless six-check PASS/PARTIAL/FAIL gate, critical/soft split, honest 3-tier prot/quaternary resolver), and `lucy nus qc`/`lucy nus pipeline` (D-07 write/quarantine boundary — FAIL never writes consumable peaks). Real-data clean-PASS + full external NMRPipe+SMILE run deferred to Phase 100/VAL. Next: Phase 100 (Cross-Platform Hardening + End-to-End Validation).*
 
 *Prior: 2026-07-12 shipped v9.3 CASE Web-View Stage 2 (phases 93–96, LOG-01/TAB-01/TBL-01..03/SP1-01/SP2-01/SP-02) — archived to `milestones/v9.3-ROADMAP.md` + `milestones/v9.3-REQUIREMENTS.md`, tagged `v9.3`. Delivered the full spectral-inspection suite: formatted run log + tab framework, data tables, and real rendered 1D + 2D NMR spectra with picked peaks overlaid.*
