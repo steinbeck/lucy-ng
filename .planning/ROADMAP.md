@@ -191,7 +191,7 @@ succeeds on this exact sample.
 **Plans**: 4 plans (3 waves)
 - [x] 101-01-PLAN.md — Nyquist Wave 0: trimmed real HSQC fixture + two 1D references + COSY/NOESY spot-check + RED hand-oracle & integration tests (wave 1)
 - [x] 101-02-PLAN.md — Vendored DIFDUP/SQZ/DUP/PAC decoder (9-object closure, New-BSD attribution), JC-04 oracle green (wave 2)
-- [ ] 101-03-PLAN.md — jcamp.py shared helpers (OFFSET+SF ppm formula, .NUCLEUS dim mapping, fail-loud assertion, metadata access) + read_1d (JC-03) (wave 2)
+- [x] 101-03-PLAN.md — jcamp.py shared helpers (OFFSET+SF ppm formula, .NUCLEUS dim mapping, fail-loud assertion, metadata access) + read_1d (JC-03) (wave 2)
 - [ ] 101-04-PLAN.md — read_2d NTUPLES page assembly + Y-FACTOR + reversed ppm axes + 1D cross-check + read() dispatcher (JC-01, JC-02) (wave 3)
 
 #### Phase 102: CLI + Peak-Pick Bridge + QC Reuse
@@ -221,7 +221,7 @@ succeeds on this exact sample.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 101. JCAMP-DX Reader | 2/4 | In Progress|  |
+| 101. JCAMP-DX Reader | 3/4 | In Progress|  |
 | 102. CLI + Peak-Pick Bridge + QC Reuse | 0/TBD | Not started | - |
 | 103. End-to-End Validation (C20H32O2-jcamp) | 0/TBD | Not started | - |
 </content>
