@@ -518,3 +518,39 @@ class JcampReader:
             frequency=float(f2_sf),
             metadata=metadata,
         )
+
+    @staticmethod
+    def read(path: str | Path) -> Spectrum1D | Spectrum2D:
+        """Read a JCAMP-DX file, dispatching to ``read_1d``/``read_2d`` on ``##NUM DIM=`` (D-09).
+
+        1D JCAMP-DX files carry no ``##NUM DIM=`` line at all (verified
+        directly against this project's own committed 1D fixtures) -- its
+        absence is treated as ``NUM DIM=1``, consistent with 2D files being
+        the only ones that declare it explicitly (``##NUM DIM= 2``).
+
+        Args:
+            path: Path to the ``.dx`` file.
+
+        Returns:
+            Spectrum1D (NUM DIM==1, or the key is absent) or Spectrum2D
+            (NUM DIM==2).
+
+        Raises:
+            FileNotFoundError: If ``path`` does not exist.
+            ValueError: If the file declares an unsupported dimensionality.
+        """
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"JCAMP-DX file not found: {path}")
+
+        inner = _read_metadata(path)
+        num_dim_raw = inner.get("NUMDIM")
+        num_dim = int(float(str(num_dim_raw[0]))) if num_dim_raw else 1
+
+        if num_dim == 1:
+            return JcampReader.read_1d(path)
+        if num_dim == 2:
+            return JcampReader.read_2d(path)
+        raise ValueError(
+            f"Unsupported JCAMP-DX dimensionality '##NUM DIM= {num_dim}': {path}"
+        )
