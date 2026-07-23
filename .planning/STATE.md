@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v10.1
 milestone_name: JCAMP-DX 2D Ingestion
-status: verifying
-stopped_at: Completed 101-04-PLAN.md
-last_updated: "2026-07-23T16:20:00.000Z"
+status: ready_to_plan
+stopped_at: Phase 101 complete (4/4) — ready to discuss Phase 102
+last_updated: 2026-07-23T14:32:33.299Z
 last_activity: 2026-07-23
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 4
-  completed_plans: 4
+  completed_plans: 22
   percent: 33
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-21)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 101 — jcamp-dx-reader
+**Current focus:** Phase 102 — cli + peak pick bridge + qc reuse
 
 ## Current Position
 
-Phase: 101 (jcamp-dx-reader) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-07-23 -- Plan 101-04 (JcampReader.read_2d + read() dispatcher, JC-01/JC-02 complete) -- Phase 101 all 4 plans done
+Phase: 102
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-23
 
 ## Milestone v10.1 Phases
 
@@ -108,7 +108,7 @@ Items acknowledged and deferred at **v10.0 milestone close (PARTIAL) on 2026-07-
 
 **Velocity:**
 
-- Total plans completed: 220 across 13 milestones (11 shipped + 1 abandoned + 1 partial) at v10.0 pause
+- Total plans completed: 224 across 13 milestones (11 shipped + 1 abandoned + 1 partial) at v10.0 pause
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
   - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
