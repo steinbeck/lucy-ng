@@ -118,3 +118,7 @@ None - no external service configuration required. The generator script depends 
 ---
 *Phase: 101-jcamp-dx-reader*
 *Completed: 2026-07-23*
+
+## Self-Check: PASSED
+
+All 7 created files verified present on disk; all 3 task/plan commits (`c852715`, `59ade7d`, `9e76f2c`) verified present in git log.

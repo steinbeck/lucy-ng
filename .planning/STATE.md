@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v10.1
 milestone_name: JCAMP-DX 2D Ingestion
 status: executing
-stopped_at: Phase 101 context gathered
-last_updated: "2026-07-23T12:43:42.906Z"
-last_activity: 2026-07-23 -- Phase 101 planning complete
+stopped_at: Completed 101-01-PLAN.md
+last_updated: "2026-07-23T13:00:47.447Z"
+last_activity: 2026-07-23
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 4
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 25
 ---
 
 # lucy-ng State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-21)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 101 — JCAMP-DX Reader
+**Current focus:** Phase 101 — jcamp-dx-reader
 
 ## Current Position
 
-Phase: Not started (roadmap created, ready to plan)
-Plan: —
-Status: Ready to execute
-Last activity: 2026-07-23 -- Phase 101 planning complete
+Phase: 101 (jcamp-dx-reader) — EXECUTING
+Plan: 2 of 4
+Status: Executing Phase 101 (Plan 01 complete, Plan 02 next)
+Last activity: 2026-07-23 -- Plan 101-01 (Nyquist Wave 0 fixtures + RED tests) complete
 
 ## Milestone v10.1 Phases
 
@@ -129,6 +129,7 @@ Items acknowledged and deferred at **v10.0 milestone close (PARTIAL) on 2026-07-
 - [v10.1-roadmap]: **No external binary dependency anywhere in this milestone** — pure-Python JCAMP-DX parsing (own DIFDUP/SQZ/PAC decoder, vendored or wrapped rather than depending on nmrglue's private API). This is what makes Phase 101 fully CI-testable with a committed real fixture, directly addressing the Phase-100 meta-learning that mock-only "verified" gave false confidence for an external-tool pipeline (D-BUG-1/D-BUG-2 were both invisible to mocked tests).
 - [v10.1-roadmap]: **JC-02 ppm-axis correctness is the milestone's one real technical risk**, flagged for extra verification emphasis in Phase 101 — same defect class as v10.0's WR-04 (Bruker OFFSET treated as Hz). Must be checked against the trusted 1D reference / §10 ground truth, not eyeballed; carried as an explicit success-criterion clause, not folded silently into JC-01.
 - [v10.1-roadmap]: **JCLI-02's "`case.md` byte-unchanged" is carried as its own Phase-102 success criterion**, mirroring the v10.0 "CASE pipeline unchanged" invariant (Phase 97-99) — verifiable by diff, not by trust.
+- [Phase 101 Plan 01]: Fixture header-pruning matches literal Bruker JCAMP-DX key prefixes (`##TITLE=`, `##$SF=`, `##.PULSE SEQUENCE=`, ...) as they appear in the real export, rather than nmrglue's normalized `_getkey()` form — simpler and deterministic to verify directly against the source file. F1 page window fixed at `[1735:1751]` (16 pages) per 101-RESEARCH.md's verified oracle coordinates (contains 2 of the 3 known real gem-dimethyl/methyl cross-peaks). The Pitfall-2 Y-FACTOR scaling test and the D-04 ppm-axis-assertion test target reader-level helpers (`_apply_yfactor`, `_assert_plausible_ppm_axis`) directly in `test_jcamp.py`, since the real fixture's own Y_FACTOR happens to be 1 and would not otherwise catch a missing multiplication.
 
 ### Key Design Decisions for v10.0
 
@@ -188,15 +189,15 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-23T11:47:51.061Z
-Stopped at: Phase 101 context gathered
-Resume with: `/gsd-plan-phase 101` (JCAMP-DX Reader — JC-01..04)
+Last session: 2026-07-23T13:00:47.442Z
+Stopped at: Completed 101-01-PLAN.md
+Resume with: `/gsd-execute-phase 101` (continue with 101-02-PLAN.md — vendored DIFDUP/SQZ/DUP/PAC decoder)
 
 ---
-*Last updated: 2026-07-21 — v10.1 roadmap created. Phases 101 (JCAMP-DX Reader), 102 (CLI + Peak-Pick Bridge + QC Reuse), 103 (End-to-End Validation, C20H32O2-jcamp). v10.0 stays PARTIAL and untouched as historical record (Phase 100 limitation note preserved in ROADMAP.md).*
+*Last updated: 2026-07-23 — Phase 101 Plan 01 (Nyquist Wave 0) complete: trimmed real HSQC fixture + 1D references + COSY/NOESY spot-check + RED hand-oracle & integration test scaffolding committed. v10.0 stays PARTIAL and untouched as historical record (Phase 100 limitation note preserved in ROADMAP.md).*
 
 ## Operator Next Steps
 
-- Plan Phase 101: `/gsd-plan-phase 101` (JCAMP-DX Reader — decode 2D NTUPLES DIFDUP pages into `Spectrum2D` + 1D into `Spectrum1D`, verified ppm axes, no external binary, CI-runnable fixture test)
+- Continue Phase 101: `/gsd-execute-phase 101` (101-02-PLAN.md — vendor the DIFDUP/SQZ/DUP/PAC decoder into `readers/_jcampdx_decode.py`, turning the D-08 layer-1 hand-oracle test GREEN)
 
 </content>
