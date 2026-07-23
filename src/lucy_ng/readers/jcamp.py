@@ -34,6 +34,7 @@ import nmrglue.fileio.jcampdx as jc
 import numpy as np
 from numpy.typing import NDArray
 
+from lucy_ng.models import Spectrum1D
 from lucy_ng.readers.bruker import (
     _detect_experiment_type,  # noqa: F401  (D-10, re-exported for Plan 04)
 )
@@ -226,3 +227,86 @@ def _resolve_dim(inner: dict[str, Any], target_nucleus: str) -> tuple[float, flo
 
     index = matches[0]
     return float(offset_raw[index]), float(sf_raw[index])
+
+
+
+
+class JcampReader:
+    """Reader for JCAMP-DX NMR data files (binary-free, already-reconstructed)."""
+
+    @staticmethod
+    def read_1d(path: str | Path) -> Spectrum1D:
+        """Read a 1D JCAMP-DX file and return a Spectrum1D.
+
+        Per D-11, the intensity array comes from nmrglue's public decoded
+        output (``ng.jcampdx.read()`` already returns real data for 1D
+        files) -- the vendored decoder covers only the 2D NTUPLES-assembly
+        gap. Metadata comes from this module's own ``_read_metadata``.
+
+        Args:
+            path: Path to the 1D ``.dx`` file.
+
+        Returns:
+            Spectrum1D with the processed real-channel data and ppm axis.
+
+        Raises:
+            FileNotFoundError: If ``path`` does not exist.
+            ValueError: If required metadata is missing, no data payload is
+                present, or the derived ppm axis is implausible/non-reversed.
+        """
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"JCAMP-DX file not found: {path}")
+
+        inner = _read_metadata(path)
+        _dic, data = jc.read(str(path))
+        if data is None:
+            raise ValueError(f"JCAMP-DX file has no data payload: {path}")
+
+        # SYMBOL for a 1D file is "X, R, I" (Hz axis, real channel, imaginary
+        # channel); data[0] is the real channel -- the processed spectrum.
+        real = np.asarray(data[0], dtype=np.float64)
+        n = len(real)
+
+        nucleus_raw = inner.get(".OBSERVENUCLEUS")
+        if not nucleus_raw:
+            raise ValueError(f"'.OBSERVE NUCLEUS' not found in JCAMP-DX metadata: {path}")
+        nucleus = _clean_nucleus_label(str(nucleus_raw[0]))
+
+        offset_raw = inner.get("$OFFSET")
+        sf_raw = inner.get("$SF")
+        first_raw = inner.get("FIRST")
+        last_raw = inner.get("LAST")
+        if not offset_raw or not sf_raw or not first_raw or not last_raw:
+            raise ValueError(
+                f"Required ppm-axis fields ($OFFSET/$SF/FIRST/LAST) missing "
+                f"from JCAMP-DX metadata: {path}"
+            )
+
+        offset_ppm = float(offset_raw[0])
+        sf = float(sf_raw[0])
+        # FIRST/LAST for a 1D file are single comma-joined "X, R, I" triples;
+        # the axis (X) value is the first component (101-RESEARCH.md Pitfall 3).
+        first_hz = float(str(first_raw[0]).split(",")[0])
+        last_hz = float(str(last_raw[0]).split(",")[0])
+
+        ppm_scale = _ppm_scale(first_hz, last_hz, offset_ppm, sf, n)
+        _assert_plausible_ppm_axis(ppm_scale, nucleus)
+
+        solvent_raw = inner.get(".SOLVENTNAME")
+        solvent = str(solvent_raw[0]) if solvent_raw else None
+        pulse_program_raw = inner.get(".PULSESEQUENCE")
+        pulse_program = str(pulse_program_raw[0]) if pulse_program_raw else None
+
+        metadata: dict[str, Any] = {"frequency_source": "SF"}
+        if pulse_program:
+            metadata["pulse_program"] = pulse_program
+
+        return Spectrum1D(
+            data=real,
+            ppm_scale=ppm_scale,
+            nucleus=nucleus,
+            frequency=sf,
+            solvent=solvent,
+            metadata=metadata,
+        )
