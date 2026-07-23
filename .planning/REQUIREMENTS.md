@@ -9,7 +9,7 @@
 
 ### JCAMP-DX reader (JC)
 
-- [ ] **JC-01**: `lucy` reads a 2D JCAMP-DX NTUPLES file (HSQC/HMBC/COSY) into the existing `Spectrum2D` model — decoding the DIFDUP-compressed per-F1-row `##DATA TABLE=` pages into a full `(n_f1, n_f2)` intensity matrix — with **no external binary**.
+- [x] **JC-01**: `lucy` reads a 2D JCAMP-DX NTUPLES file (HSQC/HMBC/COSY) into the existing `Spectrum2D` model — decoding the DIFDUP-compressed per-F1-row `##DATA TABLE=` pages into a full `(n_f1, n_f2)` intensity matrix — with **no external binary**.
 - [x] **JC-02**: The 2D `Spectrum2D` carries correct **reversed ppm axes** on both dimensions, derived from the NTUPLES metadata (`VAR_DIM`, `FIRST`/`LAST`/`FACTOR`, `.NUCLEUS`, `.OBSERVE FREQUENCY`) and **cross-checked against the trusted 1D reference / §10 ground-truth shifts** — explicitly guarding the WR-04-class Hz-vs-ppm axis error.
 - [x] **JC-03**: `lucy` reads a 1D JCAMP-DX file (¹H, ¹³C) into the existing `Spectrum1D` model through the same reader module.
 - [x] **JC-04**: A JCAMP-DX line decoder (DIFDUP/SQZ/PAC) is available to the reader **without depending on nmrglue's private API** (vendored or wrapped behind a stable internal interface), and is covered by a committed, **CI-runnable** unit test on a small real JCAMP fixture — no external binary, so "verified" means verified (addresses the Phase-100 mock-only-verification learning).
@@ -51,7 +51,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| JC-01 | Phase 101 | Pending |
+| JC-01 | Phase 101 | Complete |
 | JC-02 | Phase 101 | Complete |
 | JC-03 | Phase 101 | Complete |
 | JC-04 | Phase 101 | Complete |

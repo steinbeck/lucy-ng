@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v10.1
 milestone_name: JCAMP-DX 2D Ingestion
-status: executing
-stopped_at: Completed 101-03-PLAN.md
-last_updated: "2026-07-23T15:35:00.000Z"
+status: verifying
+stopped_at: Completed 101-04-PLAN.md
+last_updated: "2026-07-23T16:20:00.000Z"
 last_activity: 2026-07-23
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 33
 ---
 
 # lucy-ng State
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-07-21)
 
 Phase: 101 (jcamp-dx-reader) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
-Last activity: 2026-07-23 -- Plan 101-03 (readers/jcamp.py shared helpers + JcampReader.read_1d, JC-02/JC-03) complete
+Status: Phase complete — ready for verification
+Last activity: 2026-07-23 -- Plan 101-04 (JcampReader.read_2d + read() dispatcher, JC-01/JC-02 complete) -- Phase 101 all 4 plans done
 
 ## Milestone v10.1 Phases
 
@@ -113,7 +113,7 @@ Items acknowledged and deferred at **v10.0 milestone close (PARTIAL) on 2026-07-
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
   - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
   - v10.0: 4 phases (97-100), 13 plans complete (97: 5, 98: 6, 99: 4, 100: 2 of 3 — VAL plan 100-03 closed with an honest partial-stop, no code shipped from it beyond the VALIDATION.md record); full suite 1396 passing at pause. PORT-01/02 verified; VAL-01/02 not achieved (SMILE memory abort, see VALIDATION.md).
-- v10.1: 0 phases complete, Phase 101 in progress (3 of 4 plans done) — 101-01 (Wave-0 fixtures + RED tests), 101-02 (vendored JCAMP-DX DIFDUP/SQZ/DUP/PAC decoder, JC-04 complete), and 101-03 (`readers/jcamp.py` shared ppm/metadata helpers + `JcampReader.read_1d`, JC-02/JC-03 complete) shipped 2026-07-23; full suite 1405 passing (3 pre-existing RED in test_jcamp.py awaiting Plan 04's `read_2d`/`_apply_yfactor`).
+- v10.1: Phase 101 complete (4 of 4 plans done) — 101-01 (Wave-0 fixtures + RED tests), 101-02 (vendored JCAMP-DX DIFDUP/SQZ/DUP/PAC decoder, JC-04 complete), 101-03 (`readers/jcamp.py` shared ppm/metadata helpers + `JcampReader.read_1d`, JC-02/JC-03 complete), and 101-04 (`JcampReader.read_2d` + `read()` dispatcher, JC-01/JC-02 complete) shipped 2026-07-23; full suite 1408 passing, 0 RED remaining in test_jcamp.py — all 4 requirements (JC-01..04) satisfied and CI-verified on committed real fixture data. Ready for phase verification, then Phase 102.
 
 ## Accumulated Context
 
@@ -132,6 +132,7 @@ Items acknowledged and deferred at **v10.0 milestone close (PARTIAL) on 2026-07-
 - [Phase 101 Plan 01]: Fixture header-pruning matches literal Bruker JCAMP-DX key prefixes (`##TITLE=`, `##$SF=`, `##.PULSE SEQUENCE=`, ...) as they appear in the real export, rather than nmrglue's normalized `_getkey()` form — simpler and deterministic to verify directly against the source file. F1 page window fixed at `[1735:1751]` (16 pages) per 101-RESEARCH.md's verified oracle coordinates (contains 2 of the 3 known real gem-dimethyl/methyl cross-peaks). The Pitfall-2 Y-FACTOR scaling test and the D-04 ppm-axis-assertion test target reader-level helpers (`_apply_yfactor`, `_assert_plausible_ppm_axis`) directly in `test_jcamp.py`, since the real fixture's own Y_FACTOR happens to be 1 and would not otherwise catch a missing multiplication.
 - [Phase 101 Plan 02]: Vendored `src/lucy_ng/readers/_jcampdx_decode.py` (9-object nmrglue `jcampdx.py` DIFDUP/SQZ/DUP/PAC decoder closure, lines 208-453, New-BSD Jonathan J. Helmus 2010-2015) with zero nmrglue import (JC-04) and full license attribution; entry point renamed `_parse_data` -> public `parse_data`. Added type annotations as a non-behavioral typing-only layer (function signatures, `NDArray[np.float64]` return, two targeted `assert`/`# type: ignore[index]` spots, one `Any`-typed dual-purpose local) to satisfy CLAUDE.md's `mypy --strict` gate on the new module, verified zero decode-behavior change via the unchanged D-08 hand-oracle test results before/after. The plan's own literal `grep -c nmrglue == 0` acceptance criterion conflicts with its own action text (which requires a provenance/license note naming nmrglue) — resolved by checking the substantive JC-04 requirement instead (no `import nmrglue`/`from nmrglue import` statement), documented as a plan-bug deviation in 101-02-SUMMARY.md.
 - [Phase 101 Plan 03]: `src/lucy_ng/readers/jcamp.py` implements the JC-02 crux `_ppm_scale` (verified `OFFSET + SF` formula, not naive SFO) plus `_assert_plausible_ppm_axis` (D-04 fail-loud safety net) and `_resolve_dim` (WR-04-class homonuclear-degeneracy guard), then `JcampReader.read_1d` (JC-03) on top — both committed 1H/13C references decode correctly. `_resolve_dim` indexes `$SF`/`$OFFSET` via `$NUC1`'s own list position (not `.NUCLEUS`'s), since direct inspection of the real trimmed HSQC fixture showed `$NUC1`/`$SF`/`$OFFSET` are co-indexed by nmrglue's parse order while `.NUCLEUS` uses the reversed SYMBOL-declared F1/F2 order (101-RESEARCH.md Pitfall 4). `_clean_nucleus_label` strips BOTH caret (`^1H`, used by `.OBSERVE NUCLEUS`) and angle-bracket (`<1H>`, used by real `$NUC1`) wrapping — the plan's literal wording named only caret-stripping, but real fixture data showed `$NUC1` is angle-bracket-wrapped, not caret-prefixed; fixed as a Rule-1 robustness deviation so Plan 04's `read_2d` gets a correctly-matching shared helper. Full suite: 1405 passed, 3 RED remaining (Plan 04 scope: `read_2d`/`_apply_yfactor`).
+- [Phase 101 Plan 04]: `JcampReader.read_2d` assembles the DIFDUP-compressed NTUPLES pages into a `(16, 2048)` Y-FACTOR-scaled `Spectrum2D`, with `JcampReader.read()` dispatching on `##NUM DIM=` (absent -> 1D, since real 1D files carry no such key). The JC-02 load-bearing cross-check caught a real bug in the F1 axis formula: the committed trimmed fixture's `$OFFSET` anchors the file's ORIGINAL, untrimmed NTUPLES axis (fixture generation preserves the global header verbatim, only slicing the PAGE/DATATABLE window), not the trimmed window's own first page — using the window's first page Hz value as the anchor (as 101-RESEARCH.md's literal Pitfall-3 formula suggested) produced an F1 axis off by ~150 ppm. Fixed by re-basing the local anchor through the same verified `OFFSET+SF` formula before calling the shared `_ppm_scale` helper. Phase 101 (JC-01..04) now fully complete; full suite 1408 passed, 0 RED remaining, zero regressions.
 
 ### Key Design Decisions for v10.0
 
@@ -191,15 +192,15 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-23T15:35:00.000Z
-Stopped at: Completed 101-03-PLAN.md
-Resume with: `/gsd-execute-phase 101` (continue with 101-04-PLAN.md — `readers/jcamp.py` `JcampReader.read_2d` + `_apply_yfactor`)
+Last session: 2026-07-23T16:20:00.000Z
+Stopped at: Completed 101-04-PLAN.md — Phase 101 (jcamp-dx-reader) fully complete, all 4 plans done
+Resume with: `/gsd-verify-phase 101` (or `/gsd-plan-phase 102` if phase verification is being deferred)
 
 ---
-*Last updated: 2026-07-23 — Phase 101 Plan 03 complete: `readers/jcamp.py` shared ppm-axis/metadata/dimension-resolution helpers (JC-02 crux math, D-04 fail-loud assertion, WR-04-class homonuclear-degeneracy guard) plus `JcampReader.read_1d` (JC-03) — both 1H and 13C JCAMP-DX references decode correctly; full suite 1405 passing (3 pre-existing RED in test_jcamp.py awaiting Plan 04's `read_2d`). v10.0 stays PARTIAL and untouched as historical record (Phase 100 limitation note preserved in ROADMAP.md).*
+*Last updated: 2026-07-23 — Phase 101 Plan 04 complete: `JcampReader.read_2d` assembles DIFDUP-compressed NTUPLES pages into a `(16, 2048)` Y-FACTOR-scaled `Spectrum2D` with reversed, cross-check-verified ppm axes on both dimensions (JC-01, JC-02); `JcampReader.read()` dispatches on `##NUM DIM=`. Phase 101 (JC-01..04) now fully complete — full suite 1408 passing, 0 RED remaining, zero regressions. v10.0 stays PARTIAL and untouched as historical record (Phase 100 limitation note preserved in ROADMAP.md).*
 
 ## Operator Next Steps
 
-- Continue Phase 101: `/gsd-execute-phase 101` (101-04-PLAN.md — implement `JcampReader.read_2d`/`_apply_yfactor` in `readers/jcamp.py`, consuming this plan's shared helpers and turning the remaining `tests/readers/test_jcamp.py` RED tests GREEN)
+- Phase 101 (jcamp-dx-reader) is complete: run `/gsd-verify-phase 101` to verify, then `/gsd-plan-phase 102` (CLI + Peak-Pick Bridge + QC Reuse)
 
 </content>
