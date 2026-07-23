@@ -432,9 +432,10 @@ just with the unused bulk metadata pruned to hit the size target.
 
 **If this table is empty:** N/A — see rows above.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Do HMBC/COSY/NOESY 2D files decode with byte-identical structure to HSQC?**
+   - **RESOLVED (planning):** Plan 01 Task 1 runs a Wave-0 COSY/NOESY one-page decode spot-check (emits `COSY/NOESY SPOTCHECK PASS`, folded into the runnable verify command) before the single 2D code path is committed; additionally, Plan 03's `_resolve_dim` now carries a fail-loud degeneracy guard so a homonuclear (`1H,1H`) file cannot silently resolve a plausible-but-wrong axis — full real COSY/NOESY `read_2d` exercise is deferred to Phase 103 by design.
    - What we know: pulse programs and `.NUCLEUS` fields confirmed compatible with
      `_detect_experiment_type`; `DATACLASS=NTUPLES`, `NUM DIM=2` confirmed present in all four via
      spot-check grep.
@@ -448,6 +449,7 @@ just with the unused bulk metadata pruned to hit the size target.
      assumed instead of checked.
 
 2. **Should the "frequency" field on `Spectrum1D`/`Spectrum2D` store `SF` or `SFO`/`.OBSERVE FREQUENCY`?**
+   - **RESOLVED (planning):** Plan 03 Task 2 sets `frequency` from `$SF`, consistent with the ppm-axis math; low-risk either way (only used downstream for a rough ppm→Hz tolerance conversion).
    - What we know: the existing `BrukerReader` populates `frequency` from `SFO1` (transmitter freq,
      via `acqus`), not `SF`; it's only consumed downstream in `peak_picker.py` to convert a ppm
      tolerance to Hz (`ppm * spectrum.frequency`), where the SF/SFO gap (<0.01% in this fixture) is

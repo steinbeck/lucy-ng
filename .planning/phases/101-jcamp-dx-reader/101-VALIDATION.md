@@ -2,7 +2,7 @@
 phase: 101
 slug: jcamp-dx-reader
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-07-23
 ---
@@ -45,6 +45,7 @@ created: 2026-07-23
 | JC-01 | 2D NTUPLES (HSQC/HMBC/COSY) DIFDUP pages assemble into `Spectrum2D` with correct `(n_f1, n_f2)` shape, no external binary | integration | `pytest tests/readers/test_jcamp.py::test_read_2d_shape -x` | ❌ W0 | ⬜ pending |
 | JC-02 | Reader-internal fail-loud range/reversed assertion rejects Hz-looking / non-descending axes | unit (reader assertion) | `pytest tests/readers/test_jcamp.py::test_read_2d_ppm_axis_assertion -x` | ❌ W0 | ⬜ pending |
 | JC-02 | ppm axes cross-checked against 1D reference peaks within tolerance (¹H ≤0.05 ppm, ¹³C ≤0.10 ppm) — catches the 0.447 ppm naive-divisor bug class | integration (load-bearing) | `pytest tests/readers/test_jcamp.py::test_read_2d_ppm_axes_match_1d_reference -x` | ❌ W0 | ⬜ pending |
+| JC-02 | `_resolve_dim` degeneracy guard: homonuclear (ambiguous) nucleus labels fail loud instead of first-matching a plausible-but-wrong axis (WR-04 class) | unit (helper guard) | Task 1 verify (101-03) synthetic degenerate-nucleus assertion (raises ValueError) | ❌ W0 | ⬜ pending |
 | JC-03 | 1D JCAMP (¹H, ¹³C) reads into `Spectrum1D` via the same reader module | integration | `pytest tests/readers/test_jcamp.py::test_read_1d -x` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
@@ -74,11 +75,12 @@ created: 2026-07-23
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references (decode oracle, integration test, fixture)
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 5s (quick)
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (decode oracle, integration test, fixture)
+- [x] No watch-mode flags
+- [x] Feedback latency < 5s (quick)
+- [x] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending
+</content>
