@@ -188,7 +188,11 @@ succeeds on this exact sample.
   2. The decoded `Spectrum2D`'s ppm axes are reversed and correct on both dimensions, derived from the NTUPLES metadata (`VAR_DIM`, `FIRST`/`LAST`/`FACTOR`, `.NUCLEUS`, `.OBSERVE FREQUENCY`) and explicitly cross-checked against the trusted 1D reference / §10 ground-truth shifts — not eyeballed, guarding against the WR-04-class Hz-vs-ppm axis error.
   3. A 1D JCAMP-DX file (¹H or ¹³C) decodes through the same reader module into a `Spectrum1D` model.
   4. A committed, CI-runnable unit test decodes a small real JCAMP fixture via the vendored/wrapped line decoder (DIFDUP/SQZ/PAC) with no external binary and no dependency on nmrglue's private API — passes in CI, so "verified" means verified for this milestone (the Phase-100 mock-only-verification lesson applied).
-**Plans**: TBD
+**Plans**: 4 plans (3 waves)
+- [ ] 101-01-PLAN.md — Nyquist Wave 0: trimmed real HSQC fixture + two 1D references + COSY/NOESY spot-check + RED hand-oracle & integration tests (wave 1)
+- [ ] 101-02-PLAN.md — Vendored DIFDUP/SQZ/DUP/PAC decoder (9-object closure, New-BSD attribution), JC-04 oracle green (wave 2)
+- [ ] 101-03-PLAN.md — jcamp.py shared helpers (OFFSET+SF ppm formula, .NUCLEUS dim mapping, fail-loud assertion, metadata access) + read_1d (JC-03) (wave 2)
+- [ ] 101-04-PLAN.md — read_2d NTUPLES page assembly + Y-FACTOR + reversed ppm axes + 1D cross-check + read() dispatcher (JC-01, JC-02) (wave 3)
 
 #### Phase 102: CLI + Peak-Pick Bridge + QC Reuse
 
@@ -217,7 +221,7 @@ succeeds on this exact sample.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 101. JCAMP-DX Reader | 0/TBD | Not started | - |
+| 101. JCAMP-DX Reader | 0/4 | Not started | - |
 | 102. CLI + Peak-Pick Bridge + QC Reuse | 0/TBD | Not started | - |
 | 103. End-to-End Validation (C20H32O2-jcamp) | 0/TBD | Not started | - |
 </content>
