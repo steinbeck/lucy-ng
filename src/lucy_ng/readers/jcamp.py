@@ -34,10 +34,9 @@ import nmrglue.fileio.jcampdx as jc
 import numpy as np
 from numpy.typing import NDArray
 
-from lucy_ng.models import Spectrum1D
-from lucy_ng.readers.bruker import (
-    _detect_experiment_type,  # noqa: F401  (D-10, re-exported for Plan 04)
-)
+from lucy_ng.models import Spectrum1D, Spectrum2D
+from lucy_ng.readers._jcampdx_decode import parse_data
+from lucy_ng.readers.bruker import _detect_experiment_type
 
 # ppm-axis plausibility bounds per nucleus (101-RESEARCH.md "JC-02 concrete
 # assertion bounds"). Deliberately generous -- this is the coarse, fail-loud
@@ -229,6 +228,48 @@ def _resolve_dim(inner: dict[str, Any], target_nucleus: str) -> tuple[float, flo
     return float(offset_raw[index]), float(sf_raw[index])
 
 
+def _apply_yfactor(
+    raw: "list[float] | NDArray[np.float64]", y_factor: float
+) -> NDArray[np.float64]:
+    """Scale raw decoded NTUPLES row intensities by the SYMBOL-indexed Y-FACTOR.
+
+    ``parse_data`` (the vendored decoder) returns raw, un-scaled integers --
+    nmrglue's own ``getdataarray()`` applies this multiplication as a
+    separate step, and it is easy to forget when hand-rolling 2D assembly
+    (101-RESEARCH.md Pitfall 2). The real committed HSQC fixture's own
+    ``Y_FACTOR`` happens to be exactly ``1``, so this must be unit-tested
+    directly with a non-trivial factor rather than relying on the fixture
+    alone to catch a missing multiplication.
+
+    Args:
+        raw: Raw decoded row intensities (un-scaled).
+        y_factor: The ``FACTOR`` entry at SYMBOL's ``Y`` index.
+
+    Returns:
+        The scaled intensities as a float64 numpy array.
+    """
+    return (np.asarray(raw, dtype=np.float64) * y_factor).astype(np.float64)
+
+
+def _page_hz(page: str) -> float:
+    """Extract the Hz value from a NTUPLES ``##PAGE= F1=<hz>`` entry.
+
+    Args:
+        page: A single ``inner["PAGE"]`` entry (e.g. ``"F1=2830.444647689"``).
+
+    Returns:
+        The parsed Hz value.
+
+    Raises:
+        ValueError: If the entry is not in the expected ``F1=<hz>`` shape.
+    """
+    parts = page.split("=", 1)
+    if len(parts) != 2:
+        raise ValueError(f"Malformed NTUPLES PAGE entry: {page!r} -- expected 'F1=<hz>'")
+    try:
+        return float(parts[1])
+    except ValueError as exc:
+        raise ValueError(f"Malformed NTUPLES PAGE entry: {page!r} -- expected 'F1=<hz>'") from exc
 
 
 class JcampReader:
@@ -308,5 +349,172 @@ class JcampReader:
             nucleus=nucleus,
             frequency=sf,
             solvent=solvent,
+            metadata=metadata,
+        )
+
+    @staticmethod
+    def read_2d(path: str | Path) -> Spectrum2D:
+        """Read a 2D JCAMP-DX NTUPLES file and return a Spectrum2D.
+
+        Assembles the DIFDUP-compressed per-F1-row NTUPLES pages into a full
+        ``(n_f1, n_f2)`` intensity matrix -- the exact gap where nmrglue's
+        public API returns ``data=None`` for 2D files (101-RESEARCH.md
+        Pattern 1). Both ppm axes are derived via the verified ``OFFSET+SF``
+        formula (JC-02) and fail-loud plausibility-checked (D-04).
+
+        Args:
+            path: Path to the 2D ``.dx`` file.
+
+        Returns:
+            Spectrum2D with the assembled, Y-FACTOR-scaled data matrix and
+            reversed ppm axes.
+
+        Raises:
+            FileNotFoundError: If ``path`` does not exist.
+            ValueError: If required NTUPLES metadata is missing/inconsistent
+                (page/datatable count mismatch, missing Y-FACTOR, malformed
+                PAGE entries), a row fails to decode, or a derived ppm axis
+                is implausible/non-reversed.
+        """
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"JCAMP-DX file not found: {path}")
+
+        inner = _read_metadata(path)
+
+        symbol_raw = inner.get("SYMBOL")
+        if not symbol_raw:
+            raise ValueError(f"'SYMBOL' not found in JCAMP-DX metadata: {path}")
+        dims = [s.strip() for s in str(symbol_raw[0]).split(",")]
+        if "F1" not in dims or "F2" not in dims or "Y" not in dims:
+            raise ValueError(
+                f"SYMBOL does not declare the expected F1/F2/Y dimensions: {dims} ({path})"
+            )
+        y_index = dims.index("Y")
+        f2_index = dims.index("F2")
+
+        pages = inner.get("PAGE")
+        tables = inner.get("DATATABLE")
+        if not pages or not tables:
+            raise ValueError(
+                f"'PAGE'/'DATA TABLE' NTUPLES blocks not found in JCAMP-DX metadata: {path}"
+            )
+        if len(pages) != len(tables):
+            raise ValueError(
+                f"NTUPLES page/datatable count mismatch: len(PAGE)={len(pages)}, "
+                f"len(DATATABLE)={len(tables)} -- malformed or truncated 2D file: {path}"
+            )
+        n_f1 = len(pages)
+
+        vardim_raw = inner.get("VARDIM")
+        if not vardim_raw:
+            raise ValueError(f"'VAR_DIM' not found in JCAMP-DX metadata: {path}")
+        var_dims = [int(float(v)) for v in str(vardim_raw[0]).split(",")]
+        if var_dims[dims.index("F1")] != n_f1:
+            raise ValueError(
+                f"VAR_DIM F1 count ({var_dims[dims.index('F1')]}) does not match "
+                f"len(PAGE) ({n_f1}) -- malformed or truncated 2D file: {path}"
+            )
+
+        factor_raw = inner.get("FACTOR")
+        if not factor_raw:
+            raise ValueError(f"'FACTOR' not found in JCAMP-DX metadata: {path}")
+        factor_parts = str(factor_raw[0]).split(",")
+        y_factor = float(factor_parts[y_index])
+
+        rows: list[NDArray[np.float64]] = []
+        for table in tables:
+            decoded = parse_data(str(table))
+            if decoded is None:
+                raise ValueError(f"Failed to decode DIFDUP DATA TABLE row in {path}")
+            raw_row, _channel = decoded
+            rows.append(_apply_yfactor(raw_row, y_factor))
+
+        row_lengths = {len(row) for row in rows}
+        if len(row_lengths) != 1:
+            raise ValueError(
+                f"Decoded NTUPLES rows have inconsistent lengths {sorted(row_lengths)} "
+                f"-- malformed 2D file: {path}"
+            )
+        n_f2 = row_lengths.pop()
+        if var_dims[f2_index] != n_f2:
+            raise ValueError(
+                f"VAR_DIM F2 count ({var_dims[f2_index]}) does not match the decoded "
+                f"row length ({n_f2}) -- malformed 2D file: {path}"
+            )
+
+        data = np.vstack(rows).astype(np.float64)
+
+        nucleus_raw = inner.get(".NUCLEUS")
+        if not nucleus_raw:
+            raise ValueError(f"'.NUCLEUS' not found in JCAMP-DX metadata: {path}")
+        nuclei = [_clean_nucleus_label(n) for n in str(nucleus_raw[0]).split(",")]
+        if len(nuclei) != 2:
+            raise ValueError(
+                f"'.NUCLEUS' does not declare exactly two dimensions: {nuclei} ({path})"
+            )
+        # .NUCLEUS's comma-split order is guaranteed to match SYMBOL's declared
+        # F1,F2 dimension order (101-RESEARCH.md Pitfall 4).
+        f1_nucleus, f2_nucleus = nuclei[0], nuclei[1]
+
+        first_raw = inner.get("FIRST")
+        last_raw = inner.get("LAST")
+        if not first_raw or not last_raw:
+            raise ValueError(f"'FIRST'/'LAST' not found in JCAMP-DX metadata: {path}")
+        # FIRST[0]/LAST[0] are the NTUPLES-global F1,F2,Y triples (not a
+        # per-page value -- 101-RESEARCH.md Pitfall 3); only F2 (the direct
+        # dimension, constant across pages) is read from them.
+        first_global = [float(v) for v in str(first_raw[0]).split(",")]
+        last_global = [float(v) for v in str(last_raw[0]).split(",")]
+        f2_first_hz = first_global[f2_index]
+        f2_last_hz = last_global[f2_index]
+
+        f2_offset, f2_sf = _resolve_dim(inner, f2_nucleus)
+        f2_ppm_scale = _ppm_scale(f2_first_hz, f2_last_hz, f2_offset, f2_sf, n_f2)
+        _assert_plausible_ppm_axis(f2_ppm_scale, f2_nucleus)
+
+        # F1 (indirect) axis: point COUNT and endpoints come from the
+        # per-page ##PAGE= Hz values, NOT the global FIRST/LAST triple, so a
+        # trimmed fixture's axis has the correct length (Pitfall 3). But
+        # $OFFSET still anchors the ORIGINAL, un-trimmed spectrum's global
+        # FIRST hz (fixture generation preserves the NTUPLES header/OFFSET
+        # verbatim, only slicing the PAGE/DATATABLE window -- see
+        # tests/fixtures/jcamp/_generate_fixture.py) -- so passing
+        # page_hz[0] straight into _ppm_scale's offset-anchored FIRST slot
+        # silently anchors the axis at the wrong point for any trimmed
+        # window that doesn't start at the file's original page 0 (verified
+        # empirically: this produced ppm~174 instead of the true ~21-23ppm
+        # cross-peak). Rebase the anchor to page_hz[0] first, then reuse the
+        # shared helper for the local window.
+        page_hz = [_page_hz(str(page)) for page in pages]
+        f1_offset, f1_sf = _resolve_dim(inner, f1_nucleus)
+        f1_global_first_hz = first_global[dims.index("F1")]
+        f1_local_offset = f1_offset - (f1_global_first_hz - page_hz[0]) / f1_sf
+        f1_ppm_scale = _ppm_scale(page_hz[0], page_hz[-1], f1_local_offset, f1_sf, n_f1)
+        _assert_plausible_ppm_axis(f1_ppm_scale, f1_nucleus)
+
+        pulse_program_raw = inner.get(".PULSESEQUENCE")
+        if not pulse_program_raw:
+            raise ValueError(f"'.PULSE SEQUENCE' not found in JCAMP-DX metadata: {path}")
+        pulse_program = str(pulse_program_raw[0])
+        experiment_type = _detect_experiment_type(pulse_program, f1_nucleus, f2_nucleus)
+
+        solvent_raw = inner.get(".SOLVENTNAME")
+        solvent = str(solvent_raw[0]) if solvent_raw else None
+
+        metadata: dict[str, Any] = {"frequency_source": "SF", "pulse_program": pulse_program}
+        if solvent:
+            metadata["solvent"] = solvent
+        metadata["f1_frequency"] = f1_sf
+        metadata["f2_frequency"] = f2_sf
+
+        return Spectrum2D(
+            data=data,
+            f1_ppm_scale=f1_ppm_scale,
+            f2_ppm_scale=f2_ppm_scale,
+            f1_nucleus=f1_nucleus,
+            f2_nucleus=f2_nucleus,
+            experiment_type=experiment_type,
+            frequency=float(f2_sf),
             metadata=metadata,
         )
