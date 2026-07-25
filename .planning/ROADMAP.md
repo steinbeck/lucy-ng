@@ -173,7 +173,7 @@ succeeds on this exact sample.
 ### Phases
 
 - [x] **Phase 101: JCAMP-DX Reader** — pure-Python 2D NTUPLES DIFDUP decoder into `Spectrum2D` + 1D reader into `Spectrum1D`, no external binary, verified ppm axes, CI-runnable fixture test (completed 2026-07-23)
-- [ ] **Phase 102: CLI + Peak-Pick Bridge + QC Reuse** — `lucy jcamp` command reusing the Phase-99 bridge pattern and the unchanged QC gate, `case.md` byte-unchanged
+- [x] **Phase 102: CLI + Peak-Pick Bridge + QC Reuse** — `lucy jcamp` command reusing the Phase-99 bridge pattern and the unchanged QC gate, `case.md` byte-unchanged (completed 2026-07-25)
 - [ ] **Phase 103: End-to-End Validation (C20H32O2-jcamp)** — real dataset read, peak-picked, QC-graded to §8 quality, and a fresh `/lucy-ng:case C20H32O2` run converges on a rankable solution set
 
 ### Phase Details
@@ -208,7 +208,7 @@ succeeds on this exact sample.
 - [x] 102-01-PLAN.md — Homonuclear `_resolve_dim` fix (COSY/NOESY unblocked) + committed trimmed COSY/HMBC/NOESY fixtures (wave 1)
 - [x] 102-02-PLAN.md — Thin 1D peak-pick bridge (D-03) + un-mocked QC-gate discovery proof (wave 1)
 - [x] 102-03-PLAN.md — `lucy jcamp` command (discovery, routing, single staged QC call, D-07 write boundary) + registration (wave 2)
-- [ ] 102-04-PLAN.md — Fixture-backed end-to-end + QC discrimination + SHA-256 skill-file byte-unchanged guard (wave 3)
+- [x] 102-04-PLAN.md — Fixture-backed end-to-end + QC discrimination + SHA-256 skill-file byte-unchanged guard (wave 3)
 
 #### Phase 103: End-to-End Validation (C20H32O2-jcamp)
 
@@ -226,6 +226,6 @@ succeeds on this exact sample.
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
 | 101. JCAMP-DX Reader | 4/4 | Complete    | 2026-07-23 |
-| 102. CLI + Peak-Pick Bridge + QC Reuse | 3/4 | In Progress|  |
+| 102. CLI + Peak-Pick Bridge + QC Reuse | 4/4 | Complete   | 2026-07-25 |
 | 103. End-to-End Validation (C20H32O2-jcamp) | 0/TBD | Not started | - |
 </content>
