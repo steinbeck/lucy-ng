@@ -207,7 +207,7 @@ succeeds on this exact sample.
 **Plans**: 4 plans (3 waves)
 - [x] 102-01-PLAN.md — Homonuclear `_resolve_dim` fix (COSY/NOESY unblocked) + committed trimmed COSY/HMBC/NOESY fixtures (wave 1)
 - [x] 102-02-PLAN.md — Thin 1D peak-pick bridge (D-03) + un-mocked QC-gate discovery proof (wave 1)
-- [ ] 102-03-PLAN.md — `lucy jcamp` command (discovery, routing, single staged QC call, D-07 write boundary) + registration (wave 2)
+- [x] 102-03-PLAN.md — `lucy jcamp` command (discovery, routing, single staged QC call, D-07 write boundary) + registration (wave 2)
 - [ ] 102-04-PLAN.md — Fixture-backed end-to-end + QC discrimination + SHA-256 skill-file byte-unchanged guard (wave 3)
 
 #### Phase 103: End-to-End Validation (C20H32O2-jcamp)
@@ -226,6 +226,6 @@ succeeds on this exact sample.
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
 | 101. JCAMP-DX Reader | 4/4 | Complete    | 2026-07-23 |
-| 102. CLI + Peak-Pick Bridge + QC Reuse | 2/4 | In Progress|  |
+| 102. CLI + Peak-Pick Bridge + QC Reuse | 3/4 | In Progress|  |
 | 103. End-to-End Validation (C20H32O2-jcamp) | 0/TBD | Not started | - |
 </content>
