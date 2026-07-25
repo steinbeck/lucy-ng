@@ -104,3 +104,5 @@ Everything claimed above is proven on **committed, real (trimmed) fixture data**
 - `JcampReader.read_2d()` now succeeds for HSQC, HMBC, COSY, and NOESY -- the reader-level blocker for Phase 102's CLI wiring (bridge_peak_pick over HSQC/HMBC/COSY, D-06 read-but-skip-pick for NOESY) is fully resolved.
 - Three new trimmed fixtures are committed and available for 102-02/102-03/102-04's CLI integration tests (directory-mode discovery, D-06 skip-path testing, byte-unchanged guard test fixtures) -- no further fixture generation work should be needed for those plans.
 - No blockers for 102-02.
+
+## Self-Check: PASSED
