@@ -237,7 +237,13 @@ def jcamp(
             staged_1d.append((nucleus, payload))
             staged_types.add(nucleus)
         else:
-            assert isinstance(spectrum, Spectrum2D)
+            if not isinstance(spectrum, Spectrum2D):
+                # WR-01: fail loud rather than rely on `assert`, which is
+                # stripped under `-O`/`-OO` -- this branch's type-narrowing
+                # is load-bearing control flow, not an optional sanity check.
+                raise TypeError(
+                    f"Unexpected JcampReader.read() result type: {type(spectrum)!r}"
+                )
             experiment_type = spectrum.experiment_type
             if experiment_type not in SUPPORTED_2D:
                 reason = (

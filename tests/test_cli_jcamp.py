@@ -133,6 +133,30 @@ class TestJcampCliSurface:
         assert result.exit_code != 0
 
 
+class TestJcampUnexpectedReadResultType:
+    """WR-01 regression: the 2D-branch type-narrowing must fail loud (a
+    real exception), not rely on `assert`, which `-O`/`-OO` strips.
+    """
+
+    def test_neither_1d_nor_2d_result_raises_type_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _copy_fixtures(tmp_path, names=(REAL_13C_FIXTURE.name,))
+
+        class _NotASpectrum:
+            pass
+
+        monkeypatch.setattr(
+            "lucy_ng.readers.jcamp.JcampReader.read",
+            staticmethod(lambda path: _NotASpectrum()),
+        )
+
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [str(tmp_path)])
+        assert isinstance(result.exception, TypeError), result.exception
+        assert "Unexpected JcampReader.read() result type" in str(result.exception)
+
+
 class TestJcampImportSafety:
     """Mirrors tests/test_cli_nus.py's TestImportSafety."""
 
