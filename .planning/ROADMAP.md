@@ -226,6 +226,6 @@ succeeds on this exact sample.
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
 | 101. JCAMP-DX Reader | 4/4 | Complete    | 2026-07-23 |
-| 102. CLI + Peak-Pick Bridge + QC Reuse | 4/4 | Complete   | 2026-07-25 |
+| 102. CLI + Peak-Pick Bridge + QC Reuse | 4/4 | Complete    | 2026-07-25 |
 | 103. End-to-End Validation (C20H32O2-jcamp) | 0/TBD | Not started | - |
 </content>

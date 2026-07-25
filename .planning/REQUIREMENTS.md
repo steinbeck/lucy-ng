@@ -16,8 +16,8 @@
 
 ### CLI & peak-pick bridge (JCLI)
 
-- [ ] **JCLI-01**: `lucy jcamp <dir-or-files>` runs the full chain (read JCAMP → `Spectrum2D`/`Spectrum1D` → existing `PeakPicker2D` → `analysis/nmr_peaks/*.json` in the existing per-peak schema), reusing the Phase-99 bridge pattern (`build_spectrum2d`-style direct call, **not** a new picker); every subcommand supports `--format json`.
-- [ ] **JCLI-02**: JCAMP-derived peak lists pass through the **unchanged Phase-99 QC gate** (PASS/PARTIAL/FAIL), the edited-HSQC sign (+/−) is preserved so multiplicity derivation still works, and `case.md` + the 5-agent team stay byte-unchanged.
+- [x] **JCLI-01**: `lucy jcamp <dir-or-files>` runs the full chain (read JCAMP → `Spectrum2D`/`Spectrum1D` → existing `PeakPicker2D` → `analysis/nmr_peaks/*.json` in the existing per-peak schema), reusing the Phase-99 bridge pattern (`build_spectrum2d`-style direct call, **not** a new picker); every subcommand supports `--format json`.
+- [x] **JCLI-02**: JCAMP-derived peak lists pass through the **unchanged Phase-99 QC gate** (PASS/PARTIAL/FAIL), the edited-HSQC sign (+/−) is preserved so multiplicity derivation still works, and `case.md` + the 5-agent team stay byte-unchanged.
 
 ### End-to-end validation (JVAL)
 
@@ -55,8 +55,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | JC-02 | Phase 101 | Complete |
 | JC-03 | Phase 101 | Complete |
 | JC-04 | Phase 101 | Complete |
-| JCLI-01 | Phase 102 | Pending |
-| JCLI-02 | Phase 102 | Pending |
+| JCLI-01 | Phase 102 | Complete |
+| JCLI-02 | Phase 102 | Complete |
 | JVAL-01 | Phase 103 | Pending |
 | JVAL-02 | Phase 103 | Pending |
 
