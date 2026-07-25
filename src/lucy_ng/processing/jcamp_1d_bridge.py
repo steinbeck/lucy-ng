@@ -55,9 +55,14 @@ def bridge_peak_pick_1d(
     `snr_floor_used` reporting), with one deliberate divergence: when
     `spectrum.data` is all-zero (`max_abs == 0.0`), `has_significant_negative`
     is forced to `False` instead of evaluating `-effective_threshold *
-    max_abs` (which `pick_1d` does not guard) -- so a degenerate all-zero 1D
-    file returns a valid, empty-peak payload instead of a divide-adjacent
-    edge case propagating into a directory run (T-102-04).
+    max_abs` (which `pick_1d` does not guard). Note this is NOT a
+    division/crash guard -- `pick_1d`'s unguarded expression is a
+    multiplication (`-effective_threshold * max_abs`), which for an
+    all-zero spectrum evaluates to `-0.0`, and `pick_1d` never crashes on
+    this input either. The guard is purely defensive clarity: it makes the
+    all-zero case's intent explicit for a future maintainer reading this
+    SNR-mode branch, rather than relying on the reader noticing that
+    `-0.0` happens to behave correctly (T-102-04).
 
     Args:
         spectrum: The in-memory `Spectrum1D` (e.g. from
@@ -78,8 +83,11 @@ def bridge_peak_pick_1d(
     effective_threshold = threshold if threshold is not None else 0.05
     max_abs = float(np.max(np.abs(spectrum.data)))
     if max_abs == 0.0:
-        # Deliberate divergence from pick_1d (which has no such guard): an
-        # all-zero spectrum must not crash a directory run (T-102-04).
+        # Deliberate divergence from pick_1d (which has no such guard).
+        # NOT a division/crash guard -- pick_1d's unguarded expression is a
+        # multiplication that evaluates to -0.0 here and never crashes
+        # either; this is defensive clarity for a future maintainer reading
+        # this SNR-mode branch (T-102-04).
         has_significant_negative = False
     else:
         has_significant_negative = bool(
