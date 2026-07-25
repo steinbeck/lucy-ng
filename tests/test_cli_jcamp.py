@@ -132,6 +132,23 @@ class TestJcampCliSurface:
         result = runner.invoke(jcamp, [str(tmp_path), str(REAL_13C_FIXTURE)])
         assert result.exit_code != 0
 
+    def test_supported_sets_stay_in_sync_with_the_reused_subsystems(self) -> None:
+        """WR-02: `SUPPORTED_2D`/`SUPPORTED_1D` are deliberate hand-copies
+        (not imports) of `nus/bridge.py`'s `_VALID_BRIDGE_EXPERIMENTS` and
+        `processing/jcamp_1d_bridge.py`'s `_VALID_1D_NUCLEI`. If a future
+        phase extends either reused set (e.g. adds TOCSY) without updating
+        this command's copy, the new experiment type would silently keep
+        routing to the D-06 "skip" path instead of being picked -- this
+        test fails loud in CI instead of relying on a human noticing the
+        skip warning.
+        """
+        from lucy_ng.cli.jcamp import SUPPORTED_1D, SUPPORTED_2D
+        from lucy_ng.nus.bridge import _VALID_BRIDGE_EXPERIMENTS
+        from lucy_ng.processing.jcamp_1d_bridge import _VALID_1D_NUCLEI
+
+        assert set(SUPPORTED_2D) == _VALID_BRIDGE_EXPERIMENTS
+        assert set(SUPPORTED_1D) == _VALID_1D_NUCLEI
+
 
 class TestJcampUnexpectedReadResultType:
     """WR-01 regression: the 2D-branch type-narrowing must fail loud (a
