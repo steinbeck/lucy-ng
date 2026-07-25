@@ -376,6 +376,100 @@ class TestJcampEndToEnd:
         assert "hsqc_coverage" in failed_checks
 
 
+class TestJcampStaleStateCleared:
+    """CR-01 regression: a prior invocation's staged/quarantine/consumable
+    state must never leak into a later invocation over the same output
+    tree. Both scenarios were live-reproduced against the pre-fix code
+    (102-REVIEW.md CR-01) and fail without the STEP 2.5 clearing logic.
+    """
+
+    def test_removed_input_does_not_pollute_the_next_runs_qc_verdict(
+        self, tmp_path: Path
+    ) -> None:
+        """Deleting a `.dx` input and re-running must not let that
+        experiment's stale staged JSON from run 1 leak into run 2's
+        `run_qc_checks()` glob.
+        """
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        runner.invoke(jcamp, [str(tmp_path)])
+
+        staged_dir = tmp_path / "analysis" / "jcamp_ingest" / "staged"
+        assert (staged_dir / "COSY.json").exists()
+
+        (tmp_path / "C20H32O2_COSY_trimmed.dx").unlink()
+        result = runner.invoke(jcamp, [str(tmp_path), "--format", "json"])
+        data = json.loads(result.output)
+
+        # The removed file must never be re-staged, and no stale COSY
+        # artifact from run 1 may remain in the staged directory that
+        # run_qc_checks() globs over for run 2's verdict.
+        assert not (staged_dir / "COSY.json").exists()
+        assert not any(entry["file"].startswith("C20H32O2_COSY") for entry in data["failed"])
+        checked_names = {c["name"] for c in data["report"]["checks"]}
+        assert "cosy_diagonal_symmetry" in checked_names
+        cosy_check = next(
+            c for c in data["report"]["checks"] if c["name"] == "cosy_diagonal_symmetry"
+        )
+        # With no COSY staged at all this run, the COSY-specific check must
+        # not be reporting a violation derived from run 1's stale file.
+        assert cosy_check["passed"] is True
+
+    def test_pass_then_fail_removes_the_stale_pass_graded_consumable_file(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A stale PASS-graded `analysis/nmr_peaks/HSQC.json` from an
+        earlier run must not survive a later run whose QC verdict is FAIL --
+        it must not still be sitting there advertising `qc_verdict: PASS`.
+        """
+        from lucy_ng.models.nus import QcReport, QcVerdict
+
+        def fake_pass(peaks_dir: Any, config: Any = None) -> QcReport:
+            return QcReport(
+                verdict=QcVerdict.PASS,
+                checks=TestJcampQcDiscrimination._six_checks(all_pass=True),
+                thresholds_used={"c13_tol": 0.5},
+                errors=[],
+            )
+
+        def fake_fail(peaks_dir: Any, config: Any = None) -> QcReport:
+            return QcReport(
+                verdict=QcVerdict.FAIL,
+                checks=TestJcampQcDiscrimination._six_checks(
+                    all_pass=True, failing={"quaternary_exclusion": True}
+                ),
+                thresholds_used={"c13_tol": 0.5},
+                errors=[],
+            )
+
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+
+        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_pass)
+        result_pass = runner.invoke(jcamp, [str(tmp_path)])
+        assert result_pass.exit_code == 0, result_pass.output
+
+        nmr_peaks = tmp_path / "analysis" / "nmr_peaks"
+        hsqc_path = nmr_peaks / "HSQC.json"
+        assert hsqc_path.exists()
+        assert json.loads(hsqc_path.read_text())["reconstruction"]["qc_verdict"] == "PASS"
+
+        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_fail)
+        result_fail = runner.invoke(jcamp, [str(tmp_path)])
+        assert result_fail.exit_code != 0
+
+        # The stale PASS-graded file must be gone, and so must the whole
+        # now-empty consumable directory (D-07's "FAIL leaves out_root
+        # absent" invariant must hold across a re-run, not just a fresh run).
+        assert not hsqc_path.exists()
+        assert not nmr_peaks.exists()
+        quarantine_dir = tmp_path / "analysis" / "jcamp_ingest" / "qc_failed"
+        assert quarantine_dir.exists()
+        assert json.loads((quarantine_dir / "HSQC.json").read_text())[
+            "reconstruction"
+        ]["qc_verdict"] == "FAIL"
+
+
 class TestJcampQcDiscrimination:
     """MOCK-COVERED (real peaks, injected verdict): the peaks staged into
     the QC gate below are real, fixture-derived cross-peaks (the same

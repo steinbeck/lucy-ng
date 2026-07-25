@@ -22,6 +22,7 @@ already solved, and the D-07 write boundary.
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -169,6 +170,37 @@ def jcamp(
     work_root = out_root.parent / "jcamp_ingest"
     staged_dir = work_root / "staged"
     quarantine_dir = work_root / "qc_failed"
+
+    # STEP 2.5 -- clear stale state left by a PRIOR invocation before
+    # staging begins (CR-01). Every invocation must reflect ONLY the files
+    # discovered THIS run: a prior invocation's leftovers otherwise silently
+    # pollute run_qc_checks()'s directory-wide glob (a removed/renamed input
+    # keeps "voting" in the current run's verdict) and, worse, a stale
+    # PASS-graded consumable file can survive a later FAIL run unchanged,
+    # defeating the D-07 write boundary one layer up.
+    #
+    # Two different clearing strategies for two different ownership scopes:
+    # - `work_root` (`jcamp_ingest/staged` + `jcamp_ingest/qc_failed`) is a
+    #   fixed, derived subdirectory name that ONLY this command ever writes
+    #   to -- nothing else can be sitting there -- so a full `rmtree` is
+    #   safe and simplest.
+    # - `out_root` is different: it is directly user-specified via `--out`
+    #   and may be a pre-existing directory the caller manages for other
+    #   purposes, so it is never `rmtree`d wholesale. Instead only the
+    #   closed set of filenames this command is ever capable of writing
+    #   there (derived from `SUPPORTED_2D`/`SUPPORTED_1D`) is removed,
+    #   leaving any unrelated file in that directory untouched. If that
+    #   empties the directory, the (now-empty) directory is removed too,
+    #   to preserve the documented "a FAIL run leaves `out_root` absent"
+    #   invariant across a PASS-then-FAIL re-run.
+    shutil.rmtree(work_root, ignore_errors=True)
+    if out_root.is_dir():
+        for own_name in (*SUPPORTED_2D, *SUPPORTED_1D):
+            (out_root / f"{own_name}.json").unlink(missing_ok=True)
+        try:
+            out_root.rmdir()
+        except OSError:
+            pass  # not empty -- a file this command does not own; leave it
 
     # STEP 3 -- read, pick and stage every file in one pass, with no QC yet.
     staged_2d: list[tuple[Spectrum2D, str, Path]] = []
