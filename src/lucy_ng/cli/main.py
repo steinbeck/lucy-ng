@@ -10,6 +10,7 @@ from lucy_ng.cli.detect import detect
 from lucy_ng.cli.fetch import fetch
 from lucy_ng.cli.fragment import fragment
 from lucy_ng.cli.identify import identify
+from lucy_ng.cli.jcamp import jcamp
 from lucy_ng.cli.lsd import lsd
 from lucy_ng.cli.nus import nus
 from lucy_ng.cli.pick import pick
@@ -45,6 +46,7 @@ def cli() -> None:
       fragment    Fragment library (build, search, info)
       webview     Dashboard server for live CASE runs
       nus         NUS (Non-Uniform Sampling) 2D reconstruction
+      jcamp       JCAMP-DX ingestion (read -> pick -> QC -> write)
     """
     pass
 
@@ -65,3 +67,4 @@ cli.add_command(database)
 cli.add_command(fragment)
 cli.add_command(webview)
 cli.add_command(nus)
+cli.add_command(jcamp)
