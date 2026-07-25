@@ -166,7 +166,9 @@ def _assert_plausible_ppm_axis(scale: NDArray[np.float64], nucleus: str) -> None
         )
 
 
-def _resolve_dim(inner: dict[str, Any], target_nucleus: str) -> tuple[float, float]:
+def _resolve_dim(
+    inner: dict[str, Any], target_nucleus: str, *, procs_index: int | None = None
+) -> tuple[float, float]:
     """Resolve the (``$OFFSET``, ``$SF``) pair for a target nucleus in a 2D file.
 
     ``$SF``/``$OFFSET``/``$NUC1`` are parallel lists (one entry per
@@ -178,24 +180,50 @@ def _resolve_dim(inner: dict[str, Any], target_nucleus: str) -> tuple[float, flo
     since nmrglue accumulates them together from the same procs/proc2s
     parse pass).
 
-    Degeneracy guard (WR-04 class, homonuclear experiments): if
-    ``target_nucleus`` appears MORE THAN ONCE in ``$NUC1`` (e.g. COSY/NOESY,
-    both dims '1H'), first-matching would silently resolve a
-    plausible-but-wrong axis. Fail loud instead -- homonuclear axis
-    resolution by position is deferred to Phase 103.
+    Positional fallback (homonuclear experiments, e.g. COSY/NOESY): when
+    ``target_nucleus`` appears more than once in ``$NUC1`` (both dims share
+    the same nucleus), nucleus matching alone cannot disambiguate. This is
+    resolved by ``procs_index`` -- an explicit caller-supplied hint using the
+    verified "procs-then-proc2s" parse-order convention where index 0 is
+    ALWAYS the DIRECT dimension (F2) and index 1 is ALWAYS the INDIRECT
+    dimension (F1), regardless of SYMBOL's declared F1,F2 order. This
+    convention is proven -- not assumed -- on the committed heteronuclear
+    HSQC fixture, where nucleus matching independently disambiguates: its
+    ``$NUC1 = ['<1H>', '<13C>']`` against ``.NUCLEUS = "13C, 1H"`` shows 1H
+    (index 0) IS the F2/direct dimension even though SYMBOL declares F1
+    first (see ``tests/readers/test_jcamp.py::TestJcampReaderHomonuclear::
+    test_heteronuclear_positional_convention_holds``).
+
+    Honest limitation: for a genuinely homonuclear file, both dimensions
+    necessarily share the same ``$SF``, and on this project's real COSY data
+    the two ``$OFFSET`` values differ by only 0.000938 ppm (7.050608 vs
+    7.051546, ~0.47 Hz) -- so a positional swap would be numerically
+    negligible and is NOT discriminable by any downstream ppm-based
+    cross-check. The discriminating evidence for this convention is the
+    heteronuclear proof above, not the homonuclear data itself.
+
+    The unique-match path (``len(matches) == 1``) is never overridden by
+    ``procs_index`` -- it stays authoritative whenever nucleus matching alone
+    can disambiguate. If ``procs_index`` is not supplied and the match is
+    ambiguous, the original fail-loud ``ValueError`` is raised unchanged, so
+    a caller that forgets the hint still fails loud rather than silently
+    first-matching (T-102-02).
 
     Args:
         inner: The metadata dict (as returned by ``_read_metadata``, or an
             equivalent mapping with ``$NUC1``/``$SF``/``$OFFSET`` keys).
         target_nucleus: The nucleus to resolve (e.g. '1H', '13C').
+        procs_index: Optional positional hint (0 = F2/direct, 1 = F1/indirect)
+            used ONLY when nucleus matching is ambiguous (homonuclear).
 
     Returns:
         A tuple of ``(offset_ppm, sf)`` for the resolved dimension.
 
     Raises:
         ValueError: If ``$NUC1``/``$SF``/``$OFFSET`` lengths mismatch, if
-            ``target_nucleus`` is not present, or if it is ambiguous
-            (present more than once -- homonuclear).
+            ``target_nucleus`` is not present, if it is ambiguous and no
+            ``procs_index`` hint is supplied, or if ``procs_index`` is out
+            of range for the matched indices.
     """
     nuc1_raw = inner["$NUC1"]
     sf_raw = inner["$SF"]
@@ -217,12 +245,20 @@ def _resolve_dim(inner: dict[str, Any], target_nucleus: str) -> tuple[float, flo
             "cannot resolve dimension"
         )
     if len(matches) > 1:
-        raise ValueError(
-            f"Ambiguous nucleus '{target_nucleus}' appears {len(matches)} times in "
-            f"$NUC1={nuclei} -- homonuclear axis resolution (e.g. COSY/NOESY) is "
-            "out of scope for this phase (deferred to Phase 103, which resolves by "
-            "positional SYMBOL order); refusing to silently first-match"
-        )
+        if procs_index is None:
+            raise ValueError(
+                f"Ambiguous nucleus '{target_nucleus}' appears {len(matches)} times in "
+                f"$NUC1={nuclei} -- homonuclear axis resolution requires an explicit "
+                "procs_index hint (0=F2/direct, 1=F1/indirect); refusing to silently "
+                "first-match"
+            )
+        if not (0 <= procs_index < len(matches)):
+            raise ValueError(
+                f"procs_index={procs_index} out of range for {len(matches)} matches "
+                f"of nucleus '{target_nucleus}' in $NUC1={nuclei}"
+            )
+        index = matches[procs_index]
+        return float(offset_raw[index]), float(sf_raw[index])
 
     index = matches[0]
     return float(offset_raw[index]), float(sf_raw[index])
@@ -469,7 +505,12 @@ class JcampReader:
         f2_first_hz = first_global[f2_index]
         f2_last_hz = last_global[f2_index]
 
-        f2_offset, f2_sf = _resolve_dim(inner, f2_nucleus)
+        # procs_index=0: $NUC1/$SF/$OFFSET are co-indexed in nmrglue's
+        # procs-then-proc2s parse order, where index 0 is ALWAYS the DIRECT
+        # dimension (F2) -- proven on the heteronuclear HSQC fixture, see
+        # _resolve_dim's docstring. Only used when nucleus matching is
+        # ambiguous (homonuclear); the unique-match path is unaffected.
+        f2_offset, f2_sf = _resolve_dim(inner, f2_nucleus, procs_index=0)
         f2_ppm_scale = _ppm_scale(f2_first_hz, f2_last_hz, f2_offset, f2_sf, n_f2)
         _assert_plausible_ppm_axis(f2_ppm_scale, f2_nucleus)
 
@@ -487,7 +528,9 @@ class JcampReader:
         # cross-peak). Rebase the anchor to page_hz[0] first, then reuse the
         # shared helper for the local window.
         page_hz = [_page_hz(str(page)) for page in pages]
-        f1_offset, f1_sf = _resolve_dim(inner, f1_nucleus)
+        # procs_index=1: index 1 is ALWAYS the INDIRECT dimension (F1) --
+        # the other half of the proven procs-then-proc2s convention.
+        f1_offset, f1_sf = _resolve_dim(inner, f1_nucleus, procs_index=1)
         f1_global_first_hz = first_global[dims.index("F1")]
         f1_local_offset = f1_offset - (f1_global_first_hz - page_hz[0]) / f1_sf
         f1_ppm_scale = _ppm_scale(page_hz[0], page_hz[-1], f1_local_offset, f1_sf, n_f1)
