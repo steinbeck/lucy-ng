@@ -1,24 +1,84 @@
-"""CLI-surface tests for `lucy jcamp` (Phase 102, Plan 03).
+"""CLI-surface tests for `lucy jcamp` (Phase 102, Plan 03), extended by
+Plan 04 with fixture-backed end-to-end and QC-discrimination suites.
 
 Covers registration, help text, D-01's "one command, no subcommands"
-invariant, argument-validation error paths, and import safety. Fixture-backed
-end-to-end behaviour (real read -> pick -> QC -> write over committed
-trimmed fixtures) is Plan 04's own test file, not this one.
+invariant, argument-validation error paths, and import safety.
+
+Plan 04 additions -- proof-level honesty (102-RESEARCH.md Pitfall 6):
+
+* `TestJcampEndToEnd` is FIXTURE-COVERED on real committed (trimmed) data --
+  no test-double substitution anywhere in this class. It proves the CLI's
+  read -> pick -> QC -> write chain actually runs over the six committed
+  JCAMP fixtures, that NOESY is skipped non-fatally (D-06), that the
+  edited-HSQC sign survives the round-trip, and that the QC verdict is
+  embedded in the peak JSON. It does NOT prove the verdict is chemically
+  correct or that peak counts are plausible on the full 2048x2048 real
+  matrix -- those claims require the real, external, uncommitted
+  `C20H32O2-jcamp` dataset and are Phase 103 / JVAL's job (D-05 boundary).
+* `TestJcampQcDiscrimination` is MOCK-COVERED: the peaks staged into the QC
+  gate are real, fixture-derived cross-peaks, but the `QcReport` verdict
+  itself is injected via a test double over `lucy_ng.nus.qc.run_qc_checks`
+  so the CLI's own PASS/PARTIAL/FAIL branch logic can be exercised without
+  needing a genuinely Sec.8-quality spectrum (which the 16-row trimmed
+  fixtures cannot provide -- see `test_observed_trimmed_fixture_verdict`).
 """
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import click
+import pytest
 from click.testing import CliRunner
 
 from lucy_ng.cli.jcamp import jcamp
 
 FIXTURES = Path(__file__).parent / "fixtures" / "jcamp"
 REAL_13C_FIXTURE = FIXTURES / "C20H32O2_13C.dx"
+
+#: All six committed JCAMP fixtures (Phase 101 + 102-01), mirroring the real
+#: 6-file `C20H32O2-jcamp` dataset in miniature.
+ALL_FIXTURE_NAMES = (
+    "C20H32O2_HSQC_trimmed.dx",
+    "C20H32O2_HMBC_trimmed.dx",
+    "C20H32O2_COSY_trimmed.dx",
+    "C20H32O2_NOESY_trimmed.dx",
+    "C20H32O2_1H.dx",
+    "C20H32O2_13C.dx",
+)
+
+
+def _copy_fixtures(tmp_path: Path, names: tuple[str, ...] = ALL_FIXTURE_NAMES) -> Path:
+    """Copy the named committed `.dx` fixtures into `tmp_path`.
+
+    ALWAYS copy, never invoke the CLI against the tracked fixture directory
+    directly -- the command creates `analysis/nmr_peaks/` and
+    `analysis/jcamp_ingest/` side effects that must never pollute the
+    committed `tests/fixtures/jcamp/` tree (the same `_copy_fixture`
+    discipline Phase 98 Plan 06 established).
+    """
+    for name in names:
+        src = FIXTURES / name
+        assert src.exists(), f"missing fixture: {src}"
+        (tmp_path / name).write_bytes(src.read_bytes())
+    return tmp_path
+
+
+def _find_json(root: Path, filename: str) -> Path:
+    """Locate `filename` under `root`'s CONSUMABLE (`nmr_peaks/`) or
+    QUARANTINE (`jcamp_ingest/qc_failed/`) location -- never the staged
+    (verdict-less) directory, which also carries a same-named file with a
+    `qc_verdict: "UNKNOWN"` placeholder (mirrors
+    `tests/nus/test_write_boundary.py`'s staged-vs-consumable distinction).
+    """
+    matches = [p for p in root.rglob(filename) if "staged" not in p.parts]
+    assert matches, f"{filename} not found under {root} (outside any staged/ directory)"
+    assert len(matches) == 1, f"expected exactly one {filename} under {root}, found {matches}"
+    return matches[0]
 
 
 class TestJcampCliSurface:
@@ -106,3 +166,376 @@ class TestJcampImportSafety:
             f"lucy_ng.cli.jcamp leaked an eager domain import.\n"
             f"stdout: {result.stdout}\nstderr: {result.stderr}"
         )
+
+
+class TestJcampEndToEnd:
+    """FIXTURE-COVERED (real committed data, 16 F1 rows per 2D file, whole
+    real 1D files) -- no test-double substitution anywhere in this class.
+
+    `CliRunner(mix_stderr=False)` is used throughout (rather than the
+    default `mix_stderr=True`) so `json.loads(result.output)` is robust to
+    nmrglue's `UserWarning: JCAMP-DX key without value: $RELAX` (emitted via
+    `warnings.warn`, not `click.echo`), which Python's default "once per
+    call-site" warning filter only shows the FIRST time that exact
+    source line fires in a given interpreter session -- an ordering-
+    dependent leak into stdout that would otherwise make JSON parsing flaky
+    when this test file is run in isolation (verified empirically:
+    `warnings.warn` output lands on stderr and is only mixed into
+    `result.output` when `mix_stderr=True`).
+    """
+
+    def test_directory_run_write_boundary_invariant(self, tmp_path: Path) -> None:
+        """Branch-agnostic invariant: whichever verdict the 16-row trimmed
+        fixtures happen to produce, the D-07 write boundary must hold
+        exactly one way or the other -- never a traceback, never both.
+        """
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [str(tmp_path)])
+
+        assert result.exception is None or isinstance(result.exception, SystemExit), (
+            f"unexpected exception: {result.exception!r}"
+        )
+        assert result.exit_code in (0, 1), result.output
+
+        nmr_peaks = tmp_path / "analysis" / "nmr_peaks"
+        if result.exit_code == 0:
+            assert nmr_peaks.exists()
+            names = {p.name for p in nmr_peaks.iterdir()}
+            assert names == {"HSQC.json", "HMBC.json", "COSY.json", "13C.json", "1H.json"}
+        else:
+            assert not nmr_peaks.exists()
+            quarantine = tmp_path / "analysis" / "jcamp_ingest" / "qc_failed"
+            assert quarantine.exists()
+            names = {p.name for p in quarantine.iterdir()}
+            assert "qc_report.json" in names
+            for expected in ("HSQC.json", "HMBC.json", "COSY.json", "13C.json", "1H.json"):
+                assert expected in names
+
+        # D-06: NOESY is read but never picked -- no NOESY.json anywhere.
+        assert not list((tmp_path / "analysis").rglob("NOESY.json"))
+
+    def test_noesy_is_skipped_not_failed(self, tmp_path: Path) -> None:
+        """D-06: NOESY is a non-fatal skip, distinct from a read/pick failure."""
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [str(tmp_path), "--format", "json"])
+        data = json.loads(result.output)
+
+        noesy_skips = [e for e in data["skipped"] if e["file"] == "C20H32O2_NOESY_trimmed.dx"]
+        assert len(noesy_skips) == 1
+        assert "NOESY" in noesy_skips[0]["reason"]
+        assert data["failed"] == []
+
+    def test_all_six_fixtures_are_read_without_read_failures(self, tmp_path: Path) -> None:
+        """Proves all four 2D fixtures (including the two homonuclear ones
+        fixed in Plan 01) and both 1D files decoded without raising.
+        """
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [str(tmp_path), "--format", "json"])
+        data = json.loads(result.output)
+        assert data["failed"] == []
+
+    def test_edited_hsqc_sign_survives_round_trip(self, tmp_path: Path) -> None:
+        """ROADMAP criterion 3, real committed data (not synthetic).
+
+        Measured baseline (2026-07-25, `snr_floor=5.0` default, 16 F1 rows):
+        115 cross-peaks, multiplicity_hint distribution {"CH_or_CH3": 70,
+        "CH2": 45}, zero ambiguous "CH_or_CH2_or_CH3" entries -- the trimmed
+        HSQC fixture has 33 detected negative cross-peaks
+        (`detect_multiplicity_edited` == (True, 33)), so the whole spectrum
+        is treated as multiplicity-edited and every peak's sign maps
+        deterministically to CH2 (negative) or CH_or_CH3 (positive). Assert
+        the distribution SHAPE (both hints present, zero ambiguous), not the
+        exact 70/45 split, to stay robust to minor picker changes.
+        """
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        runner.invoke(jcamp, [str(tmp_path)])
+
+        hsqc_path = _find_json(tmp_path / "analysis", "HSQC.json")
+        payload = json.loads(hsqc_path.read_text())
+        assert payload["n_cross_peaks"] > 0
+        hints = {p["multiplicity_hint"] for p in payload["cross_peaks"]}
+        assert "CH2" in hints
+        assert "CH_or_CH3" in hints
+        assert "CH_or_CH2_or_CH3" not in hints
+
+    def test_qc_verdict_is_embedded_in_peak_json(self, tmp_path: Path) -> None:
+        """JCLI-02: the unchanged QC gate's verdict reaches the peak JSON."""
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        runner.invoke(jcamp, [str(tmp_path)])
+
+        hsqc_path = _find_json(tmp_path / "analysis", "HSQC.json")
+        payload = json.loads(hsqc_path.read_text())
+        assert payload["reconstruction"]["qc_verdict"] in ("PASS", "PARTIAL", "FAIL")
+        assert payload["reconstruction"]["backend"] == "jcamp"
+        assert payload["reconstruction"]["thresholds_used"]
+        assert payload["source"]["format"] == "JCAMP-DX"
+
+    def test_1d_lists_are_qc_discoverable_in_the_output_directory(self, tmp_path: Path) -> None:
+        """D-03/D-04: the picked 1D lists are the QC gate's own trusted
+        1D reference -- proven via the REAL `QcReferenceData.resolve()`,
+        not by inspecting the CLI's internal staging.
+        """
+        from lucy_ng.nus.qc import QcReferenceData
+
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        runner.invoke(jcamp, [str(tmp_path)])
+
+        hsqc_path = _find_json(tmp_path / "analysis", "HSQC.json")
+        written_dir = hsqc_path.parent
+        ref = QcReferenceData.resolve(written_dir)
+        assert ref.trusted_c13
+        assert ref.trusted_h1
+        # INHERITED byte-unchanged-qc.py behaviour (102-RESEARCH.md Pitfall
+        # 4), NOT a choice this phase makes: with no DEPT `.dx` file present,
+        # `QcConfig.default()`'s five compiled-in Sec.8 quaternary shifts are
+        # used unconditionally as the tier-2 override.
+        assert ref.classification_source == "override"
+
+    def test_explicit_file_list_mode(self, tmp_path: Path) -> None:
+        """D-01: an explicit file list (not a directory) is a supported input mode."""
+        _copy_fixtures(tmp_path)
+        files = [
+            str(tmp_path / "C20H32O2_HSQC_trimmed.dx"),
+            str(tmp_path / "C20H32O2_1H.dx"),
+            str(tmp_path / "C20H32O2_13C.dx"),
+        ]
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [*files, "--format", "json"])
+        data = json.loads(result.output)
+        assert data["verdict"] in ("PASS", "PARTIAL", "FAIL")
+        # Written relative to <parent-of-first-file>/analysis/nmr_peaks, per
+        # the same D-07 branch invariant as the directory-mode test.
+        expected_out = tmp_path / "analysis" / "nmr_peaks"
+        assert Path(data["out_dir"]) == expected_out
+
+    def test_out_override(self, tmp_path: Path) -> None:
+        """D-02: `--out` relocates the consumable/quarantine artefacts, and
+        no `analysis/` tree is created under the input directory at all.
+        """
+        _copy_fixtures(tmp_path)
+        custom = tmp_path / "custom"
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [str(tmp_path), "--out", str(custom), "--format", "json"])
+        data = json.loads(result.output)
+
+        assert not (tmp_path / "analysis").exists()
+        if data["verdict"] == "FAIL":
+            assert Path(data["quarantine"]) == custom.parent / "jcamp_ingest" / "qc_failed"
+        else:
+            assert Path(data["out_dir"]) == custom
+
+    def test_format_json_shape(self, tmp_path: Path) -> None:
+        """The `--format json` output parses and carries the documented shape."""
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [str(tmp_path), "--format", "json"])
+        data = json.loads(result.output)
+        assert set(data.keys()) == {
+            "verdict",
+            "out_dir",
+            "written",
+            "skipped",
+            "failed",
+            "quarantine",
+            "report",
+        }
+        assert len(data["report"]["checks"]) == 6
+
+    def test_observed_trimmed_fixture_verdict(self, tmp_path: Path) -> None:
+        """Observed (not invented) verdict for the six committed fixtures.
+
+        RUN FIRST, then assert what was actually seen: the trimmed HSQC
+        fixture covers only 16 F1 rows (~1.3 ppm of 13C), so it cannot reach
+        the 0.8 `hsqc_coverage` floor against the whole-file 1D 13C
+        reference (45 real picked 13C shifts) -- a FAIL verdict is the
+        expected, honest outcome of testing on a deliberately small fixture,
+        not a defect. Verified live 2026-07-25: `hsqc_coverage` reports
+        "2/21 protonated carbons covered (10%)", `ppm_calibration` and
+        `signal_to_ridge` also fail critically. Driving the REAL
+        2048x2048 `C20H32O2-jcamp` dataset to a green Sec.8 verdict is
+        Phase 103 / JVAL (D-05) -- explicitly NOT this phase's bar.
+        """
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [str(tmp_path), "--format", "json"])
+        data = json.loads(result.output)
+
+        assert data["verdict"] == "FAIL", (
+            "observed verdict changed from the recorded baseline (FAIL) -- "
+            "if this is an intentional picker/QC-threshold change, update "
+            "this test's assertion AND the comment above with the new "
+            "observed reason; do not silently flip the expectation"
+        )
+        failed_checks = {c["name"] for c in data["report"]["checks"] if not c["passed"]}
+        assert "hsqc_coverage" in failed_checks
+
+
+class TestJcampQcDiscrimination:
+    """MOCK-COVERED (real peaks, injected verdict): the peaks staged into
+    the QC gate below are real, fixture-derived cross-peaks (the same
+    read -> pick chain `TestJcampEndToEnd` exercises unmocked); only the
+    `QcReport` VERDICT itself is a test double over
+    `lucy_ng.nus.qc.run_qc_checks` -- the CLI resolves that name via a
+    deferred import inside the command body, so monkeypatching the source
+    attribute intercepts it correctly. This lets D-05's "PASS/PARTIAL/FAIL
+    all mechanically reachable" bar be proven without needing a genuinely
+    Sec.8-quality spectrum, which the 16-row trimmed fixtures cannot
+    provide (see `test_observed_trimmed_fixture_verdict` above).
+    """
+
+    @staticmethod
+    def _six_checks(*, all_pass: bool, failing: dict[str, bool] | None = None) -> list[Any]:
+        """Build all six named `QcCheckResult`s; `failing` names the subset
+        that must report `passed=False` (`all_pass` documents the common
+        case at each call site but every check not named in `failing`
+        always passes).
+        """
+        from lucy_ng.models.nus import QcCheckResult
+
+        assert all_pass, "this helper only builds the mostly-passing shape used by these tests"
+        failing = failing or {}
+        critical_by_name = {
+            "quaternary_exclusion": True,
+            "ppm_calibration": True,
+            "hsqc_coverage": True,
+            "signal_to_ridge": True,
+            "edited_sign_consistency": False,
+            "cosy_diagonal_symmetry": False,
+        }
+        return [
+            QcCheckResult(
+                name=name,
+                passed=name not in failing,
+                critical=critical,
+                details="stand-in",
+            )
+            for name, critical in critical_by_name.items()
+        ]
+
+    def test_pass_verdict_writes_consumable_peaks(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from lucy_ng.models.nus import QcReport, QcVerdict
+
+        def fake_run_qc_checks(peaks_dir: Any, config: Any = None) -> QcReport:
+            return QcReport(
+                verdict=QcVerdict.PASS,
+                checks=self._six_checks(all_pass=True),
+                thresholds_used={"c13_tol": 0.5},
+                errors=[],
+            )
+
+        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_run_qc_checks)
+
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [str(tmp_path), "--format", "json"])
+
+        assert result.exit_code == 0, result.output
+        nmr_peaks = tmp_path / "analysis" / "nmr_peaks"
+        hsqc_path = nmr_peaks / "HSQC.json"
+        assert hsqc_path.exists()
+        payload = json.loads(hsqc_path.read_text())
+        assert payload["reconstruction"]["qc_verdict"] == "PASS"
+        assert all(p["confidence"] == "high" for p in payload["cross_peaks"])
+        assert not (tmp_path / "analysis" / "jcamp_ingest" / "qc_failed").exists()
+
+    def test_partial_verdict_writes_and_warns(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from lucy_ng.models.nus import QcReport, QcVerdict
+
+        def fake_run_qc_checks(peaks_dir: Any, config: Any = None) -> QcReport:
+            return QcReport(
+                verdict=QcVerdict.PARTIAL,
+                checks=self._six_checks(
+                    all_pass=True, failing={"cosy_diagonal_symmetry": True}
+                ),
+                thresholds_used={"cosy_symmetry_floor": 0.5},
+                errors=[],
+            )
+
+        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_run_qc_checks)
+
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [str(tmp_path), "--format", "json"])
+
+        assert result.exit_code == 0, result.output
+        hsqc_path = tmp_path / "analysis" / "nmr_peaks" / "HSQC.json"
+        payload = json.loads(hsqc_path.read_text())
+        assert payload["reconstruction"]["qc_verdict"] == "PARTIAL"
+        assert all(p["confidence"] == "low" for p in payload["cross_peaks"])
+        assert "cosy_diagonal_symmetry" in payload["reconstruction"]["violated_checks"]
+        assert "cosy_diagonal_symmetry" in result.output
+
+    def test_fail_verdict_quarantines_and_exits_nonzero(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Mirrors `tests/nus/test_write_boundary.py`'s FAIL assertion shape.
+
+        Also proves `confidence_from_verdict()` is never called for FAIL
+        peaks (it raises by design, per `nus/bridge.py`) -- the CLI's FAIL
+        branch hand-builds the metadata instead, and this test would raise
+        `ValueError` if that contract were ever violated.
+        """
+        from lucy_ng.models.nus import QcReport, QcVerdict
+
+        def fake_run_qc_checks(peaks_dir: Any, config: Any = None) -> QcReport:
+            return QcReport(
+                verdict=QcVerdict.FAIL,
+                checks=self._six_checks(all_pass=True, failing={"quaternary_exclusion": True}),
+                thresholds_used={"c13_tol": 0.5},
+                errors=[],
+            )
+
+        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_run_qc_checks)
+
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [str(tmp_path), "--format", "json"])
+
+        assert result.exit_code != 0
+        assert not (tmp_path / "analysis" / "nmr_peaks").exists()
+        quarantine_dir = tmp_path / "analysis" / "jcamp_ingest" / "qc_failed"
+        assert quarantine_dir.exists()
+        assert (quarantine_dir / "qc_report.json").exists()
+        payload = json.loads((quarantine_dir / "HSQC.json").read_text())
+        assert payload["reconstruction"]["qc_verdict"] == "FAIL"
+        assert "quaternary_exclusion" in payload["caveat"]
+
+    def test_read_failure_forces_nonzero_exit(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """T-102-07: a malformed `.dx` is never silently absorbed as clean,
+        even when the QC verdict itself is forced to PASS.
+        """
+        from lucy_ng.models.nus import QcReport, QcVerdict
+
+        def fake_run_qc_checks(peaks_dir: Any, config: Any = None) -> QcReport:
+            return QcReport(
+                verdict=QcVerdict.PASS,
+                checks=self._six_checks(all_pass=True),
+                thresholds_used={},
+                errors=[],
+            )
+
+        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_run_qc_checks)
+
+        _copy_fixtures(tmp_path)
+        (tmp_path / "broken.dx").write_text("not a jcamp file\njust some text\n")
+
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(jcamp, [str(tmp_path), "--format", "json"])
+
+        assert result.exit_code != 0
+        data = json.loads(result.output)
+        assert data["verdict"] == "PASS"
+        failed_names = {e["file"] for e in data["failed"]}
+        assert "broken.dx" in failed_names
