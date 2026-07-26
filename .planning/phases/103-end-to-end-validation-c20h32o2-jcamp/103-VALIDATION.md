@@ -375,10 +375,95 @@ carried-forward hazard ("Literal `grep -c … == N` acceptance criteria recurren
 contradict a plan's own prose").
 
 ### Chemist verdict (D-07)
-*TBD — verbatim, with reasoning*
+
+**Branch 3 (critical FAIL) applies — D-07's soft-only chemist gate does NOT trigger** (per
+D-06, that gate is reserved for soft-only violations; a critical FAIL is the D-10
+honest-partial-close branch instead).
+
+**D-10 honest partial close, recorded here:**
+
+**Achieved:**
+- All six real `.dx` files (HSQC, HMBC, COSY, 1H, 13C, NOESY) read via ONE governed `lucy
+  jcamp` invocation with **zero** read failures — HMBC included, which was impossible
+  before this plan's Task-1 reader fix.
+- NOESY correctly skipped (D-06), not treated as a failure.
+- The full, pre-defined, finite D-03 knob matrix (31 cells) was executed and logged in
+  full — not just the winning cells.
+- The per-experiment `--threshold`/`--snr-floor` `KEY=value` CLI wiring (D-01/D-04) works
+  correctly on the real dataset for the governed invocation.
+- The independent 20-row §10 cross-check table was built: 17/20 matched within
+  tolerance, with the 3 misses fully explained by verified, real data facts (acquisition
+  window + solvent artifact), not by a picking defect.
+- The §8 HSQC spot-check shows 4 of the 5 compiled-in quaternaries cleanly absent from
+  HSQC correlations; only 37.86 ppm (§10's own MEDIUM-confidence shift) shows a hit.
+- The persistent, knob-independent nature of that one hit was rigorously characterized:
+  present at all 8 HSQC matrix cells, not a single-cell fluke.
+
+**NOT achieved:**
+- A QC verdict of PASS or soft-only PARTIAL. The observed verdict is **FAIL**
+  (`quaternary_exclusion` and `hsqc_coverage` both critical violations) — success
+  criterion 2 of Phase 103's ROADMAP entry ("QC gate reports PASS, or PARTIAL with only
+  soft-check violations") is therefore **NOT true** for this run.
+- A known-good positive regression fixture (Task 5) — a FAIL run writes no consumable
+  peaks (D-07 write boundary), so there is nothing to commit as a positive fixture. Task
+  5 is skipped, with this reason recorded.
+- The D-03 knob matrix is exhausted for HSQC's `quaternary_exclusion` criterion
+  specifically: every one of the 8 pre-defined HSQC cells (5 `snr_floor` + 3 `threshold`
+  values) shows the same ~37.9 ppm hit. Per D-03/D-08, no cell outside the matrix was
+  invented and no peak list was hand-edited to make the hit disappear.
+
+**v10.1 closes PARTIAL for JVAL-01, mirroring v10.0's Phase-100 close.** Tracked next
+step: **JVAL-F2**, filed in `.planning/REQUIREMENTS.md` § Future Requirements. A limitation
+note is recorded in `.planning/ROADMAP.md` under Phase 103.
+
+**No hand-editing check (D-08 / T-103-06):** every file under
+`analysis/jcamp_ingest/` post-dates the governed invocation and nothing has been touched
+since (all timestamps fall within the single ~13-second governed run, no later
+modifications):
+
+```
+2026-07-26T16:22:18  jcamp_ingest/staged/13C.json
+2026-07-26T16:22:18  jcamp_ingest/staged/1H.json
+2026-07-26T16:22:22  jcamp_ingest/staged/COSY.json
+2026-07-26T16:22:23  jcamp_ingest/staged/HMBC.json
+2026-07-26T16:22:28  jcamp_ingest/staged/HSQC.json
+2026-07-26T16:22:30  jcamp_ingest/qc_failed/COSY.json
+2026-07-26T16:22:30  jcamp_ingest/qc_failed/HMBC.json
+2026-07-26T16:22:31  jcamp_ingest/qc_failed/13C.json
+2026-07-26T16:22:31  jcamp_ingest/qc_failed/1H.json
+2026-07-26T16:22:31  jcamp_ingest/qc_failed/HSQC.json
+2026-07-26T16:22:31  jcamp_ingest/qc_failed/qc_report.json
+```
+
+No `analysis/nmr_peaks/` directory exists (FAIL run wrote nothing consumable, D-07 write
+boundary held). `git diff --exit-code 08ad99a -- src/lucy_ng/nus/qc.py` is clean;
+`pytest tests/test_skill_files_unchanged.py -q` passes (8/8).
+
+**Task 5 (known-good positive regression fixture): SKIPPED**, per its own explicit
+anticipation of this exact scenario ("If Task 3's run ended in a FAIL verdict and
+therefore wrote no consumable peaks, do not fabricate a fixture"). No peaks exist under
+`~/.../C20H32O2-jcamp/analysis/nmr_peaks/` to draw from (the directory does not exist —
+only `analysis/jcamp_ingest/qc_failed/` does, holding the quarantined FAIL payloads).
+`tests/fixtures/jcamp/known_good_peaks/` and `tests/test_jcamp_qc_regression.py` are
+therefore NOT created this run; this is filed in the Proof-Level Ledger below as NOT
+PROVEN, tracked by JVAL-F2.
 
 ### CASE outcome (D-15) + model actually used (D-13.4)
-*TBD*
+
+**Not attempted, and not attempted for a principled reason, not an oversight.** JVAL-02's
+Task 6 hand-off requires `analysis/nmr_peaks/*.json` to exist for the fresh CASE session
+to consume — the governed run's FAIL verdict means this directory was never created
+(D-07 write boundary correctly quarantined everything instead). Handing off to a fresh
+`/lucy-ng:case C20H32O2` session now would give the byte-frozen `lucy-nmr-chemist` agent
+literally nothing to find at `analysis/nmr_peaks/` — not a meaningful test of the JVAL-02
+integration risk (Pitfall 3/JVAL-F1), just a guaranteed stall for an unrelated, already-
+understood reason. Per Task 4's own action text ("continue to Tasks 5 and 6 anyway if
+any usable peaks exist... only skip Task 5's fixture if the run produced no consumable
+peaks at all"), no usable peaks exist, so Task 6's actual handoff is deferred to the
+checkpoint below for the user's decision rather than run against empty data.
+v10.1 closes PARTIAL for JVAL-02 as well, for this reason — not because the
+nmr-chemist/pre-picked-peaks integration gap (JVAL-F1's original hypothesis) was
+observed; that specific integration risk was never reached this run.
 
 ### Deviations logged under D-09
 
@@ -433,9 +518,9 @@ Extends Phase 102's. Phase 103's job is to move the four
 
 | Level | Claim |
 |-------|-------|
-| REAL-DATA | *TBD during execution* |
-| FIXTURE-COVERED | *TBD* |
-| NOT PROVEN | *TBD — anything the D-03 budget did not reach, per the D-10 honest-partial-close rule, with a named tracked next step* |
+| REAL-DATA | Peak-count plausibility: MOVED from NOT-PROVEN. All 31 D-03 matrix cells measured directly against the real, external `C20H32O2-jcamp` dataset; the chosen cells produce §8-plausible counts for HSQC (23), COSY (77), HMBC (59), and an exact 20-count match for 13C. Full-matrix SNR behaviour: MOVED from NOT-PROVEN. Both `snr_floor` and `threshold` modes swept across all 5 experiments (31 cells total), each logged with its outcome. All six real `.dx` files read via one governed `lucy jcamp` invocation with zero read failures (HMBC included, the Task-1 fix proven on the real file, not a probe). |
+| FIXTURE-COVERED (Phase 102, unaffected) | Everything `tests/test_cli_jcamp.py`/`tests/readers/test_jcamp.py` already exercise on the trimmed 16-row fixtures, now further extended by this phase's Task 1/2 test additions (boundary cases for the widened ppm bound; the new per-experiment knob-option surface). |
+| NOT PROVEN — Phase 103 / JVAL, tracked by JVAL-F2 | **§8-quality green verdict**: NOT achieved. The governed run's QC verdict is FAIL (`quaternary_exclusion` + `hsqc_coverage` critical), for reasons characterized in full above (a persistent, knob-independent HSQC hit at a MEDIUM-confidence quaternary shift, plus an achievable-coverage ceiling capped by a real acquisition-window gap and a solvent artifact) — not a picking defect within this phase's fix boundary. **CASE convergence**: NOT PROVEN — not attempted, because the FAIL verdict wrote no consumable peaks for a fresh CASE session to consume; the JVAL-02 nmr-chemist/pre-picked-peaks integration risk (originally flagged as Pitfall 3) was never reached. **Any claim that a verdict is chemically correct**: still NOT PROVEN — this phase never claimed otherwise; the §10/§8 evidence above is the honest, bounded substitute for that claim on a dataset where the QC gate's own quaternary check partially grades itself (D-05). |
 
 ---
 

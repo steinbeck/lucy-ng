@@ -32,6 +32,19 @@ Acknowledged but deferred — not in this milestone's roadmap.
 - **JC-F2**: Generalized vendor-format ingestion (Varian/JEOL native, nmrML) behind the same reader abstraction.
 - **JC-F3**: JCAMP-DX **writing** / round-trip export of lucy-ng spectra.
 - **RECON-F1** (carried from v10.0): hmsIST / mddnmr CLI fallback backend for in-lucy-ng NUS self-reconstruction — the tracked path to close v10.0's VAL. Note the v10.1 JCAMP data was itself produced by `mddnmr`, so this remains the natural next reconstruction step.
+- **JVAL-F2** (tracked, Phase 103 honest partial close): real-data recalibration of the 2D
+  noise/threshold model and/or the QC gate's quaternary-override mechanism for
+  CS-reconstructed matrices. On the real `C20H32O2-jcamp` HSQC file, every cell of the
+  pre-defined D-03 knob matrix (all 5 `snr_floor` and all 3 `threshold` values) shows a
+  persistent, knob-independent HSQC correlation at ~37.9 ppm within tolerance of the QC
+  gate's compiled-in quaternary shift 37.86 ppm — a shift §10 itself flags as only
+  MEDIUM-confidence — so `quaternary_exclusion` cannot be cleared by any value in the
+  matrix. Closing this needs either (a) a genuinely different picker/noise-model
+  calibration for real CS/IRLS-reconstructed matrices (the `_compute_2d_noise_sigma`
+  ~15x dynamic-range gap already flagged in 103-RESEARCH.md), or (b) a mechanism for the
+  QC gate's `known_quaternary_shifts` override to express confidence tiers instead of a
+  hard boolean list — both require edits to files byte-frozen in Phase 103
+  (`nus/qc.py`, `PeakPicker2D`). Evidence: `phases/103-.../103-VALIDATION.md`.
 
 ## Out of Scope
 

@@ -220,7 +220,32 @@ succeeds on this exact sample.
   2. The QC gate reports PASS, or PARTIAL with only soft-check violations plus a brief chemist confirmation that the PARTIAL result is acceptable.
   3. A fresh `/lucy-ng:case C20H32O2` run on the JCAMP-derived peak lists converges on a finite, rankable solution set — the milestone's actual success bar, proving the connectivity from externally-reconstructed spectra is usable for CASE.
 **Plans**: 1 plan (1 wave, `autonomous: false` per D-16)
-- [ ] 103-01-PLAN.md — D-09 reader fix (13C ppm bound, unblocks HMBC) + D-01/D-04 per-experiment `KEY=value` knob wiring → real-data D-03 knob matrix (all 31 cells logged) → ONE governed `lucy jcamp` run + unchanged QC gate → §10 ground-truth cross-check table → D-07 chemist gate → known-good positive regression fixture → D-14 fresh-CASE handoff (JVAL-01, JVAL-02) (wave 1)
+- [~] 103-01-PLAN.md — D-09 reader fix (13C ppm bound, unblocks HMBC) + D-01/D-04 per-experiment `KEY=value` knob wiring → real-data D-03 knob matrix (all 31 cells logged) → ONE governed `lucy jcamp` run + unchanged QC gate → §10 ground-truth cross-check table → D-07 chemist gate → known-good positive regression fixture → D-14 fresh-CASE handoff (JVAL-01, JVAL-02) (wave 1) — **JVAL-01 honest partial close, see limitation below**
+
+> **⚠ Phase-103 limitation (JVAL-01 NOT achieved as a clean/soft-only QC pass) — recorded per CONTEXT decision D-10.**
+> Tasks 1-3 shipped cleanly: the widened `13C` ppm bound (D-09) lets the real
+> `C20H32O2_HMBC.dx` read for the first time; the D-01/D-04 per-experiment
+> `--threshold`/`--snr-floor` `KEY=value` CLI wiring is shipped and tested; all six real
+> `.dx` files were read via ONE governed `lucy jcamp` invocation with **zero** read
+> failures (HMBC included) and NOESY correctly skipped (D-06). The finite, pre-defined
+> D-03 knob matrix (31 cells) was run in full and logged in full, not just the winners.
+> **The QC verdict is FAIL, not PASS/soft-PARTIAL:** `quaternary_exclusion` shows a
+> persistent, knob-independent HSQC correlation at ~37.9 ppm present at **every one of
+> the 8 HSQC matrix cells** — within tolerance of the QC gate's compiled-in quaternary
+> shift 37.86 ppm, which §10 itself flags as only **MEDIUM-confidence**. `hsqc_coverage`
+> also falls short (69% vs. an 80% floor), partly because the achievable ceiling on this
+> real 1D-13C file is itself capped below 100% by a CDCl3 solvent-triplet artifact and
+> the two olefinic quaternaries (142.00/135.86 ppm) being physically outside this real
+> 1D-13C file's own acquisition window (`[-10.14, 110.14]` ppm, verified directly). No
+> peak list was hand-edited toward §10 (D-08) and no cell outside the pre-defined matrix
+> was invented (D-03) — the matrix is genuinely exhausted for this criterion. A critical
+> FAIL means the D-07 chemist gate does not apply (that gate is for soft-only violations
+> only, per D-06); this is the D-10 branch instead. Because the FAIL verdict wrote no
+> consumable peaks (D-07 write boundary), no known-good positive regression fixture could
+> be produced from this run, and the JVAL-02 CASE handoff has nothing to consume.
+> **Tracked next step: JVAL-F2** (real-data recalibration of the 2D noise/threshold model
+> and/or the QC gate's quaternary-override mechanism for CS-reconstructed matrices — needs
+> edits to files byte-frozen in Phase 103). Full evidence: `phases/103-.../103-VALIDATION.md`.
 
 ### Progress
 
