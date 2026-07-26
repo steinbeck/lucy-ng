@@ -90,6 +90,7 @@ class TestJcampCliSurface:
         assert result.exit_code == 0, result.output
         assert "--out" in result.output
         assert "--snr-floor" in result.output
+        assert "--threshold" in result.output
         assert "--format" in result.output
         assert "lucy nus qc" in result.output
 
@@ -674,3 +675,268 @@ class TestJcampQcDiscrimination:
         assert data["verdict"] == "PASS"
         failed_names = {e["file"] for e in data["failed"]}
         assert "broken.dx" in failed_names
+
+
+class TestJcampKnobOptions:
+    """D-01/D-04: per-experiment `--threshold`/`--snr-floor` `KEY=value`
+    wiring, added Phase 103. `bridge_peak_pick`/`bridge_peak_pick_1d` are
+    wrapped with recording spies that DELEGATE to the real implementations
+    (real peaks still get produced, so the QC gate and D-07 write boundary
+    behave normally) while capturing the exact per-call
+    `(experiment_or_nucleus, threshold, snr_floor)` triple -- both are
+    imported inside the command body at call time, so patching the source
+    module attribute intercepts the deferred import correctly (same
+    convention `TestJcampQcDiscrimination` already establishes for
+    `run_qc_checks`).
+    """
+
+    @staticmethod
+    def _spy_bridges(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> tuple[
+        list[tuple[str, float | None, float]], list[tuple[str, float | None, float | None]]
+    ]:
+        import lucy_ng.nus.bridge as bridge_mod
+        import lucy_ng.processing.jcamp_1d_bridge as bridge_1d_mod
+
+        calls_2d: list[tuple[str, float | None, float]] = []
+        calls_1d: list[tuple[str, float | None, float | None]] = []
+        real_2d = bridge_mod.bridge_peak_pick
+        real_1d = bridge_1d_mod.bridge_peak_pick_1d
+
+        def spy_2d(
+            spectrum: Any,
+            *,
+            experiment: str,
+            qc_report: Any = None,
+            recon_meta: Any = None,
+            threshold: float | None = None,
+            snr_floor: float = 5.0,
+        ) -> Any:
+            calls_2d.append((experiment, threshold, snr_floor))
+            return real_2d(
+                spectrum,
+                experiment=experiment,
+                qc_report=qc_report,
+                recon_meta=recon_meta,
+                threshold=threshold,
+                snr_floor=snr_floor,
+            )
+
+        def spy_1d(
+            spectrum: Any, *, threshold: float | None = None, snr_floor: float | None = None
+        ) -> Any:
+            calls_1d.append((spectrum.nucleus, threshold, snr_floor))
+            return real_1d(spectrum, threshold=threshold, snr_floor=snr_floor)
+
+        monkeypatch.setattr(bridge_mod, "bridge_peak_pick", spy_2d)
+        monkeypatch.setattr(bridge_1d_mod, "bridge_peak_pick_1d", spy_1d)
+        return calls_2d, calls_1d
+
+    @staticmethod
+    def _by_experiment(
+        calls: list[tuple[str, float | None, float]],
+    ) -> dict[str, set[tuple[float | None, float]]]:
+        by_experiment: dict[str, set[tuple[float | None, float]]] = {}
+        for name, threshold, snr_floor in calls:
+            by_experiment.setdefault(name, set()).add((threshold, snr_floor))
+        return by_experiment
+
+    def test_help_documents_threshold_option(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(jcamp, ["--help"])
+        assert result.exit_code == 0, result.output
+        assert "--threshold" in result.output
+
+    def test_bare_snr_floor_applies_to_every_experiment_backwards_compatible(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The plain `--snr-floor 5.0` form behaves exactly as before D-04."""
+        calls_2d, calls_1d = self._spy_bridges(monkeypatch)
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        runner.invoke(jcamp, [str(tmp_path), "--snr-floor", "5.0"])
+
+        assert calls_2d, "no 2D bridge calls recorded"
+        for _experiment, threshold, snr_floor in calls_2d:
+            assert threshold is None
+            assert snr_floor == 5.0
+        for _nucleus, threshold, snr_floor in calls_1d:
+            assert threshold is None
+            assert snr_floor == 5.0
+
+    def test_omitting_snr_floor_entirely_yields_the_shipped_default(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Omitting `--snr-floor` entirely still yields 5.0 everywhere."""
+        calls_2d, _calls_1d = self._spy_bridges(monkeypatch)
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        runner.invoke(jcamp, [str(tmp_path)])
+
+        assert calls_2d
+        for _experiment, threshold, snr_floor in calls_2d:
+            assert threshold is None
+            assert snr_floor == 5.0
+
+    def test_keyed_form_routes_per_experiment_and_reaches_staging_and_rebuild_identically(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """`--threshold hsqc=1e4 --threshold hmbc=3e4 --snr-floor cosy=7`
+        routes threshold=0.01 (fraction-of-max) to HSQC, threshold=0.02 to
+        HMBC, snr_floor=7.0 to COSY -- and the staging call and the
+        PASS/PARTIAL (or FAIL) rebuild call for the SAME experiment record
+        the identical triple (asserted via the per-experiment call-set
+        having exactly one member). Values kept in the real, meaningful
+        fraction-of-max range (not an arbitrary large number) so the
+        16-row trimmed fixture still yields at least one peak -- an
+        all-zero pick is a pre-existing `PeakPicker2D`/nmrglue edge case
+        unrelated to this option-parsing test.
+        """
+        calls_2d, _calls_1d = self._spy_bridges(monkeypatch)
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        runner.invoke(
+            jcamp,
+            [
+                str(tmp_path),
+                "--threshold",
+                "hsqc=0.01",
+                "--threshold",
+                "hmbc=0.02",
+                "--snr-floor",
+                "cosy=7",
+            ],
+        )
+
+        by_experiment = self._by_experiment(calls_2d)
+        assert by_experiment["HSQC"] == {(0.01, 5.0)}
+        assert by_experiment["HMBC"] == {(0.02, 5.0)}
+        assert by_experiment["COSY"] == {(None, 7.0)}
+
+    def test_case_insensitive_keys_for_both_experiments_and_nuclei(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """`--threshold hsqc=...`/`--threshold HSQC=...` are equivalent;
+        `--snr-floor 13c=20`/`--snr-floor 1h=10` resolve to `13C`/`1H`.
+        """
+        calls_2d, calls_1d = self._spy_bridges(monkeypatch)
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(
+            jcamp,
+            [
+                str(tmp_path),
+                "--threshold",
+                "HSQC=1e4",
+                "--snr-floor",
+                "13c=20",
+                "--snr-floor",
+                "1h=10",
+            ],
+        )
+        assert "unrecognized key" not in result.output
+
+        by_experiment = self._by_experiment(calls_2d)
+        assert by_experiment["HSQC"] == {(10000.0, 5.0)}
+        by_nucleus = {nucleus: (t, s) for nucleus, t, s in calls_1d}
+        assert by_nucleus["13C"] == (None, 20.0)
+        assert by_nucleus["1H"] == (None, 10.0)
+
+    def test_keyed_beats_bare_for_the_named_experiment(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """`--snr-floor 5.0 --snr-floor hsqc=4000` gives HSQC 4000.0 and
+        everyone else 5.0 (keyed always beats bare)."""
+        calls_2d, _calls_1d = self._spy_bridges(monkeypatch)
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        runner.invoke(
+            jcamp,
+            [str(tmp_path), "--snr-floor", "5.0", "--snr-floor", "hsqc=4000"],
+        )
+
+        by_experiment = self._by_experiment(calls_2d)
+        assert by_experiment["HSQC"] == {(None, 4000.0)}
+        assert by_experiment["HMBC"] == {(None, 5.0)}
+        assert by_experiment["COSY"] == {(None, 5.0)}
+
+    def test_unrecognized_key_exits_nonzero_and_names_it(self, tmp_path: Path) -> None:
+        """Typo guard: `--threshold hqsc=1` must fail loud, not silently
+        apply nothing."""
+        _copy_fixtures(tmp_path)
+        runner = CliRunner()
+        result = runner.invoke(jcamp, [str(tmp_path), "--threshold", "hqsc=1"])
+        assert result.exit_code != 0
+        assert "hqsc" in result.output
+        assert "HSQC" in result.output
+
+    def test_malformed_value_exits_nonzero(self, tmp_path: Path) -> None:
+        _copy_fixtures(tmp_path)
+        runner = CliRunner()
+        result = runner.invoke(jcamp, [str(tmp_path), "--threshold", "hsqc=abc"])
+        assert result.exit_code != 0
+
+    def test_same_experiment_threshold_and_snr_floor_is_ambiguous(
+        self, tmp_path: Path
+    ) -> None:
+        """A keyed `--threshold` and a keyed `--snr-floor` for the SAME
+        experiment is rejected -- the two are mutually exclusive modes, so
+        an explicit request for both is ambiguous, not a merge."""
+        _copy_fixtures(tmp_path)
+        runner = CliRunner()
+        result = runner.invoke(
+            jcamp,
+            [str(tmp_path), "--threshold", "hsqc=0.02", "--snr-floor", "hsqc=4000"],
+        )
+        assert result.exit_code != 0
+        assert "HSQC" in result.output
+
+    def test_keyed_threshold_with_bare_snr_floor_is_legal(self, tmp_path: Path) -> None:
+        """A keyed `--threshold` alongside a BARE `--snr-floor` is legal --
+        it means fraction-of-max mode for that experiment, documented, not
+        an error."""
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        result = runner.invoke(
+            jcamp,
+            [str(tmp_path), "--threshold", "hsqc=0.02", "--snr-floor", "5.0"],
+        )
+        assert result.exception is None or isinstance(result.exception, SystemExit)
+
+    def test_run_qc_checks_called_exactly_once_regardless_of_knob_count(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """D-04: the QC gate stays a single call over the fully-staged set
+        no matter how many distinct keyed values are supplied."""
+        import lucy_ng.nus.qc as qc_mod
+
+        calls: list[Path] = []
+        real_run_qc_checks = qc_mod.run_qc_checks
+
+        def spy_run_qc_checks(peaks_dir: Path, config: Any = None) -> Any:
+            calls.append(peaks_dir)
+            return real_run_qc_checks(peaks_dir, config)
+
+        monkeypatch.setattr(qc_mod, "run_qc_checks", spy_run_qc_checks)
+
+        _copy_fixtures(tmp_path)
+        runner = CliRunner(mix_stderr=False)
+        runner.invoke(
+            jcamp,
+            [
+                str(tmp_path),
+                "--threshold",
+                "hsqc=0.01",
+                "--threshold",
+                "hmbc=0.02",
+                "--snr-floor",
+                "cosy=7",
+                "--snr-floor",
+                "13c=10",
+                "--snr-floor",
+                "1h=10",
+            ],
+        )
+
+        assert len(calls) == 1

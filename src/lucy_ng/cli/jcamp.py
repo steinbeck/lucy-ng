@@ -41,6 +41,63 @@ SUPPORTED_1D = ("1H", "13C")
 RECON_BACKEND = "jcamp"
 
 
+def _parse_keyed_option(
+    raw: tuple[str, ...], *, option_name: str
+) -> tuple[dict[str, float], float | None]:
+    """Split a repeatable `--option value` / `--option KEY=value` tuple.
+
+    Each item in ``raw`` is either a bare numeric value (applies to every
+    experiment/nucleus not explicitly named) or a ``KEY=value`` pair scoped
+    to one experiment (``HSQC``/``HMBC``/``COSY``) or nucleus (``1H``/``13C``).
+    Keys are normalized ``.strip().upper()`` and validated against the
+    closed set ``(*SUPPORTED_2D, *SUPPORTED_1D)`` -- an unrecognized key
+    raises `click.BadParameter` naming the offending key and the accepted
+    keys (fail-loud, never-first-match, mirrors
+    `readers/jcamp.py::_resolve_dim`'s idiom) rather than silently applying
+    nothing. The last bare value wins if more than one is given; a keyed
+    value always wins over the bare value for that experiment.
+
+    Args:
+        raw: The raw ``multiple=True`` option values, in argv order.
+        option_name: The option's display name, for error messages
+            (e.g. ``"--threshold"``).
+
+    Returns:
+        A ``(by_key, bare)`` pair: ``by_key`` maps an upper-cased,
+        recognized experiment/nucleus name to its float value; ``bare`` is
+        the last unkeyed value, or ``None`` if none was given.
+
+    Raises:
+        click.BadParameter: On an unrecognized key or a non-float value.
+    """
+    accepted = (*SUPPORTED_2D, *SUPPORTED_1D)
+    by_key: dict[str, float] = {}
+    bare: float | None = None
+    for item in raw:
+        if "=" in item:
+            key_raw, _, value_raw = item.partition("=")
+            key = key_raw.strip().upper()
+            if key not in accepted:
+                raise click.BadParameter(
+                    f"unrecognized key {key_raw!r} in {option_name} "
+                    f"{item!r} -- accepted keys: {', '.join(accepted)}"
+                )
+            try:
+                by_key[key] = float(value_raw)
+            except ValueError as exc:
+                raise click.BadParameter(
+                    f"non-numeric value in {option_name} {item!r}: {exc}"
+                ) from exc
+        else:
+            try:
+                bare = float(item)
+            except ValueError as exc:
+                raise click.BadParameter(
+                    f"non-numeric value for {option_name}: {item!r}"
+                ) from exc
+    return by_key, bare
+
+
 def _source_block(path: Path) -> dict[str, str]:
     """Additive top-level `source` provenance block attached to every payload.
 
@@ -74,10 +131,26 @@ def _source_block(path: Path) -> dict[str, str]:
 )
 @click.option(
     "--snr-floor",
-    type=float,
-    default=5.0,
-    show_default=True,
-    help="SNR floor multiplier k forwarded to both the 1D and 2D pickers.",
+    "snr_floors",
+    multiple=True,
+    default=(),
+    help=(
+        "SNR floor multiplier k forwarded to the 1D and 2D pickers. Bare "
+        "value applies to every experiment (default 5.0); `KEY=value` scopes "
+        "it to one experiment/nucleus (HSQC, HMBC, COSY, 13C, 1H); repeatable."
+    ),
+)
+@click.option(
+    "--threshold",
+    "thresholds",
+    multiple=True,
+    default=(),
+    help=(
+        "Legacy fraction-of-max pick threshold. Bare value or `KEY=value`; "
+        "repeatable. Passing a threshold for an experiment DISABLES SNR mode "
+        "for that experiment (`use_snr = threshold is None`), so `--snr-floor` "
+        "is then ignored for it."
+    ),
 )
 @click.option(
     "--format",
@@ -90,7 +163,8 @@ def _source_block(path: Path) -> dict[str, str]:
 def jcamp(
     paths: tuple[str, ...],
     out_dir: str | None,
-    snr_floor: float,
+    snr_floors: tuple[str, ...],
+    thresholds: tuple[str, ...],
     output_format: str,
 ) -> None:
     """Ingest JCAMP-DX spectra: read -> pick -> QC -> write in one invocation.
@@ -117,10 +191,13 @@ def jcamp(
     payloads plus `qc_report.json` are quarantined instead, and the process
     exits non-zero (D-07 write boundary, extended from Phase 99).
 
-    This command has no `--ridge-fail`/`--coverage-floor`/`--c13-tol`/
-    `--h1-tol` threshold-override flags of its own (Assumption A3): standalone
-    re-grading with custom thresholds is `lucy nus qc <out-dir>` -- the
-    output schema is identical across the NUS and JCAMP paths, so no
+    This command exposes two **picker** knobs, `--threshold` and
+    `--snr-floor`, each scopable per-experiment via `KEY=value` (D-01/D-04) --
+    a keyed `--threshold` switches that experiment to fraction-of-max mode,
+    so the two knobs are mutually exclusive MODES per experiment, not a pair
+    to combine. The **QC-gate** thresholds (`--ridge-fail`/`--coverage-floor`/
+    `--c13-tol`/`--h1-tol`) remain exclusive to `lucy nus qc <out-dir>` --
+    the output schema is identical across the NUS and JCAMP paths, so no
     duplicate `lucy jcamp qc` subcommand exists (D-01).
 
     Honest note (Pitfall 4, document-only): with no DEPT `.dx` file present
@@ -137,6 +214,32 @@ def jcamp(
     from lucy_ng.nus.qc import run_qc_checks
     from lucy_ng.processing.jcamp_1d_bridge import bridge_peak_pick_1d
     from lucy_ng.readers.jcamp import JcampReader
+
+    # STEP 0 -- resolve the per-experiment --threshold/--snr-floor knobs
+    # (D-01/D-04). Keyed values always beat the bare/default value for that
+    # experiment; the bare `--snr-floor 5.0` form (or omitting it entirely)
+    # preserves the exact Phase-102 default for every experiment.
+    threshold_by_exp, threshold_bare = _parse_keyed_option(
+        thresholds, option_name="--threshold"
+    )
+    snr_by_exp, snr_bare = _parse_keyed_option(snr_floors, option_name="--snr-floor")
+    snr_bare = snr_bare if snr_bare is not None else 5.0
+
+    ambiguous = sorted(set(threshold_by_exp) & set(snr_by_exp))
+    if ambiguous:
+        raise click.BadParameter(
+            "a keyed --threshold and a keyed --snr-floor were both given for "
+            f"the same experiment(s) {', '.join(ambiguous)} -- these are "
+            "mutually exclusive modes, so an explicit request for both is "
+            "ambiguous. Give at most one keyed value per experiment (a bare "
+            "--snr-floor alongside a keyed --threshold is fine)."
+        )
+
+    def _resolved_threshold(name: str) -> float | None:
+        return threshold_by_exp.get(name, threshold_bare)
+
+    def _resolved_snr_floor(name: str) -> float:
+        return snr_by_exp.get(name, snr_bare)
 
     # STEP 1 -- resolve inputs.
     resolved = [Path(p).resolve() for p in paths]
@@ -231,7 +334,11 @@ def jcamp(
                 failed.append({"file": path.name, "error": error})
                 click.echo(f"Warning: {path.name}: {error}; not written", err=True)
                 continue
-            payload = bridge_peak_pick_1d(spectrum, snr_floor=snr_floor)
+            payload = bridge_peak_pick_1d(
+                spectrum,
+                threshold=_resolved_threshold(nucleus),
+                snr_floor=_resolved_snr_floor(nucleus),
+            )
             payload["source"] = _source_block(path)
             write_peak_json(staged_dir, nucleus, payload)
             staged_1d.append((nucleus, payload))
@@ -267,7 +374,8 @@ def jcamp(
                     experiment=experiment_type,
                     qc_report=None,
                     recon_meta={"backend": RECON_BACKEND, "iterations": None},
-                    snr_floor=snr_floor,
+                    threshold=_resolved_threshold(experiment_type),
+                    snr_floor=_resolved_snr_floor(experiment_type),
                 )
             except ValueError as exc:
                 skipped.append({"file": path.name, "reason": str(exc)})
@@ -308,7 +416,8 @@ def jcamp(
                 experiment=experiment_type,
                 qc_report=None,
                 recon_meta={"backend": RECON_BACKEND, "iterations": None},
-                snr_floor=snr_floor,
+                threshold=_resolved_threshold(experiment_type),
+                snr_floor=_resolved_snr_floor(experiment_type),
             )
             final_payload["reconstruction"] = {
                 "backend": RECON_BACKEND,
@@ -343,7 +452,8 @@ def jcamp(
                 experiment=experiment_type,
                 qc_report=report,
                 recon_meta={"backend": RECON_BACKEND, "iterations": None},
-                snr_floor=snr_floor,
+                threshold=_resolved_threshold(experiment_type),
+                snr_floor=_resolved_snr_floor(experiment_type),
             )
             final_payload["source"] = _source_block(path)
             out_path = write_peak_json(out_root, experiment_type, final_payload)
