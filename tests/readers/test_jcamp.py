@@ -37,7 +37,18 @@ class TestJcampReader2D:
         assert spectrum.data.shape == (16, 2048)
 
     def test_read_2d_ppm_axis_assertion(self) -> None:
-        """Reader's fail-loud ppm-axis assertion rejects implausible/non-reversed axes (D-04)."""
+        """Reader's fail-loud ppm-axis assertion rejects implausible/non-reversed axes (D-04).
+
+        Phase 103 (D-09) widened the 13C upper bound 230.0 -> 250.0 so the
+        real HMBC file's legitimate ~234.81 ppm acquisition window can be
+        read. The negative controls that genuinely hold post-widening are
+        a >250 ppm axis and a raw-**Hz** axis (the real HMBC ``FIRST``/
+        ``LAST`` values 29516.31/-574.76 -- the "forgot to divide by SF"
+        bug class this guard exists to catch). This coarse net does NOT
+        and never did catch the ~0.447 ppm SFO-vs-SF divisor bug (per
+        ``_assert_plausible_ppm_axis``'s own docstring) -- that remains
+        the JC-02 1D cross-check's job, not this test's.
+        """
         from lucy_ng.readers.jcamp import _assert_plausible_ppm_axis
 
         # Plausible, correctly-reversed 13C axis: no error.
@@ -50,6 +61,22 @@ class TestJcampReader2D:
         # Implausible out-of-range axis must raise.
         with pytest.raises(ValueError):
             _assert_plausible_ppm_axis(np.array([5000.0, 0.0]), "13C")
+
+        # The real HMBC window (verified [-4.57, 234.81] ppm) is accepted.
+        _assert_plausible_ppm_axis(np.array([234.81, 100.0, -4.57]), "13C")
+
+        # The widened bound is inclusive at both ends.
+        _assert_plausible_ppm_axis(np.array([250.0, 0.0, -15.0]), "13C")
+
+        # The widened bound is still a bound -- not "raise the ceiling
+        # until it stops complaining".
+        with pytest.raises(ValueError):
+            _assert_plausible_ppm_axis(np.array([260.0, 0.0]), "13C")
+
+        # A raw-Hz axis (real HMBC FIRST/LAST left undivided by SF) is
+        # still rejected -- the guard still catches the divisor-bug class.
+        with pytest.raises(ValueError):
+            _assert_plausible_ppm_axis(np.array([29516.31, -574.76]), "13C")
 
     def test_read_2d_yfactor_scaling(self) -> None:
         """A Y_FACTOR != 1 must be multiplied through decoded row intensities (Pitfall 2).

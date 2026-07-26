@@ -131,7 +131,48 @@ explicitly extended above).*
 *TBD*
 
 ### Deviations logged under D-09
-*TBD — every reader/bridge/CLI fix, so a proof phase does not silently become a development phase*
+
+**1. `src/lucy_ng/readers/jcamp.py` — widened `_PPM_PLAUSIBILITY_BOUNDS["13C"]` upper bound `230.0` → `250.0` (Task 1).**
+- **Genuine defect blocking JVAL-01/02:** `JcampReader.read_2d()` on the real
+  `C20H32O2_HMBC.dx` raised `ValueError: Implausible 13C ppm axis: [-4.57, 234.81]
+  outside expected [-15.0, 230.0]` — the real HMBC file could not be read AT ALL
+  without this fix, blocking every downstream step (D-03 matrix, QC gate, §10
+  table, CASE handoff).
+- **Root cause:** the real HMBC acquisition uses a legitimately wider 13C sweep
+  than HSQC (`$OFFSET=234.8062` ppm, SW ≈ 30091 Hz at `SF=125.705` MHz) — a real,
+  physically sensible window, not a units/divisor bug. The old `230.0` ceiling was
+  simply too tight for this real experiment's parameter choice.
+- **Fix:** changed exactly one literal, `_PPM_PLAUSIBILITY_BOUNDS["13C"]` from
+  `(-15.0, 230.0)` to `(-15.0, 250.0)`. Nothing else in `_assert_plausible_ppm_axis`,
+  `_ppm_scale`, or `_resolve_dim` was touched.
+- **Measured axis endpoints (proof the fix is correct, not just "stops raising"):**
+  read `C20H32O2_HMBC.dx` with `PYTHONPATH="$(pwd)/src"` — shape `(1024, 2048)`,
+  F1 (13C) `234.80619999997373` → `-4.572275227432982` ppm, F2 (1H)
+  `7.050608` → `-0.4469294966244597` ppm. This F1 axis brackets the full §10 13C
+  range (21.78–142.00 ppm) with wide margin on both sides (per RESEARCH.md Open
+  Question #3).
+- **The guard remains meaningful, not "raised until it stops complaining":** still
+  rejects a >250 ppm axis (`[260.0, 0.0]`) and a raw-Hz axis (the real HMBC
+  `FIRST`/`LAST` values `29516.31`/`-574.76` left undivided by SF — the "forgot to
+  divide by SF" bug class this guard exists to catch). Both negative controls are
+  now pinned in `tests/readers/test_jcamp.py::test_read_2d_ppm_axis_assertion`.
+- **Explicitly NOT covered by this guard** (per its own docstring, unchanged):
+  the ~0.447 ppm SFO-vs-SF divisor error stays inside these bounds by design —
+  that remains the JC-02 1D cross-check's job (Task 3 Step E's §10 table), not
+  this coarse net's.
+- **Files:** `src/lucy_ng/readers/jcamp.py` (1 constant + comment), `tests/readers/test_jcamp.py`
+  (4 new assertions in the existing test).
+
+**2. `src/lucy_ng/cli/jcamp.py` — additive per-experiment `--threshold`/`--snr-floor` `KEY=value` CLI wiring (D-01/D-04, Task 2).**
+- **No new picking logic added** — `bridge_peak_pick` (2D) and `bridge_peak_pick_1d`
+  (1D) already accepted both `threshold` and `snr_floor`; only `--snr-floor`
+  (bare, single global value) was reachable from the CLI. This wiring exposes the
+  already-existing tuning surface so the D-03 knob matrix (Task 3) can be run
+  through the real governed CLI invocation, not just direct bridge calls.
+- **Additive/backwards-compatible:** the plain `--snr-floor 5.0` form is unchanged;
+  omitting the option still yields the shipped default (5.0) for every experiment.
+- **Files:** `src/lucy_ng/cli/jcamp.py` (new `_parse_keyed_option` helper, option
+  block, four bridge call sites), `tests/test_cli_jcamp.py` (new test class).
 
 ---
 

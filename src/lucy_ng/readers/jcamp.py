@@ -42,9 +42,18 @@ from lucy_ng.readers.bruker import _detect_experiment_type
 # assertion bounds"). Deliberately generous -- this is the coarse, fail-loud
 # safety net (D-04); the finer JC-02 cross-check against 1D reference peaks
 # lives in the test layer (D-03).
+#
+# 13C upper bound widened 230.0 -> 250.0 in Phase 103 (D-09): the real
+# C20H32O2-jcamp HMBC acquisition uses a legitimately wider 13C sweep than
+# HSQC (``$OFFSET=234.8062`` ppm, SW ~= 30091 Hz at ``SF=125.705`` MHz),
+# whose axis reaches ~234.81 ppm -- outside the old 230.0 ceiling despite
+# being a real, physically sensible window, not a units bug. 250.0 clears
+# that window with ~15 ppm margin while staying far below the Hz-scale
+# magnitudes (~29,500) a genuine SFO/SF-divisor bug produces, so the guard
+# remains meaningful.
 _PPM_PLAUSIBILITY_BOUNDS: dict[str, tuple[float, float]] = {
     "1H": (-3.0, 15.0),
-    "13C": (-15.0, 230.0),
+    "13C": (-15.0, 250.0),
     "15N": (-50.0, 900.0),
     "31P": (-200.0, 250.0),
 }
