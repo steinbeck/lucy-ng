@@ -1,10 +1,11 @@
 ---
 phase: 103
 slug: end-to-end-validation-c20h32o2-jcamp
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: planned
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-07-26
+updated: 2026-07-26
 ---
 
 # Phase 103 — Validation Strategy
@@ -51,7 +52,12 @@ must stay byte-identical (`tests/test_skill_files_unchanged.py`). `nus/qc.py`,
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD — filled by gsd-planner | | | JVAL-01 / JVAL-02 | — | N/A | | | | ⬜ pending |
+| 103-01-T1 | 103-01 | 1 | JVAL-01 | T-103-03 | Widened `13C` ppm bound still rejects a >250 ppm axis AND a raw-Hz axis, so the fail-loud guard is narrowed, not removed; frozen-file drift gate green | unit | `PYTHONPATH="$(pwd)/src" pytest tests/readers/test_jcamp.py -q && mypy src/lucy_ng && ruff check src tests` | ⚠️ extends `tests/readers/test_jcamp.py` | ⬜ pending |
+| 103-01-T2 | 103-01 | 1 | JVAL-01 | T-103-01, T-103-03 | Unrecognized experiment key / non-float value / same-experiment threshold+snr_floor all exit non-zero (never silently ignored); `run_qc_checks` still called exactly once; CR-01 clearing not regressed | unit + CLI-surface (`CliRunner(mix_stderr=False)`) | `PYTHONPATH="$(pwd)/src" pytest tests/test_cli_jcamp.py -q && test "$(grep -c 'run_qc_checks(staged_dir)' src/lucy_ng/cli/jcamp.py)" = "1"` | ⚠️ extends `tests/test_cli_jcamp.py` | ⬜ pending |
+| 103-01-T3 | 103-01 | 1 | JVAL-01 | T-103-02, T-103-06 | Nothing written into the sibling Bruker tree or `tests/fixtures/nus/`; external known-bad lists checksummed pre/post; single governed CLI invocation | **MANUAL-ONLY** real-data run + artefact assertion | `test "$(grep -cE '^\| (HSQC\|COSY\|HMBC\|13C\|1H) \| (snr_floor\|threshold) \|' .planning/phases/103-end-to-end-validation-c20h32o2-jcamp/103-VALIDATION.md)" -ge 31 && test -z "$(git status --porcelain tests/fixtures/nus/)"` | ⚠️ writes this file's Evidence sections | ⬜ pending |
+| 103-01-T4 | 103-01 | 1 | JVAL-01 | T-103-06 | No peak list hand-edited toward §10 (mtime listing recorded); `nus/qc.py` byte-unchanged; a FAIL/exhausted budget recorded as NOT achieved with a named next step | **MANUAL-ONLY** (blocking chemist checkpoint, D-07) | N/A — `<human-check>`; `git diff --exit-code 08ad99a -- src/lucy_ng/nus/qc.py` | N/A | ⬜ pending |
+| 103-01-T5 | 103-01 | 1 | JVAL-01 | T-103-02 | New known-good fixture is physically distinct from the known-bad floors and never overwrites them; test asserts PASS-or-PARTIAL **and** zero critical violations, so it cannot silently degrade | integration (real committed peaks) | `PYTHONPATH="$(pwd)/src" pytest tests/test_jcamp_qc_regression.py tests/nus/test_qc_regression.py -q && test -z "$(git status --porcelain tests/fixtures/nus/)"` | ❌ new `tests/test_jcamp_qc_regression.py` + `tests/fixtures/jcamp/known_good_peaks/` | ⬜ pending |
+| 103-01-T6 | 103-01 | 1 | JVAL-02 | T-103-03, T-103-04 | All four D-13 blind safeguards recorded as performed; `case.md` + 5 agent files byte-unchanged; `README.md` restored unconditionally | **MANUAL-ONLY** (blocking handoff checkpoint, D-14) | N/A — `<human-check>`; `git diff --exit-code 08ad99a -- .claude/ && pytest tests/test_skill_files_unchanged.py -q` | N/A | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -69,9 +75,26 @@ must stay byte-identical (`tests/test_skill_files_unchanged.py`). `nus/qc.py`,
 
 ## Wave 0 Requirements
 
-- [ ] Boundary test near the widened `_PPM_PLAUSIBILITY_BOUNDS["13C"]` — an axis at ~235 ppm passes, a genuinely-wrong axis (e.g. computed from SFO instead of SF) still fails — covers the D-09 reader fix
-- [ ] `tests/test_cli_jcamp.py` extension for the new `key=value` option parsing (keyed form, bare form, unrecognised-key error)
-- [ ] Known-good peak fixture directory + regression test mirroring `tests/nus/test_qc_regression.py` (name/location = planner discretion per D-11)
+There is no separate RED-stub wave (`tdd_mode` is off). Every code-producing task in
+`103-01-PLAN.md` creates or extends the test its own `<automated>` command runs, so
+Nyquist coverage holds task-by-task. The three RESEARCH.md Wave-0 gaps map as follows:
+
+- [x] Boundary test near the widened `_PPM_PLAUSIBILITY_BOUNDS["13C"]` → **103-01-T1**.
+      **Planner correction:** RESEARCH.md's suggested negative control ("an axis computed
+      from SFO instead of SF still fails") is NOT achievable — `_assert_plausible_ppm_axis`'s
+      own docstring records that the SFO-divisor error is only ~0.447 ppm and stays inside
+      these bounds by design; that bug is the JC-02 1D cross-check's job. The negative
+      controls that genuinely hold are a >250 ppm axis and a raw-**Hz** axis (the real HMBC
+      `FIRST`/`LAST` values 29516.31/-574.76 — the "forgot to divide by SF" class). The test
+      must not overclaim.
+- [x] `tests/test_cli_jcamp.py` extension for the new `KEY=value` option parsing (keyed,
+      bare, keyed-beats-bare, case-insensitive key, unrecognised-key error, non-float value,
+      same-experiment threshold+snr_floor ambiguity, `run_qc_checks` call-count 1) → **103-01-T2**
+- [x] Known-good peak fixture + regression test mirroring `tests/nus/test_qc_regression.py`
+      → **103-01-T5**, at `tests/fixtures/jcamp/known_good_peaks/` +
+      `tests/test_jcamp_qc_regression.py` (module-level fixture, no new conftest — only one
+      test file needs it). Asserts PASS-**or**-PARTIAL plus zero critical violations, since
+      D-06/D-07 make a soft-only PARTIAL a valid positive outcome.
 
 *Existing infrastructure otherwise covers this phase: `tests/readers/test_jcamp.py`,
 `tests/test_jcamp_1d_bridge.py`, `tests/test_cli_jcamp.py`,

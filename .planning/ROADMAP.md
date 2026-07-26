@@ -219,7 +219,8 @@ succeeds on this exact sample.
   1. All six `C20H32O2-jcamp` `.dx` files are read and peak-picked via `lucy jcamp`, producing §8-quality peak lists (clean 1-bond HSQC, ridge-free HMBC, a real aliphatic COSY network) — the first real (non-fixture) spectra to clear this bar via the JCAMP path.
   2. The QC gate reports PASS, or PARTIAL with only soft-check violations plus a brief chemist confirmation that the PARTIAL result is acceptable.
   3. A fresh `/lucy-ng:case C20H32O2` run on the JCAMP-derived peak lists converges on a finite, rankable solution set — the milestone's actual success bar, proving the connectivity from externally-reconstructed spectra is usable for CASE.
-**Plans**: TBD
+**Plans**: 1 plan (1 wave, `autonomous: false` per D-16)
+- [ ] 103-01-PLAN.md — D-09 reader fix (13C ppm bound, unblocks HMBC) + D-01/D-04 per-experiment `KEY=value` knob wiring → real-data D-03 knob matrix (all 31 cells logged) → ONE governed `lucy jcamp` run + unchanged QC gate → §10 ground-truth cross-check table → D-07 chemist gate → known-good positive regression fixture → D-14 fresh-CASE handoff (JVAL-01, JVAL-02) (wave 1)
 
 ### Progress
 
@@ -227,5 +228,5 @@ succeeds on this exact sample.
 |-------|-----------------|--------|-----------|
 | 101. JCAMP-DX Reader | 4/4 | Complete    | 2026-07-23 |
 | 102. CLI + Peak-Pick Bridge + QC Reuse | 4/4 | Complete    | 2026-07-25 |
-| 103. End-to-End Validation (C20H32O2-jcamp) | 0/TBD | Not started | - |
+| 103. End-to-End Validation (C20H32O2-jcamp) | 0/1 | Not started | - |
 </content>
