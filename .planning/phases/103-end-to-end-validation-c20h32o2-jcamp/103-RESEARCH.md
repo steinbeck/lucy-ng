@@ -389,19 +389,22 @@ This gives ≤5 values × 3 2D experiments + ≤2 values × 2 1D experiments = �
 
 **If this table is empty:** N/A — see entries above; A3 is the one item that most needs user/planner attention.
 
-## Open Questions
+## Open Questions (RESOLVED — operationalized in `103-01-PLAN.md`: Q1 → Task 6, Q2 → Task 3 Step B, Q3 → Task 1 + Task 3 Step E)
 
-1. **Will the byte-frozen `lucy-nmr-chemist` agent successfully consume pre-picked `analysis/nmr_peaks/*.json` instead of failing on its hardcoded `lucy pick <bruker-path>` step?**
+1. **RESOLVED (by design — only answerable by running JVAL-02 itself).** Will the byte-frozen `lucy-nmr-chemist` agent successfully consume pre-picked `analysis/nmr_peaks/*.json` instead of failing on its hardcoded `lucy pick <bruker-path>` step?
+   - *Resolution:* Task 6 briefs the user on this exact risk in the D-14 handoff text, defines what "the agent recovered" vs. "the agent could not consume pre-picked peaks" looks like as an observation, and routes the second outcome into the D-10 honest-close branch with the named tracked next step **JVAL-F1** (teach the CASE path about pre-existing peak lists) — explicitly recorded as *not* a JCAMP-chain defect. No attempt is made to edit the byte-frozen agent files.
    - What we know: The agent's workflow is hardcoded to `lucy pick 1d/hsqc/hmbc <path>` (Bruker-only reader). There is zero written instruction anywhere in `case.md` or `lucy-nmr-chemist.md` about pre-existing peak lists. This exact hand-off was designed for in v10.0 but never once exercised (Phase 100 VAL-02 never reached this step).
    - What's unclear: Whether the agent, as an LLM following loose natural-language instructions, will notice the pre-existing JSON and adapt, or will stall/fail/misreport.
    - Recommendation: Flag this explicitly in the D-14 handoff instructions so a stall here is correctly attributed; record the actual observed behavior (success or failure, and how) in `VALIDATION.md` regardless of outcome — this is itself valuable evidence for the milestone even if JVAL-02 does not pass on the first attempt. Do not attempt to fix `case.md`/`lucy-nmr-chemist.md` (byte-frozen).
 
-2. **Exactly which knob values will drive COSY and HMBC to a §8-plausible peak count?**
+2. **RESOLVED — Task 3 Step B.** Exactly which knob values will drive COSY and HMBC to a §8-plausible peak count?
+   - *Resolution:* the plan's 31-cell D-03 matrix carries **both** `snr_floor` and `threshold`-mode candidates for COSY and HMBC (COSY `snr_floor` 800/1500/3000/5000/8000 + `threshold` 0.02/0.05/0.10; HMBC `snr_floor` 500/1000/2000/3000/5000 + `threshold` 0.01/0.02/0.05), with per-experiment target zones and an explicit `MATRIX EXHAUSTED` outcome feeding the D-10 branch in Task 4.
    - What we know: HSQC has a clear-ish empirical target zone (snr_floor 3000-5000 range, from a measured plateau). COSY resists thinning far more strongly. HMBC was only lightly swept.
    - What's unclear: Whether `snr_floor` alone (vs. combining with the legacy `threshold` fraction-of-max mode) is sufficient for COSY without also destroying real weak long-range correlations.
    - Recommendation: Include both `snr_floor` and `threshold` mode candidates for COSY/HMBC in the D-03 matrix; if the honest D-03 budget is exhausted without reaching PASS, a soft-only PARTIAL + chemist confirmation (D-07) remains a valid, decided-in-advance outcome — do not treat "not a clean PASS" as a phase failure.
 
-3. **Does the widened `_PPM_PLAUSIBILITY_BOUNDS["13C"]` value need to also be re-verified against the 1D 13C reference for consistency, per JC-02's own stated verification discipline?**
+3. **RESOLVED — Task 1 + Task 3 Step E.** Does the widened `_PPM_PLAUSIBILITY_BOUNDS["13C"]` value need to also be re-verified against the 1D 13C reference for consistency, per JC-02's own stated verification discipline?
+   - *Resolution:* Task 1 brackets the widened bound with negative controls that genuinely hold (a >250 ppm axis and a raw-**Hz** axis — the real HMBC `FIRST`/`LAST` 29516.31/-574.76), **not** the SFO-vs-SF control originally suggested here: `_assert_plausible_ppm_axis`'s own docstring records that error as only ~0.447 ppm, i.e. inside these bounds by design, so it remains JC-02's 1D cross-check's job. The stronger real-data evidence asked for here is Task 3 Step E's §10 cross-check table.
    - What we know: JC-02's cross-check discipline (Phase 101) says ppm-axis correctness should be checked against the trusted 1D reference, not just a coarse bound.
    - What's unclear: Whether the fix should also add/extend a test asserting the widened HMBC axis lines up with the real 1D 13C peak positions (stronger evidence than just "it no longer raises").
    - Recommendation: At minimum, cross-check a few real HMBC cross-peak 13C positions against the §10 list after the fix (this is effectively what the QC gate's `ppm_calibration` check already does for HSQC — extend the same expectation to HMBC once it can be read).
