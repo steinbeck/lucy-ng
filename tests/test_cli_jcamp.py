@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -809,6 +810,14 @@ class TestJcampKnobOptions:
             ],
         )
 
+        per_experiment_count = Counter(name for name, _, _ in calls_2d)
+        for experiment in ("HSQC", "HMBC", "COSY"):
+            assert per_experiment_count[experiment] == 2, (
+                f"expected one staging + one rebuild call for {experiment}, "
+                f"got {per_experiment_count[experiment]} -- a deleted rebuild "
+                "call site must fail this test"
+            )
+
         by_experiment = self._by_experiment(calls_2d)
         assert by_experiment["HSQC"] == {(0.01, 5.0)}
         assert by_experiment["HMBC"] == {(0.02, 5.0)}
@@ -835,7 +844,11 @@ class TestJcampKnobOptions:
                 "1h=10",
             ],
         )
-        assert "unrecognized key" not in result.output
+        # click.BadParameter's usage error would land on stderr, not
+        # result.output (stdout only under mix_stderr=False) -- assert on
+        # the real channel it would appear on so a false rejection actually
+        # fails this test.
+        assert "unrecognized key" not in result.stderr
 
         by_experiment = self._by_experiment(calls_2d)
         assert by_experiment["HSQC"] == {(10000.0, 5.0)}
@@ -892,17 +905,46 @@ class TestJcampKnobOptions:
         assert result.exit_code != 0
         assert "HSQC" in result.output
 
-    def test_keyed_threshold_with_bare_snr_floor_is_legal(self, tmp_path: Path) -> None:
+    def test_bare_threshold_with_keyed_snr_floor_is_rejected(
+        self, tmp_path: Path
+    ) -> None:
+        """CR-01 regression: a BARE `--threshold` combined with a KEYED
+        `--snr-floor` for the same experiment must be rejected, not
+        silently accepted with the snr-floor discarded. Before the CR-01
+        fix, the old guard only compared the two KEYED sets, so a bare
+        `--threshold` was invisible to it: `_resolved_threshold()` falls
+        back to the bare value for every experiment, and
+        `nus/bridge.py`'s `use_snr = threshold is None` then silently
+        drops the explicitly requested `--snr-floor` for COSY with no
+        warning and exit code 0/1 as if it had been honoured."""
+        _copy_fixtures(tmp_path)
+        runner = CliRunner()
+        result = runner.invoke(
+            jcamp, [str(tmp_path), "--threshold", "0.02", "--snr-floor", "cosy=7"]
+        )
+        assert result.exit_code == 2, result.output
+        assert "COSY" in result.output
+
+    def test_keyed_threshold_with_bare_snr_floor_is_legal(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """A keyed `--threshold` alongside a BARE `--snr-floor` is legal --
         it means fraction-of-max mode for that experiment, documented, not
-        an error."""
+        an error -- and every OTHER experiment still gets the bare
+        snr-floor unchanged."""
+        calls_2d, _calls_1d = self._spy_bridges(monkeypatch)
         _copy_fixtures(tmp_path)
         runner = CliRunner(mix_stderr=False)
         result = runner.invoke(
             jcamp,
             [str(tmp_path), "--threshold", "hsqc=0.02", "--snr-floor", "5.0"],
         )
-        assert result.exception is None or isinstance(result.exception, SystemExit)
+        assert result.exit_code in (0, 1), result.output  # never a usage error (2)
+
+        by_experiment = self._by_experiment(calls_2d)
+        assert by_experiment["HSQC"] == {(0.02, 5.0)}
+        assert by_experiment["HMBC"] == {(None, 5.0)}
+        assert by_experiment["COSY"] == {(None, 5.0)}
 
     def test_run_qc_checks_called_exactly_once_regardless_of_knob_count(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
