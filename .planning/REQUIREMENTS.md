@@ -59,6 +59,28 @@ Acknowledged but deferred — not in this milestone's roadmap.
   ~37.9 ppm (tracked by JVAL-F2) sits well inside exp6's own narrow window and is
   entirely independent of which 1D-13C reference file is present. A PASS verdict is
   therefore NOT guaranteed by this step alone. Evidence: `phases/103-.../103-VALIDATION.md`.
+- **CR-02** (Phase-102 defect, rediscovered by Phase 103's code review; NOT fixed by
+  Phase 103): `lucy jcamp`'s STEP 2.5 (`src/lucy_ng/cli/jcamp.py:299-306`) purges the
+  `--out` target's closed set of peak-list filenames (`HSQC.json`/`HMBC.json`/
+  `COSY.json`/`1H.json`/`13C.json`) *before* STEP 3 reads a single input file. A run
+  that fails on malformed input (or discovers nothing supported) exits non-zero,
+  writes nothing to `--out`, and still destroys any pre-existing peak lists at that
+  path -- including a prior `lucy nus pipeline` PASS-graded result, since the two
+  commands write the identical filenames/schema. Fix: move the `out_root` half of the
+  purge to after the "nothing staged" bail-out (STEP 4), so it only runs once a verdict
+  is about to be produced. Introduced in Phase 102 (commit `f6de196`), not Phase 103;
+  filed here because Phase 103's review (`103-REVIEW.md` CR-02) is where it was found.
+  Evidence: `phases/103-.../103-REVIEW.md`.
+- **CR-03** (Phase-102 defect, rediscovered by Phase 103's code review; NOT fixed by
+  Phase 103): `lucy jcamp`'s derived `work_root = out_root.parent / "jcamp_ingest"`
+  (`src/lucy_ng/cli/jcamp.py:273`) is unvalidated against the caller-supplied `--out`.
+  If `--out` is itself named (or ends in) `jcamp_ingest`, `work_root == out_root`, and
+  STEP 2.5's `shutil.rmtree(work_root, ignore_errors=True)`
+  (`src/lucy_ng/cli/jcamp.py:299`) deletes the entire user-specified output directory,
+  including files this command never wrote. Fix: fail loud (`click.BadParameter`) on
+  the collision before any deletion, per `103-REVIEW.md`'s suggested fix. Introduced in
+  Phase 102 (commit `f6de196`), not Phase 103; filed here because Phase 103's review
+  (`103-REVIEW.md` CR-03) is where it was found. Evidence: `phases/103-.../103-REVIEW.md`.
 
 ## Out of Scope
 
