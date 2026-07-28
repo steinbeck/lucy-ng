@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v10.1
 milestone_name: JCAMP-DX 2D Ingestion
-status: milestone_complete
-stopped_at: Milestone complete (Phase 103 was final phase)
-last_updated: 2026-07-28T12:36:08.932Z
-last_activity: 2026-07-28
+status: Awaiting next milestone
+stopped_at: Phase 103 closed PARTIAL (JVAL-01/JVAL-02 honest partial close, D-10)
+last_updated: "2026-07-28T17:58:44.847Z"
+last_activity: 2026-07-28 — Milestone v10.1 completed and archived
 progress:
   total_phases: 3
   completed_phases: 3
   total_plans: 9
-  completed_plans: 27
+  completed_plans: 9
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-07-21)
 
 ## Current Position
 
-Phase: 103
-Plan: Not started
-Status: Milestone complete
-Last activity: 2026-07-28
+Phase: Milestone v10.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-28 — Milestone v10.1 completed and archived
 
 ## Milestone v10.1 Phases
 
@@ -50,6 +50,17 @@ Last activity: 2026-07-28
 | 100. Cross-Platform Hardening + End-to-End Validation | Portability matrix (macOS/Linux native, Windows WSL2 gap documented); C20H32O2 exp2/3/4 reconstruction passing §8 gate; `/lucy-ng:case C20H32O2` convergence — **PARTIAL**: PORT-01/02 shipped, VAL-01/02 not achieved (SMILE memory abort, RECON-F1 tracked) | PORT-01..02, VAL-01..02 | 99 |
 
 ## Deferred Items
+
+Items acknowledged and deferred at **v10.1 JCAMP-DX 2D Ingestion milestone close (PARTIAL) on 2026-07-28**:
+
+| Category | Item | Status | Note |
+|----------|------|--------|------|
+| JVAL-F2 | Real-data noise/threshold-model and/or QC quaternary-override recalibration for CS-reconstructed matrices | tracked | Closes JVAL-01's `quaternary_exclusion` critical FAIL (~37.9 ppm HSQC hit, reproduced in all 8 HSQC matrix cells — knob-independent). Needs edits to files byte-frozen in Phase 103. |
+| JVAL-F3 | Re-export `exp7`/wide (`$SW=160.37`) from the raw `C20H32O2` Bruker tree as JCAMP-DX | tracked | Only `exp6`/narrow (`$SW=120.28`, window `[-10.14, 110.14]` ppm) was exported, so 142.00/135.86 ppm are physically absent. Completes §10 coverage but does **not** fix `quaternary_exclusion`, which sits inside exp6's own window. |
+| CR-02 | `lucy jcamp` purges the `--out` peak-list filenames *before* STEP 3 reads any input | tracked | Real data-loss path: a run failing on malformed input exits non-zero, writes nothing, and still destroys pre-existing peak lists (same filenames/schema `lucy nus pipeline` writes). **Phase-102 defect** (`f6de196`), found by Phase 103's code review. Filed, not fixed. |
+| CR-03 | `work_root = out_root.parent / "jcamp_ingest"` is unvalidated against `--out` | tracked | On collision, `shutil.rmtree` deletes a caller-owned directory. **Phase-102 defect** (`f6de196`), found by Phase 103's code review. Filed, not fixed. |
+| todo | 2026-06-25-case4-azulene-regiochemistry-enumeration-gap | carried (from v9.1) | Still open; unrelated to the JCAMP scope. |
+| todo | 2026-06-30-ranking-tests-hardfail-without-hosegen | carried (from v9.1) | Still open; test-infra backlog, unrelated to the JCAMP scope. |
 
 Items acknowledged and deferred at **v9.3 CASE Web-View Stage 2 milestone close on 2026-07-12**:
 
@@ -209,6 +220,4 @@ Resume with: `/gsd-verify-phase 103` (to verify the honest-partial-close evidenc
 
 ## Operator Next Steps
 
-- Phase 103 (end-to-end-validation-c20h32o2-jcamp) closed PARTIAL: run `/gsd-verify-phase 103` to verify the honest-partial-close evidence, then `/gsd-complete-milestone` to formally close v10.1 as PARTIAL (mirroring v10.0), or open a new phase/milestone to address JVAL-F2/JVAL-F3.
-
-</content>
+- Start the next milestone with /gsd-new-milestone

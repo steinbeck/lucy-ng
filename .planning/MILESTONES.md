@@ -1,5 +1,38 @@
 # Project Milestones: lucy-ng
 
+## v10.1 JCAMP-DX 2D Ingestion — **CLOSED PARTIAL** (2026-07-28)
+
+**Phases completed:** 3 phases, 9 plans, 19 tasks · 77 commits · 2026-07-23 → 2026-07-28
+
+**Status: PARTIAL, not shipped-complete.** The ingestion path was built and works mechanically — JC-01..04 and JCLI-01/02 all met — but the milestone's actual success bar was **not** reached: real spectra never cleared the QC gate, and the CASE convergence run was never attempted. Closed deliberately via Phase 103's D-10 honest-partial-close on a user decision, mirroring v10.0's honest stop rather than inflating the result.
+
+**Delivered:** A binary-free JCAMP-DX path — pure-Python 2D NTUPLES/DIFDUP decoding into the existing `Spectrum2D`/`Spectrum1D` models with verified ppm axes, plus a single `lucy jcamp` command that reuses the Phase-99 peak-pick bridge and the byte-unchanged QC gate end-to-end.
+
+### Known Gaps
+
+| Requirement | Outcome |
+|-------------|---------|
+| **JVAL-01** | **NOT achieved.** Reading and picking work (all six real `.dx` read in one governed run, zero failures; 31-cell D-03 matrix exhausted; §10 cross-check 17/20 within ±0.5 ppm), but the QC verdict is a **critical FAIL** — not PASS, not soft-only PARTIAL — on `quaternary_exclusion` (a ~37.9 ppm HSQC hit reproduced in *all 8* HSQC matrix cells, so knob-independent) and `hsqc_coverage` (11/16 = 69 %). Tracked: JVAL-F2, JVAL-F3. |
+| **JVAL-02** | **NOT ATTEMPTED** — not "failed". JVAL-01's FAIL correctly triggered the D-07 write boundary, so no consumable peaks existed for a fresh blind CASE session to read. |
+
+Ruled out along the way: the JC-02/WR-04 ppm-axis defect class. A read-only diagnostic against the raw JCAMP header and the untouched sibling Bruker `acqus`/`procs` proved the narrow 1D-13C window is a genuine dataset property — `exp6`/narrow (`$SW=120.28`) was exported to JCAMP, `exp7`/wide (`$SW=160.37`) was not — and not a reader defect.
+
+**Known deferred items at close: 6** (JVAL-F2, JVAL-F3, CR-02, CR-03, 2 carried todos — see STATE.md *Deferred Items*). CR-02/CR-03 are real data-loss paths in `lucy jcamp`, attributable to Phase 102 (`f6de196`), filed rather than fixed.
+
+**Key accomplishments:**
+
+- Committed a real, trimmed 2D HSQC JCAMP-DX fixture (16 genuine DIFDUP pages with verified gem-dimethyl cross-peaks) plus two RED test modules that every downstream reader-implementation plan must turn GREEN — the correctness oracle is real data, not a mock.
+- Vendored nmrglue's 9-object DIFDUP/SQZ/DUP/PAC decoder dependency closure into `src/lucy_ng/readers/_jcampdx_decode.py` with full New-BSD attribution, zero nmrglue import, and mypy-strict/ruff-clean type annotations added as a non-behavioral layer -- the Wave-0 hand-oracle test now passes independently of nmrglue.
+- Implemented the verified OFFSET+SF ppm-axis formula (not the naive SFO divisor) plus a fail-loud homonuclear-degeneracy guard in `readers/jcamp.py`, then built `JcampReader.read_1d` on top of it -- both 1H and 13C JCAMP-DX references now decode into `Spectrum1D` with correctly reversed, plausibility-checked ppm axes.
+- `JcampReader.read_2d` assembles DIFDUP-compressed NTUPLES pages into a Y-FACTOR-scaled `(16, 2048)` `Spectrum2D` with reversed, cross-check-verified ppm axes on both dimensions -- closing JC-01/JC-02, the milestone's one real technical risk.
+- Extended the JCAMP fixture generator to commit trimmed COSY/HMBC/NOESY fixtures, then fixed a real, verified `_resolve_dim` defect that raised `ValueError` for every homonuclear 2D experiment (blocking COSY, a required Phase-102 experiment) with a positional fallback proven on the heteronuclear HSQC fixture.
+- A direct-call 1D peak-pick bridge (`bridge_peak_pick_1d`) that reproduces `cli/pick.py::pick_1d`'s exact JSON payload shape, proven by a real, un-mocked `QcReferenceData.resolve()` run to be discovered as trusted 1D reference by the byte-unchanged Phase-99 QC gate.
+- Single `@click.command("jcamp")` (not a group) that discovers a JCAMP-DX directory or explicit file list, routes 1D 1H/13C through the Plan-02 bridge and 2D HSQC/HMBC/COSY through the byte-unchanged Phase-99 `bridge_peak_pick()`, runs the byte-unchanged QC gate exactly once over the whole staged set, and enforces the D-07 write/quarantine boundary -- proving the Phase-99 bridge+QC design generalizes to a second, entirely different upstream source.
+- Proved `lucy jcamp` actually works end-to-end on the six committed real JCAMP fixtures (observed verdict: FAIL, for an honest and explained reason), proved all three QC verdicts drive distinct write behaviour via a verdict test-double, and shipped the repo's first committed SHA-256 byte-unchanged guard for `case.md` and the 5-agent CASE team.
+- Real C20H32O2-jcamp dataset driven through `lucy jcamp` end-to-end (zero read failures, HMBC included) with a full 31-cell D-03 knob matrix; QC verdict is a genuinely knob-independent critical FAIL, closed honestly as PARTIAL with two tracked next steps (JVAL-F2, JVAL-F3) after an independent raw-header diagnostic ruled out a ppm-axis reader defect.
+
+---
+
 ## v9.3 CASE Web-View Stage 2 (Shipped: 2026-07-12)
 
 **Phases completed:** 4 phases, 16 plans, 23 tasks
