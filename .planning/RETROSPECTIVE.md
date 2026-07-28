@@ -216,12 +216,56 @@ Formatted markdown run log + 4-tab framework (93); data tables — ¹³C/HSQC/HM
 
 ---
 
+## Milestone: v10.1 — JCAMP-DX 2D Ingestion (CLOSED PARTIAL)
+
+**Closed:** 2026-07-28 (not shipped-complete)
+**Phases:** 3 (101–103) | **Plans:** 9 | **Commits:** 77 | **Span:** 2026-07-23 → 2026-07-28
+
+### What Was Built
+- Pure-Python `readers/jcamp.py`: 1D `.dx` → `Spectrum1D`, 2D NTUPLES DIFDUP pages → `Spectrum2D`, closing the gap where nmrglue returns `None` for 2D NTUPLES assembly
+- Vendored New-BSD DIFDUP/SQZ/DUP/PAC line decoder (`_jcampdx_decode.py`) — zero nmrglue private-API, mypy-strict, CI-runnable on a committed real fixture
+- `lucy jcamp` — one command from JCAMP directory to QC-graded peak lists, reusing the Phase-99 bridge and the byte-unchanged QC gate
+- Thin 1D bridge whose payload matches `cli/pick.py::pick_1d` exactly, so the unchanged gate discovers it as trusted 1D reference (proven un-mocked)
+- The repo's first committed SHA-256 byte-unchanged guard for `case.md` + the 5-agent team
+
+### What Was NOT Achieved
+The milestone's actual success bar. JVAL-01's real-data QC verdict is a critical FAIL, and JVAL-02 (CASE convergence) was never attempted because the FAIL correctly produced no consumable peaks. The plumbing works; the proof that it is *usable* does not exist yet. Closed via the plan's D-10 honest-partial-close on an explicit user decision — the second consecutive milestone (after v10.0) to stop honestly rather than inflate a result.
+
+### What Worked
+- **Real fixtures as the correctness oracle, not mocks.** Phase 101 opened by committing a real trimmed DIFDUP fixture plus RED tests that every later plan had to turn GREEN. This was a direct correction of the Phase-100 mock-only-verification learning, and it held.
+- **Citing raw headers instead of trusting the reader's own output.** When the §10 cross-check missed 3 of 20 carbons, the tempting story was "our ppm axis is broken" — the highest-risk failure class of this milestone. Reading the raw JCAMP header *and* the untouched sibling Bruker `acqus`/`procs` settled it in minutes with code-external evidence: `exp6`/narrow was exported, `exp7`/wide was not.
+- **Independent verification catching a self-reported "clean".** Phase 103's code review found a silent-ignore defect (CR-01) in code the phase itself had shipped and described as clean — in exactly the behaviour class the plan's must-haves ruled out.
+- **Mutation testing to confirm a gap was really closed.** Reverting the guard made the new regression test fail; stubbing the rebuild call site made the call-site test fail. Diff-reading would not have proven either.
+
+### What Was Inefficient
+- **Three tests were vacuous and shipped that way.** `assert exception is None or isinstance(exception, SystemExit)` is true on every outcome; an assertion read stdout where the message lands on stderr; a `set()` collapse passed even with the call site deleted. All three were written *by* the phase whose must-haves they were supposed to pin, and all three were only caught by an outside reviewer that executed them rather than read them.
+- **A knob matrix was defined before knowing whether the failure was knob-shaped.** All 8 HSQC cells produced the same quaternary hit. Testing one cell for knob-sensitivity first would have reached "this is not tunable" far sooner.
+- **The `gsd-code-fixer` agent wrote its changes but neither committed nor verified them**, returning an empty report. The orchestrator had to re-derive the diff, re-run the behaviour, and run the suite before committing.
+
+### Patterns Established
+- **Header-citation diagnosis:** when a reader's output looks wrong, quote the raw file and the vendor's own parameter files before touching the reader. Code-external evidence beats a code-internal argument.
+- **`[~]` for partial requirements:** a checkbox that says `[x]` while the traceability table says "Partial" is a lie that outlives the milestone in the archive.
+- **Write-boundary honesty compounds:** because the D-07 boundary refused to write peaks on FAIL, JVAL-02 could be recorded as *not attempted* rather than fabricated or half-run.
+
+### Key Lessons
+1. **A test that cannot fail is worse than no test** — it converts an unknown into a false assurance. Prove a new test fails against the unfixed code before trusting it.
+2. **"Knob-independent" is a finding, not a dead end** — reproducing a failure across the whole parameter matrix is what converts "we didn't tune enough" into "this needs a different fix", and it is what made the honest close defensible.
+3. **Ask which artefact is missing before blaming the code.** Two milestones in a row (v10.0 SMILE memory, v10.1 narrow exp6) were limited by the environment or the input, not by lucy-ng.
+4. **Verify agent self-reports.** Executor, fixer and verifier each made at least one claim this milestone that did not survive an independent check — one full-suite claim, one silent no-op, one "clean" that a reviewer disproved.
+
+### Cost Observations
+- Model mix: orchestration on Opus, executors/verifier/reviewer on Sonnet
+- Notable: the highest-value spend was the *unplanned* read-only ppm-axis diagnostic — ~25 minutes that converted a suspected reader bug into a ruled-out risk class, and it only happened because the close was paused to ask.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
 
 | Milestone | Sessions | Phases | Key Change |
 |-----------|----------|--------|------------|
+| v10.1 | ~6 | 3 | Real fixtures as the correctness oracle (not mocks); raw-header citation to rule out a suspected reader defect; second consecutive honest PARTIAL close |
 | v9.0 | many | 14 | Blind UAT as the real gate; fix the runtime model, not just the skill; blind-UAT memory hygiene |
 | v7.0 | ~4 | 6 | ABANDONED — calibrate statistical metrics early before building infrastructure |
 | v6.0 | 3 | 4 | Auto-advance pipeline; pure .md editing; integration checker for wiring |
@@ -230,6 +274,7 @@ Formatted markdown run log + 4-tab framework (93); data tables — ¹³C/HSQC/HM
 
 | Milestone | Tests | Coverage | Skill Lines |
 |-----------|-------|----------|-------------|
+| v10.1 | 1469 passing (8 skipped, 1 xfailed) | — | 5-agent team + orchestrator, byte-frozen and SHA-256-guarded |
 | v9.0 | 1081 passing | — | 4-agent team + orchestrator (repo/.claude, symlinked) |
 | v7.0 | 860 (7 skipped) | — | ~4,200 (unchanged — all code reverted) |
 | v6.0 | 867 (unchanged) | — | ~4,200 (skills + agents, factored with references) |
@@ -240,3 +285,5 @@ Formatted markdown run log + 4-tab framework (93); data tables — ¹³C/HSQC/HM
 2. Calibrate statistical approaches on small samples before building full infrastructure — the distribution problem in v7.0 was visible at any scale
 3. A green unit suite ≠ validation — the end-to-end blind UAT against real data is the only gate that catches upstream (peak-picking) defects (v9.0)
 4. Verify the runtime model/config before attributing failures to the skill — a silent subagent-model override drove much of the v9.0 failure chain
+5. A test that cannot fail is worse than no test — prove a new test fails against the unfixed code before trusting it (v10.1: three vacuous tests shipped by the phase whose must-haves they were meant to pin)
+6. Verify agent self-reports rather than relaying them — executor, fixer and verifier each made a claim in v10.1 that did not survive an independent check
