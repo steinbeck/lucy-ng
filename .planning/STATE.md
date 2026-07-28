@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v10.1
 milestone_name: JCAMP-DX 2D Ingestion
-status: executing
-stopped_at: Phase 103 context gathered
-last_updated: "2026-07-26T12:55:30.406Z"
-last_activity: 2026-07-26 -- Phase 103 planning complete
+status: verifying
+stopped_at: Phase 103 closed PARTIAL (JVAL-01/JVAL-02 honest partial close, D-10)
+last_updated: "2026-07-28T07:14:28.712Z"
+last_activity: 2026-07-28
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
-  completed_plans: 8
-  percent: 67
+  completed_plans: 9
+  percent: 100
 ---
 
 # lucy-ng State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-21)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 103 — end to end validation (c20h32o2 jcamp)
+**Current focus:** Phase 103 — end-to-end-validation-c20h32o2-jcamp
 
 ## Current Position
 
-Phase: 103
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-07-26 -- Phase 103 planning complete
+Phase: 103 (end-to-end-validation-c20h32o2-jcamp) — CLOSED PARTIAL (D-10 honest partial close)
+Plan: 1 of 1 (executed; Tasks 5-6 formally skipped, no consumable peaks from the FAIL run)
+Status: JVAL-01/JVAL-02 both PARTIAL — tracked next steps JVAL-F2, JVAL-F3 filed; ready for `/gsd-verify-phase 103`
+Last activity: 2026-07-28 -- Phase 103 closed PARTIAL after a coordinator-requested read-only ppm-axis diagnostic confirmed the JVAL-01 FAIL's 1D-13C acquisition-window gap is a real dataset property (exp6/narrow vs exp7/wide), not a reader defect
 
 ## Milestone v10.1 Phases
 
@@ -113,7 +113,7 @@ Items acknowledged and deferred at **v10.0 milestone close (PARTIAL) on 2026-07-
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
   - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
   - v10.0: 4 phases (97-100), 13 plans complete (97: 5, 98: 6, 99: 4, 100: 2 of 3 — VAL plan 100-03 closed with an honest partial-stop, no code shipped from it beyond the VALIDATION.md record); full suite 1396 passing at pause. PORT-01/02 verified; VAL-01/02 not achieved (SMILE memory abort, see VALIDATION.md).
-- v10.1: Phase 101 complete (4 of 4 plans done) — 101-01 (Wave-0 fixtures + RED tests), 101-02 (vendored JCAMP-DX DIFDUP/SQZ/DUP/PAC decoder, JC-04 complete), 101-03 (`readers/jcamp.py` shared ppm/metadata helpers + `JcampReader.read_1d`, JC-02/JC-03 complete), and 101-04 (`JcampReader.read_2d` + `read()` dispatcher, JC-01/JC-02 complete) shipped 2026-07-23; full suite 1408 passing, 0 RED remaining in test_jcamp.py — all 4 requirements (JC-01..04) satisfied and CI-verified on committed real fixture data. Ready for phase verification, then Phase 102.
+- v10.1: Phase 101 complete (4 of 4 plans done) — 101-01 (Wave-0 fixtures + RED tests), 101-02 (vendored JCAMP-DX DIFDUP/SQZ/DUP/PAC decoder, JC-04 complete), 101-03 (`readers/jcamp.py` shared ppm/metadata helpers + `JcampReader.read_1d`, JC-02/JC-03 complete), and 101-04 (`JcampReader.read_2d` + `read()` dispatcher, JC-01/JC-02 complete) shipped 2026-07-23; full suite 1408 passing, 0 RED remaining in test_jcamp.py — all 4 requirements (JC-01..04) satisfied and CI-verified on committed real fixture data. Phase 102 (CLI + Peak-Pick Bridge + QC Reuse, JCLI-01/02) complete 2026-07-25, full suite 1457 passing. Phase 103 (End-to-End Validation, 1 of 1 plans) **CLOSED PARTIAL 2026-07-28** — JVAL-01/JVAL-02 honest partial close (D-10); full suite 1468 passing, zero regressions. **v10.1 milestone therefore closes PARTIAL overall** (JC-01..04, JCLI-01..02 fully shipped; JVAL-01/JVAL-02 partial, tracked next steps JVAL-F2/JVAL-F3), mirroring v10.0's own Phase-100 PARTIAL close.
 
 ## Accumulated Context
 
@@ -133,6 +133,8 @@ Items acknowledged and deferred at **v10.0 milestone close (PARTIAL) on 2026-07-
 - [Phase 101 Plan 02]: Vendored `src/lucy_ng/readers/_jcampdx_decode.py` (9-object nmrglue `jcampdx.py` DIFDUP/SQZ/DUP/PAC decoder closure, lines 208-453, New-BSD Jonathan J. Helmus 2010-2015) with zero nmrglue import (JC-04) and full license attribution; entry point renamed `_parse_data` -> public `parse_data`. Added type annotations as a non-behavioral typing-only layer (function signatures, `NDArray[np.float64]` return, two targeted `assert`/`# type: ignore[index]` spots, one `Any`-typed dual-purpose local) to satisfy CLAUDE.md's `mypy --strict` gate on the new module, verified zero decode-behavior change via the unchanged D-08 hand-oracle test results before/after. The plan's own literal `grep -c nmrglue == 0` acceptance criterion conflicts with its own action text (which requires a provenance/license note naming nmrglue) — resolved by checking the substantive JC-04 requirement instead (no `import nmrglue`/`from nmrglue import` statement), documented as a plan-bug deviation in 101-02-SUMMARY.md.
 - [Phase 101 Plan 03]: `src/lucy_ng/readers/jcamp.py` implements the JC-02 crux `_ppm_scale` (verified `OFFSET + SF` formula, not naive SFO) plus `_assert_plausible_ppm_axis` (D-04 fail-loud safety net) and `_resolve_dim` (WR-04-class homonuclear-degeneracy guard), then `JcampReader.read_1d` (JC-03) on top — both committed 1H/13C references decode correctly. `_resolve_dim` indexes `$SF`/`$OFFSET` via `$NUC1`'s own list position (not `.NUCLEUS`'s), since direct inspection of the real trimmed HSQC fixture showed `$NUC1`/`$SF`/`$OFFSET` are co-indexed by nmrglue's parse order while `.NUCLEUS` uses the reversed SYMBOL-declared F1/F2 order (101-RESEARCH.md Pitfall 4). `_clean_nucleus_label` strips BOTH caret (`^1H`, used by `.OBSERVE NUCLEUS`) and angle-bracket (`<1H>`, used by real `$NUC1`) wrapping — the plan's literal wording named only caret-stripping, but real fixture data showed `$NUC1` is angle-bracket-wrapped, not caret-prefixed; fixed as a Rule-1 robustness deviation so Plan 04's `read_2d` gets a correctly-matching shared helper. Full suite: 1405 passed, 3 RED remaining (Plan 04 scope: `read_2d`/`_apply_yfactor`).
 - [Phase 101 Plan 04]: `JcampReader.read_2d` assembles the DIFDUP-compressed NTUPLES pages into a `(16, 2048)` Y-FACTOR-scaled `Spectrum2D`, with `JcampReader.read()` dispatching on `##NUM DIM=` (absent -> 1D, since real 1D files carry no such key). The JC-02 load-bearing cross-check caught a real bug in the F1 axis formula: the committed trimmed fixture's `$OFFSET` anchors the file's ORIGINAL, untrimmed NTUPLES axis (fixture generation preserves the global header verbatim, only slicing the PAGE/DATATABLE window), not the trimmed window's own first page — using the window's first page Hz value as the anchor (as 101-RESEARCH.md's literal Pitfall-3 formula suggested) produced an F1 axis off by ~150 ppm. Fixed by re-basing the local anchor through the same verified `OFFSET+SF` formula before calling the shared `_ppm_scale` helper. Phase 101 (JC-01..04) now fully complete; full suite 1408 passed, 0 RED remaining, zero regressions.
+- [Phase 102]: `lucy jcamp` (read -> pick -> QC -> write in one command) shipped reusing the byte-unchanged Phase-99 `bridge_peak_pick` + QC gate, plus a new thin 1D bridge (`processing/jcamp_1d_bridge.py`); fixed a real Phase-101 `_resolve_dim` defect that blocked every homonuclear 2D experiment (COSY, not just NOESY); first committed SHA-256 byte-unchanged guard for `case.md` + the 5 agent files. Full detail: `102-cli-peak-pick-bridge-qc-reuse/102-VALIDATION.md`.
+- [Phase 103 Plan 01, CLOSED PARTIAL 2026-07-28]: D-09 widened `_PPM_PLAUSIBILITY_BOUNDS["13C"]` 230.0 -> 250.0 so the real `C20H32O2-jcamp` HMBC file (legitimate ~234.81 ppm window) reads at all; D-01/D-04 added repeatable `--threshold`/`--snr-floor` `KEY=value` CLI options (bare form byte-identical to the old default). Ran the full, pre-defined 31-cell D-03 knob matrix directly against the real dataset (all 6 `.dx` files, zero read failures via one governed `lucy jcamp` invocation, NOESY skipped per D-06) and found the QC verdict is a genuinely **knob-independent** critical FAIL: every one of the 8 HSQC matrix cells shows the same ~37.9 ppm HSQC correlation within tolerance of the QC gate's compiled-in (and §10-flagged MEDIUM-confidence) 37.86 ppm quaternary shift, so `quaternary_exclusion` cannot pass within the matrix; `hsqc_coverage` (69% vs 80% floor) is additionally capped by a CDCl3 solvent-triplet artifact and a real 1D-13C acquisition-window gap. **Coordinator requested and received a read-only diagnostic** (raw JCAMP header + the untouched sibling Bruker tree's `acqus`/`procs` for `exp6`/`exp7`) before accepting the honest close, confirming the narrow `[-10.14, 110.14]` ppm 1D-13C window is a real, pre-existing dataset property (`exp6`/"narrow" vs `exp7`/"wide", the latter never exported to JCAMP-DX) — the JC-02/WR-04 ppm-axis risk class is explicitly cleared, not just assumed. **v10.1 closes PARTIAL**: JVAL-01 (critical FAIL, matrix exhausted, tracked via **JVAL-F2**) and JVAL-02 (not attempted — no consumable peaks for a fresh CASE session, Task 6 correctly skipped rather than run against empty data). **JVAL-F3** (re-export `exp7`/wide) filed as an additional, explicitly non-sufficient tracked next step. Full detail: `103-end-to-end-validation-c20h32o2-jcamp/103-VALIDATION.md` + `103-01-SUMMARY.md`.
 
 ### Key Design Decisions for v10.0
 
@@ -179,28 +181,34 @@ Decisions are logged in PROJECT.md Key Decisions table.
 
 - **[2026-06-25] CASE4 azulene-regiochemistry-enumeration gap** — carried seed; not in v10.1 scope. See `.planning/todos/pending/2026-06-25-case4-azulene-regiochemistry-enumeration-gap.md`.
 - **RECON-F1** — hmsIST/mddnmr fallback backend for in-lucy-ng NUS self-reconstruction (tracked from v10.0 close). Not in v10.1 scope (JCAMP ingestion is complementary, not the fallback itself), but noted as the natural next reconstruction-side step given `C20H32O2-jcamp` was itself produced by `mddnmr`.
+- **JVAL-F2** (tracked from Phase 103 PARTIAL close) — real-data recalibration of the 2D noise/threshold model and/or the QC gate's quaternary-override mechanism for CS-reconstructed matrices; needs edits to files byte-frozen in Phase 103 (`nus/qc.py`, `PeakPicker2D`). See `.planning/REQUIREMENTS.md` § Future Requirements.
+- **JVAL-F3** (tracked from Phase 103 PARTIAL close) — re-export `exp7`/wide as JCAMP-DX into `C20H32O2-jcamp` to complete the §10 1D-13C coverage gap; explicitly would NOT by itself fix `quaternary_exclusion` (JVAL-F2's job). See `.planning/REQUIREMENTS.md` § Future Requirements.
 
 ### Blockers/Concerns
 
-None. Phase 101 may begin planning immediately (`/gsd-plan-phase 101`).
+None blocking further work. v10.1 milestone effectively closes PARTIAL: JC-01..04/JCLI-01..02
+(Phases 101-102) fully shipped; JVAL-01/JVAL-02 (Phase 103) partial, with **JVAL-F2**
+and **JVAL-F3** tracked as the named next steps (see Pending Todos above). Milestone-close
+bookkeeping (`/gsd-complete-milestone`, infographic-deck refresh) is a separate command,
+not yet run.
 
 ### Strategic Reference
 
-See `background/sherlock-analysis.md` for full Sherlock vs lucy-ng comparison. v9.0 closed the end-to-end mechanism gap; v9.1 closed the three "clean-but-wrong" defect classes. v9.2 adds live observability; v9.3 deepens the inspector with spectra and data tables. v10.0 closes (partially — PORT shipped, VAL blocked) the NUS 2D reconstruction gap that timed out the first C20H32O2 CASE run. v10.1 opens a complementary, no-external-binary ingestion path (JCAMP-DX) that decouples CASE from the SMILE blocker entirely.
+See `background/sherlock-analysis.md` for full Sherlock vs lucy-ng comparison. v9.0 closed the end-to-end mechanism gap; v9.1 closed the three "clean-but-wrong" defect classes. v9.2 adds live observability; v9.3 deepens the inspector with spectra and data tables. v10.0 closes (partially — PORT shipped, VAL blocked) the NUS 2D reconstruction gap that timed out the first C20H32O2 CASE run. v10.1 opens a complementary, no-external-binary ingestion path (JCAMP-DX) that decouples CASE from the SMILE blocker entirely, and itself closes PARTIAL at Phase 103 (JVAL-01/JVAL-02, tracked via JVAL-F2/JVAL-F3) — mirroring v10.0's own honest-partial-close shape.
 
 Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions. Native LSD-3.4.9 commands are: MULT, LIST, PROP, BOND, COSY, HMBC, ELIM, DEFF, FEXP, HSQC, ELEM.
 
 ## Session Continuity
 
-Last session: 2026-07-26T12:14:53.480Z
-Stopped at: Phase 103 context gathered
-Resume with: `/gsd-verify-phase 101` (or `/gsd-plan-phase 102` if phase verification is being deferred)
+Last session: 2026-07-28T07:14:28.707Z
+Stopped at: Phase 103 closed PARTIAL (JVAL-01/JVAL-02 honest partial close, D-10)
+Resume with: `/gsd-verify-phase 103` (to verify the honest-partial-close evidence), then consider `/gsd-complete-milestone` for v10.1 (PARTIAL) or a future phase to address JVAL-F2/JVAL-F3
 
 ---
-*Last updated: 2026-07-23 — Phase 101 Plan 04 complete: `JcampReader.read_2d` assembles DIFDUP-compressed NTUPLES pages into a `(16, 2048)` Y-FACTOR-scaled `Spectrum2D` with reversed, cross-check-verified ppm axes on both dimensions (JC-01, JC-02); `JcampReader.read()` dispatches on `##NUM DIM=`. Phase 101 (JC-01..04) now fully complete — full suite 1408 passing, 0 RED remaining, zero regressions. v10.0 stays PARTIAL and untouched as historical record (Phase 100 limitation note preserved in ROADMAP.md).*
+*Last updated: 2026-07-28 — Phase 103 (End-to-End Validation, C20H32O2-jcamp) CLOSED PARTIAL. All six real `.dx` files read via one governed `lucy jcamp` invocation with zero read failures (HMBC unblocked by the D-09 reader fix); the full 31-cell D-03 knob matrix run and logged; QC verdict is a genuinely knob-independent critical FAIL (`quaternary_exclusion` hits at every one of the 8 HSQC matrix cells; `hsqc_coverage` capped by a verified real 1D-13C acquisition-window gap). A coordinator-requested read-only diagnostic against the raw JCAMP header and the untouched sibling Bruker tree's `acqus`/`procs` files (exp6/narrow vs exp7/wide) confirmed the window is a genuine dataset property, not a lucy-ng ppm-axis defect (JC-02/WR-04 risk class cleared). JVAL-01 and JVAL-02 both close PARTIAL; JVAL-F2 and JVAL-F3 filed as tracked next steps. Full suite 1468 passing, zero regressions. v10.1 milestone now effectively closes PARTIAL overall.*
 
 ## Operator Next Steps
 
-- Phase 101 (jcamp-dx-reader) is complete: run `/gsd-verify-phase 101` to verify, then `/gsd-plan-phase 102` (CLI + Peak-Pick Bridge + QC Reuse)
+- Phase 103 (end-to-end-validation-c20h32o2-jcamp) closed PARTIAL: run `/gsd-verify-phase 103` to verify the honest-partial-close evidence, then `/gsd-complete-milestone` to formally close v10.1 as PARTIAL (mirroring v10.0), or open a new phase/milestone to address JVAL-F2/JVAL-F3.
 
 </content>
