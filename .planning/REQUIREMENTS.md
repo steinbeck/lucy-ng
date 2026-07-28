@@ -45,6 +45,20 @@ Acknowledged but deferred — not in this milestone's roadmap.
   QC gate's `known_quaternary_shifts` override to express confidence tiers instead of a
   hard boolean list — both require edits to files byte-frozen in Phase 103
   (`nus/qc.py`, `PeakPicker2D`). Evidence: `phases/103-.../103-VALIDATION.md`.
+- **JVAL-F3** (tracked, Phase 103 honest partial close, additional to JVAL-F2 not instead
+  of it): re-export **exp7 (wide, `$SW=160.372937567397` ppm, `$OFFSET=160.1929` ppm)**
+  from the raw Bruker tree as JCAMP-DX into the `C20H32O2-jcamp` dataset, alongside the
+  existing exp6 ("narrow") 1D-13C file. A read-only diagnostic (103-VALIDATION.md §10
+  table) confirmed the real `C20H32O2_13C.dx` file included in this dataset is exp6
+  ("narrow", `$SW=120.283311386233` ppm, `$OFFSET=110.1447` ppm), whose window
+  (`[-10.14, 110.14]` ppm) physically cannot cover the two olefinic quaternaries
+  (142.00/135.86 ppm) — those exist in the raw Bruker tree's exp7 ("wide"), which was
+  never converted to JCAMP-DX for this dataset. **Honest limit of this step:**
+  re-exporting exp7 would complete the §10 1D-13C coverage but would **NOT** fix
+  `quaternary_exclusion`'s FAIL — the persistent, knob-independent HSQC correlation at
+  ~37.9 ppm (tracked by JVAL-F2) sits well inside exp6's own narrow window and is
+  entirely independent of which 1D-13C reference file is present. A PASS verdict is
+  therefore NOT guaranteed by this step alone. Evidence: `phases/103-.../103-VALIDATION.md`.
 
 ## Out of Scope
 
@@ -70,8 +84,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | JC-04 | Phase 101 | Complete |
 | JCLI-01 | Phase 102 | Complete |
 | JCLI-02 | Phase 102 | Complete |
-| JVAL-01 | Phase 103 | Pending |
-| JVAL-02 | Phase 103 | Pending |
+| JVAL-01 | Phase 103 | Partial (closed 2026-07-28, honest partial close — see JVAL-F2/JVAL-F3) |
+| JVAL-02 | Phase 103 | Partial (closed 2026-07-28, not attempted — no consumable peaks) |
 
 **Coverage:**
 - v10.1 requirements: 8 total

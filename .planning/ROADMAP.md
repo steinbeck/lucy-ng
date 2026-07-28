@@ -174,7 +174,7 @@ succeeds on this exact sample.
 
 - [x] **Phase 101: JCAMP-DX Reader** — pure-Python 2D NTUPLES DIFDUP decoder into `Spectrum2D` + 1D reader into `Spectrum1D`, no external binary, verified ppm axes, CI-runnable fixture test (completed 2026-07-23)
 - [x] **Phase 102: CLI + Peak-Pick Bridge + QC Reuse** — `lucy jcamp` command reusing the Phase-99 bridge pattern and the unchanged QC gate, `case.md` byte-unchanged (completed 2026-07-25)
-- [ ] **Phase 103: End-to-End Validation (C20H32O2-jcamp)** — real dataset read, peak-picked, QC-graded to §8 quality, and a fresh `/lucy-ng:case C20H32O2` run converges on a rankable solution set
+- [~] **Phase 103: End-to-End Validation (C20H32O2-jcamp)** — **PARTIAL (closed 2026-07-28).** All six real `.dx` files read via one governed `lucy jcamp` invocation, zero read failures, full 31-cell D-03 knob matrix, 20-row §10 cross-check table (17/20 matched, 3 misses explained by a verified real acquisition-window fact, not a reader defect). **JVAL-01 NOT achieved as a clean/soft-only QC pass** — verdict is critical FAIL (`quaternary_exclusion`/`hsqc_coverage`), matrix genuinely exhausted for `quaternary_exclusion`. **JVAL-02 NOT attempted** (no consumable peaks for a fresh CASE session). Tracked next steps: **JVAL-F2**, **JVAL-F3**. See the limitation note under *Phase Details* + `phases/103-.../103-VALIDATION.md`.
 
 ### Phase Details
 
@@ -242,10 +242,24 @@ succeeds on this exact sample.
 > FAIL means the D-07 chemist gate does not apply (that gate is for soft-only violations
 > only, per D-06); this is the D-10 branch instead. Because the FAIL verdict wrote no
 > consumable peaks (D-07 write boundary), no known-good positive regression fixture could
-> be produced from this run, and the JVAL-02 CASE handoff has nothing to consume.
-> **Tracked next step: JVAL-F2** (real-data recalibration of the 2D noise/threshold model
+> be produced from this run (Task 5 skipped, no fixture fabricated), and Task 6's JVAL-02
+> handoff was correspondingly **not attempted** — not a stall, not a failure, simply
+> nothing at `analysis/nmr_peaks/` for a fresh CASE session to consume.
+> **A coordinator-requested read-only diagnostic confirmed the narrow 1D-13C acquisition
+> window is a real dataset property, not a reader defect** (JC-02/WR-04 ppm-axis risk
+> class explicitly cleared): the raw Bruker `acqus`/`procs` files for the underlying
+> experiment (`exp6`, `$SW=120.283311386233` ppm, `$OFFSET=110.1447` ppm) match this
+> JCAMP file's own header exactly, and a separate, wider experiment (`exp7`,
+> `$SW=160.372937567397` ppm, `$OFFSET=160.1929` ppm — the sibling Bruker tree's own
+> `13C_exp7_wide.json` naming) exists in the raw dataset but was never exported to
+> JCAMP-DX for `C20H32O2-jcamp`. Full evidence with cited header values:
+> `phases/103-.../103-VALIDATION.md` §10.
+> **Tracked next steps: JVAL-F2** (real-data recalibration of the 2D noise/threshold model
 > and/or the QC gate's quaternary-override mechanism for CS-reconstructed matrices — needs
-> edits to files byte-frozen in Phase 103). Full evidence: `phases/103-.../103-VALIDATION.md`.
+> edits to files byte-frozen in Phase 103) **and JVAL-F3** (re-export exp7/wide as JCAMP-DX
+> to complete the §10 1D-13C coverage — would not by itself fix `quaternary_exclusion`,
+> since that hit sits inside exp6's own window and is knob-independent). Full evidence:
+> `phases/103-.../103-VALIDATION.md`.
 
 ### Progress
 

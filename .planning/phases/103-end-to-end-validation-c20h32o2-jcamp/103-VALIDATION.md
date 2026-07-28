@@ -1,11 +1,11 @@
 ---
 phase: 103
 slug: end-to-end-validation-c20h32o2-jcamp
-status: planned
+status: complete
 nyquist_compliant: true
 wave_0_complete: true
 created: 2026-07-26
-updated: 2026-07-26
+updated: 2026-07-28
 ---
 
 # Phase 103 — Validation Strategy
@@ -293,6 +293,66 @@ Picked 1D-¹³C list (`13C.json`, `snr_floor=40`, 20 peaks), tolerance = the gat
   does not cover the olefinic region at all. This is a genuine acquisition-coverage fact
   about the real `C20H32O2_13C.dx` file, not a peak-picking knob failure — no `snr_floor`
   or `threshold` value could ever recover these two shifts from this file.
+
+  **Strengthened evidence (read-only diagnostic, requested by the coordinator before
+  accepting the JVAL-01 close, since a ~120 ppm 13C window is unusual and this is
+  precisely the JC-02/WR-04 ppm-axis risk class flagged at milestone start):**
+
+  Raw header fields quoted directly from `C20H32O2_13C.dx` (not paraphrased):
+  ```
+  ##.OBSERVE FREQUENCY= 125.711269233199
+  ##.SHIFT REFERENCE= INTERNAL, CDCl3, 1, 110.1447
+  ##$BF1= 125.704983984
+  ##$SFO1= 125.711269233199
+  ##$SW= 120.283311386233
+  ##$SW_h= 15120.9677419355
+  ##$OFFSET= 110.1447
+  ##$SF= 125.704983984
+  ##SYMBOL=    X,             R,               I
+  ##FACTOR=    0.0576819142987648, 1,          1
+  ##FIRST=     15120.9100600211, 268498,       288035
+  ##LAST=      0,             208620,          -326617
+  ```
+
+  **The window arises DIRECTLY from these header values, not from our code.** Two
+  independent checks: (1) the raw NTUPLES `FIRST` value for the X column
+  (`15120.9100600211`) matches `$SW_h` (`15120.9677419355` Hz) almost exactly, confirming
+  `FIRST`/`LAST` are already given in the stated `UNITS` (Hz) per the JCAMP-DX NTUPLES
+  spec — `FACTOR` (`0.0576819142987648` for X) applies only to DATA-TABLE array values,
+  never to `FIRST`/`LAST`, and `readers/jcamp.py::read_1d` correctly does NOT reapply it
+  to these fields (only `.split(",")[0]` extraction, no multiplication). (2) `##.SHIFT
+  REFERENCE= INTERNAL, CDCl3, 1, 110.1447` is Bruker's own embedded calibration statement
+  ("point 1 of this file = 110.1447 ppm, referenced internally to CDCl3") — independent
+  of anything lucy-ng computed, and it matches `$OFFSET` exactly.
+
+  **The Task-1 plausibility bound (commit `712bcd7`, `[-15.0, 250.0]` ppm for 13C) does
+  not clip this axis** — the computed `[-10.14, 110.14]` ppm window sits comfortably
+  inside those bounds, so the widened guard is not a factor here either way.
+
+  **HSQC/HMBC F1 (13C) range comparison, same real dataset:** HSQC's F1 axis spans
+  `174.99` → `-4.90` ppm; HMBC's spans `234.81` → `-4.57` ppm — both comfortably exceed
+  110 ppm, proving 13C shifts above 110 ppm ARE correctly represented elsewhere in this
+  same dataset; only the standalone 1D-13C acquisition is narrower.
+
+  **Code-independent confirmation via the raw Bruker `acqus`/`procs` files** (read-only,
+  external sibling tree `~/.../C20H32O2/6/` and `~/.../C20H32O2/7/`, D-12 held — nothing
+  written there):
+  ```
+  exp6 (= this JCAMP file, per its own audit-trail path ".../C20H32O2/6/pdata/1/auditp.txt"):
+    acqus:  $SW=120.283311386233   procs: $OFFSET=110.1447   $SF=125.704983984
+  exp7 (NOT included in the C20H32O2-jcamp JCAMP export):
+    acqus:  $SW=160.372937567397   procs: $OFFSET=160.1929   $SF=125.704983984
+  ```
+  The sibling Bruker tree's own pre-existing known-bad fixtures are literally named
+  `13C_exp6_narrow.json` and `13C_exp7_wide.json` — exp6 ("narrow") is exactly this
+  JCAMP file; exp7 ("wide", window reaching up to 160.19 ppm, which would cover
+  142.00/135.86 ppm) exists in the raw Bruker dataset but was never exported to JCAMP-DX
+  for `C20H32O2-jcamp`.
+
+  **Conclusion: the ~120 ppm window is a property of the exported dataset (a genuinely
+  narrower experiment, "exp6/narrow", was the only 1D-13C acquisition converted to
+  JCAMP-DX), not a lucy-ng reader defect** — the JC-02/WR-04 ppm-axis risk class is
+  cleared for this finding by this diagnostic.
 - **79.35 ppm (the Cq-O quaternary) IS present in the raw spectrum at low `snr_floor`
   (verified present at 5/10/20) but drops below the `snr_floor=40` cutoff** chosen for its
   exact 20-peak count match to §10. This is a genuine, documented D-03 tuning trade-off,
@@ -450,20 +510,29 @@ PROVEN, tracked by JVAL-F2.
 
 ### CASE outcome (D-15) + model actually used (D-13.4)
 
-**Not attempted, and not attempted for a principled reason, not an oversight.** JVAL-02's
-Task 6 hand-off requires `analysis/nmr_peaks/*.json` to exist for the fresh CASE session
-to consume — the governed run's FAIL verdict means this directory was never created
-(D-07 write boundary correctly quarantined everything instead). Handing off to a fresh
-`/lucy-ng:case C20H32O2` session now would give the byte-frozen `lucy-nmr-chemist` agent
-literally nothing to find at `analysis/nmr_peaks/` — not a meaningful test of the JVAL-02
-integration risk (Pitfall 3/JVAL-F1), just a guaranteed stall for an unrelated, already-
-understood reason. Per Task 4's own action text ("continue to Tasks 5 and 6 anyway if
-any usable peaks exist... only skip Task 5's fixture if the run produced no consumable
-peaks at all"), no usable peaks exist, so Task 6's actual handoff is deferred to the
-checkpoint below for the user's decision rather than run against empty data.
-v10.1 closes PARTIAL for JVAL-02 as well, for this reason — not because the
-nmr-chemist/pre-picked-peaks integration gap (JVAL-F1's original hypothesis) was
-observed; that specific integration risk was never reached this run.
+**Task 6 (D-14 fresh-CASE handoff): SKIPPED — not attempted, and not attempted for a
+principled reason, not an oversight, not a failure.** JVAL-02's hand-off requires
+`analysis/nmr_peaks/*.json` to exist for the fresh CASE session to consume — the governed
+run's FAIL verdict means this directory was never created (D-07 write boundary correctly
+quarantined everything to `analysis/jcamp_ingest/qc_failed/` instead). Handing off to a
+fresh `/lucy-ng:case C20H32O2` session now would give the byte-frozen `lucy-nmr-chemist`
+agent literally nothing to find at `analysis/nmr_peaks/` — not a meaningful test of the
+JVAL-02 integration risk RESEARCH.md's Pitfall 3 originally flagged (whether the agent
+recovers from a pre-picked-peaks hand-off), just a guaranteed stall for an unrelated,
+already-understood reason (no data at all, not a picking/consumption ambiguity). Per
+Task 4's own action text ("continue to Tasks 5 and 6 anyway if any usable peaks exist...
+only skip Task 5's fixture if the run produced no consumable peaks at all"), no usable
+peaks exist, so Task 6's handoff was correctly not run against empty data — confirmed by
+the coordinator's D-10 close decision.
+
+**v10.1 closes PARTIAL for JVAL-02: not attempted, not failed, not achieved.** The
+nmr-chemist/pre-picked-peaks integration risk (RESEARCH.md Pitfall 3, the hypothesis
+behind a possible future **JVAL-F1** requirement) was never reached this run and remains
+entirely untested — it is NOT being filed as a tracked next step here, since no evidence
+about it was gathered either way. JVAL-01 must first reach a PASS/soft-PARTIAL verdict
+(tracked via JVAL-F2/JVAL-F3) before JVAL-02 can be meaningfully attempted at all. No
+model-disclosure gate ran; no CASE session was launched; no D-13 blind safeguards were
+needed since no session was started.
 
 ### Deviations logged under D-09
 
@@ -520,19 +589,24 @@ Extends Phase 102's. Phase 103's job is to move the four
 |-------|-------|
 | REAL-DATA | Peak-count plausibility: MOVED from NOT-PROVEN. All 31 D-03 matrix cells measured directly against the real, external `C20H32O2-jcamp` dataset; the chosen cells produce §8-plausible counts for HSQC (23), COSY (77), HMBC (59), and an exact 20-count match for 13C. Full-matrix SNR behaviour: MOVED from NOT-PROVEN. Both `snr_floor` and `threshold` modes swept across all 5 experiments (31 cells total), each logged with its outcome. All six real `.dx` files read via one governed `lucy jcamp` invocation with zero read failures (HMBC included, the Task-1 fix proven on the real file, not a probe). |
 | FIXTURE-COVERED (Phase 102, unaffected) | Everything `tests/test_cli_jcamp.py`/`tests/readers/test_jcamp.py` already exercise on the trimmed 16-row fixtures, now further extended by this phase's Task 1/2 test additions (boundary cases for the widened ppm bound; the new per-experiment knob-option surface). |
-| NOT PROVEN — Phase 103 / JVAL, tracked by JVAL-F2 | **§8-quality green verdict**: NOT achieved. The governed run's QC verdict is FAIL (`quaternary_exclusion` + `hsqc_coverage` critical), for reasons characterized in full above (a persistent, knob-independent HSQC hit at a MEDIUM-confidence quaternary shift, plus an achievable-coverage ceiling capped by a real acquisition-window gap and a solvent artifact) — not a picking defect within this phase's fix boundary. **CASE convergence**: NOT PROVEN — not attempted, because the FAIL verdict wrote no consumable peaks for a fresh CASE session to consume; the JVAL-02 nmr-chemist/pre-picked-peaks integration risk (originally flagged as Pitfall 3) was never reached. **Any claim that a verdict is chemically correct**: still NOT PROVEN — this phase never claimed otherwise; the §10/§8 evidence above is the honest, bounded substitute for that claim on a dataset where the QC gate's own quaternary check partially grades itself (D-05). |
+| NOT PROVEN — Phase 103 / JVAL, tracked by JVAL-F2 (+ JVAL-F3 for the 1D-13C coverage gap specifically) | **§8-quality green verdict**: NOT achieved. The governed run's QC verdict is FAIL (`quaternary_exclusion` + `hsqc_coverage` critical), for reasons characterized in full above (a persistent, knob-independent HSQC hit at a MEDIUM-confidence quaternary shift, plus an achievable-coverage ceiling capped by a real, verified acquisition-window fact — exp6/narrow vs. exp7/wide, confirmed against raw Bruker `acqus`/`procs`, NOT a reader defect — and a solvent artifact) — not a picking defect within this phase's fix boundary. **CASE convergence**: NOT PROVEN — not attempted (Task 6 skipped), because the FAIL verdict wrote no consumable peaks for a fresh CASE session to consume; the JVAL-02 nmr-chemist/pre-picked-peaks integration risk (RESEARCH.md Pitfall 3) was never reached and is NOT filed as JVAL-F1 since no evidence was gathered about it either way. **Any claim that a verdict is chemically correct**: still NOT PROVEN — this phase never claimed otherwise; the §10/§8 evidence above is the honest, bounded substitute for that claim on a dataset where the QC gate's own quaternary check partially grades itself (D-05). |
+| RESOLVED (this phase, read-only diagnostic) | The ppm-axis risk class (JC-02/WR-04) as applied to the 1D-13C acquisition-window question: CONFIRMED as a real dataset property (exp6/narrow, raw `acqus`/`procs` `$SW=120.283311386233`/`$OFFSET=110.1447`, matching this JCAMP file's own header exactly), not a lucy-ng reader defect. Task-1's widened plausibility bound does not clip this axis; `FACTOR` is correctly not reapplied to `FIRST`/`LAST`. See §10 table above for the full cited evidence. |
 
 ---
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or a Wave 0 dependency, or are listed under Manual-Only above
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 240 s
-- [ ] Byte-freeze drift gate green (`tests/test_skill_files_unchanged.py`)
-- [ ] Known-bad QC-02 fixtures under `.../C20H32O2/analysis/nmr_peaks/` untouched (D-11)
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or a Wave 0 dependency, or are listed under Manual-Only above
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 240 s
+- [x] Byte-freeze drift gate green (`tests/test_skill_files_unchanged.py`)
+- [x] Known-bad QC-02 fixtures under `.../C20H32O2/analysis/nmr_peaks/` untouched (D-11)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** Coordinator-approved D-10 honest partial close, 2026-07-28. JVAL-01 closes
+PARTIAL (critical FAIL, matrix exhausted, tracked via JVAL-F2/JVAL-F3). JVAL-02 closes
+PARTIAL as **not attempted** (no consumable peaks; Task 6 correctly skipped, per
+coordinator confirmation after an independent read-only diagnostic ruled out a
+ppm-axis/reader defect as the root cause of the 1D-13C coverage gap).
