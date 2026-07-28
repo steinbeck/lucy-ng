@@ -48,9 +48,21 @@ from lucy_ng.readers.bruker import _detect_experiment_type
 # HSQC (``$OFFSET=234.8062`` ppm, SW ~= 30091 Hz at ``SF=125.705`` MHz),
 # whose axis reaches ~234.81 ppm -- outside the old 230.0 ceiling despite
 # being a real, physically sensible window, not a units bug. 250.0 clears
-# that window with ~15 ppm margin while staying far below the Hz-scale
-# magnitudes (~29,500) a genuine SFO/SF-divisor bug produces, so the guard
-# remains meaningful.
+# that window with ~15 ppm margin.
+#
+# Honest scope of what this ceiling does and does not catch (103-REVIEW.md
+# WR-07): ``_ppm_scale``'s ``scale[0]`` is always ``$OFFSET`` verbatim from
+# the file (see ``_ppm_scale`` below), so ``scale.max() <= hi`` here never
+# re-derives anything from the computed Hz math -- it only re-checks a
+# field the file already states in ppm. It is the *floor* (``lo <=
+# scale.min()``, at -15.0 for 13C) that exercises the computed half and
+# rejects an undivided-Hz axis (the ~29,500-magnitude "forgot to divide by
+# SF" bug lands in the axis minimum, ``offset - sw_hz``, never in the
+# maximum). Neither bound -- ceiling or floor -- detects a wrong-but-in-range
+# divisor (e.g. SFO taken in place of SF, or the wrong dimension's SF): see
+# ``_assert_plausible_ppm_axis``'s own docstring, which states this guard
+# would NOT by itself catch that class. That finer check is the JC-02
+# 1D-reference cross-check in the test layer (D-03), not this coarse net.
 _PPM_PLAUSIBILITY_BOUNDS: dict[str, tuple[float, float]] = {
     "1H": (-3.0, 15.0),
     "13C": (-15.0, 250.0),
