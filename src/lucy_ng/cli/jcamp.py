@@ -222,24 +222,51 @@ def jcamp(
     threshold_by_exp, threshold_bare = _parse_keyed_option(
         thresholds, option_name="--threshold"
     )
-    snr_by_exp, snr_bare = _parse_keyed_option(snr_floors, option_name="--snr-floor")
-    snr_bare = snr_bare if snr_bare is not None else 5.0
-
-    ambiguous = sorted(set(threshold_by_exp) & set(snr_by_exp))
-    if ambiguous:
-        raise click.BadParameter(
-            "a keyed --threshold and a keyed --snr-floor were both given for "
-            f"the same experiment(s) {', '.join(ambiguous)} -- these are "
-            "mutually exclusive modes, so an explicit request for both is "
-            "ambiguous. Give at most one keyed value per experiment (a bare "
-            "--snr-floor alongside a keyed --threshold is fine)."
-        )
+    snr_by_exp, snr_bare_given = _parse_keyed_option(
+        snr_floors, option_name="--snr-floor"
+    )
+    snr_bare = snr_bare_given if snr_bare_given is not None else 5.0
 
     def _resolved_threshold(name: str) -> float | None:
         return threshold_by_exp.get(name, threshold_bare)
 
     def _resolved_snr_floor(name: str) -> float:
         return snr_by_exp.get(name, snr_bare)
+
+    # CR-01 (103-REVIEW.md): an explicitly requested --snr-floor must never
+    # be silently discarded. `nus/bridge.py`'s `use_snr = threshold is None`
+    # means ANY resolved threshold -- bare OR keyed -- switches that
+    # experiment/nucleus to fraction-of-max mode and drops its snr_floor on
+    # the floor with no diagnostic. The old guard only compared the two
+    # KEYED sets, so a bare --threshold (invisible to that comparison) slid
+    # straight through and silently shadowed every keyed --snr-floor. Test
+    # the *resolved* mode instead, for every experiment that was explicitly
+    # given a keyed --snr-floor.
+    shadowed = sorted(
+        name for name in snr_by_exp if _resolved_threshold(name) is not None
+    )
+    if shadowed:
+        raise click.BadParameter(
+            f"--snr-floor was given for {', '.join(shadowed)}, but a "
+            "--threshold (bare or keyed) also applies there; --threshold "
+            "switches that experiment to fraction-of-max mode, so the "
+            "--snr-floor would be silently ignored. Scope the --threshold "
+            "away with KEY=value, or drop the --snr-floor for those "
+            "experiments."
+        )
+    # Same hole, bare-vs-bare: a bare --threshold together with a bare
+    # --snr-floor means the bare snr-floor is dead for every experiment, not
+    # just the keyed ones caught above.
+    if threshold_bare is not None and snr_bare_given is not None:
+        raise click.BadParameter(
+            "a bare --threshold and a bare --snr-floor were both given; "
+            "--threshold switches every experiment/nucleus to "
+            "fraction-of-max mode, so the bare --snr-floor would be "
+            "silently ignored everywhere. Give only one of the two bare "
+            "forms (a keyed --snr-floor for specific experiments alongside "
+            "a bare --threshold is fine, as long as those experiments are "
+            "not themselves keyed to --snr-floor)."
+        )
 
     # STEP 1 -- resolve inputs.
     resolved = [Path(p).resolve() for p in paths]
