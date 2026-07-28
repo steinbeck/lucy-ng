@@ -267,5 +267,5 @@ succeeds on this exact sample.
 |-------|-----------------|--------|-----------|
 | 101. JCAMP-DX Reader | 4/4 | Complete    | 2026-07-23 |
 | 102. CLI + Peak-Pick Bridge + QC Reuse | 4/4 | Complete    | 2026-07-25 |
-| 103. End-to-End Validation (C20H32O2-jcamp) | 1/1 | Complete   | 2026-07-28 |
+| 103. End-to-End Validation (C20H32O2-jcamp) | 1/1 | Complete    | 2026-07-28 |
 </content>

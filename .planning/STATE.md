@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v10.1
 milestone_name: JCAMP-DX 2D Ingestion
-status: verifying
-stopped_at: Phase 103 closed PARTIAL (JVAL-01/JVAL-02 honest partial close, D-10)
-last_updated: "2026-07-28T07:14:28.712Z"
+status: milestone_complete
+stopped_at: Milestone complete (Phase 103 was final phase)
+last_updated: 2026-07-28T12:36:08.932Z
 last_activity: 2026-07-28
 progress:
   total_phases: 3
   completed_phases: 3
   total_plans: 9
-  completed_plans: 9
+  completed_plans: 27
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-21)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 103 — end-to-end-validation-c20h32o2-jcamp
+**Current focus:** Milestone complete
 
 ## Current Position
 
-Phase: 103 (end-to-end-validation-c20h32o2-jcamp) — CLOSED PARTIAL (D-10 honest partial close)
-Plan: 1 of 1 (executed; Tasks 5-6 formally skipped, no consumable peaks from the FAIL run)
-Status: JVAL-01/JVAL-02 both PARTIAL — tracked next steps JVAL-F2, JVAL-F3 filed; ready for `/gsd-verify-phase 103`
-Last activity: 2026-07-28 -- Phase 103 closed PARTIAL after a coordinator-requested read-only ppm-axis diagnostic confirmed the JVAL-01 FAIL's 1D-13C acquisition-window gap is a real dataset property (exp6/narrow vs exp7/wide), not a reader defect
+Phase: 103
+Plan: Not started
+Status: Milestone complete
+Last activity: 2026-07-28
 
 ## Milestone v10.1 Phases
 
@@ -108,7 +108,7 @@ Items acknowledged and deferred at **v10.0 milestone close (PARTIAL) on 2026-07-
 
 **Velocity:**
 
-- Total plans completed: 228 across 13 milestones (11 shipped + 1 abandoned + 1 partial) at v10.0 pause
+- Total plans completed: 229 across 13 milestones (11 shipped + 1 abandoned + 1 partial) at v10.0 pause
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
   - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)

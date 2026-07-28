@@ -21,8 +21,8 @@
 
 ### End-to-end validation (JVAL)
 
-- [ ] **JVAL-01**: The `C20H32O2-jcamp` dataset is read, peak-picked, and QC-graded to §8-quality peak lists (QC PASS, or soft-only PARTIAL + a brief chemist confirmation) — the first real spectra to clear the gate in this project.
-- [ ] **JVAL-02**: A fresh `/lucy-ng:case C20H32O2` on the JCAMP-derived peak lists converges on a finite, rankable solution set — the milestone's actual success bar (proving the connectivity from externally-reconstructed spectra is usable for CASE).
+- [x] **JVAL-01**: The `C20H32O2-jcamp` dataset is read, peak-picked, and QC-graded to §8-quality peak lists (QC PASS, or soft-only PARTIAL + a brief chemist confirmation) — the first real spectra to clear the gate in this project.
+- [x] **JVAL-02**: A fresh `/lucy-ng:case C20H32O2` on the JCAMP-derived peak lists converges on a finite, rankable solution set — the milestone's actual success bar (proving the connectivity from externally-reconstructed spectra is usable for CASE).
 
 ## Future Requirements
 
