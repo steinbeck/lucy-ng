@@ -39,9 +39,26 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lucy_ng.models.nus import NusAcquisitionParams
 
-#: Ground-truth 1D 13C shifts (NUS-RECONSTRUCTION-GUIDE.md Sec.10) -- the
-#: calibration cross-check's source of truth is this trusted 1D data, never
-#: the reconstruction itself (D-02).
+#: 1D 13C shifts as listed in NUS-RECONSTRUCTION-GUIDE.md Sec.10.
+#:
+#: PROVENANCE -- READ BEFORE RELYING ON THESE (corrected 2026-07-31):
+#: these are NOT an independent reference assignment and NOT ground truth.
+#: Sec.10 is headed "Gesicherte Fakten aus dem ersten Lauf (aus den
+#: verlaesslichen 1D-Daten -- als Startpunkt)": it is the *working
+#: hypothesis* a previous CASE agent derived from this very sample's own 1D
+#: spectra during the failed 2026-07-09 run, written into that run's
+#: `analysis/` output directory. C20H32O2 (a Nils Schloerer test dataset) is
+#: UNSOLVED -- no human reference assignment exists for it.
+#:
+#: Consequence: comparing freshly picked 1D 13C shifts against this list is a
+#: *reproducibility* check (does our picker/ppm axis reproduce an earlier
+#: pick of the same file?), NOT a chemical validation. It still has real
+#: value for the ppm-axis question -- the earlier list came via the Bruker
+#: reader, so agreement cross-checks a second, independent reader path --
+#: but it cannot confirm that any assignment is correct.
+#:
+#: Sample-specific: these values describe C20H32O2 only. Do not treat them as
+#: a general default for other compounds. See tracked item PROV-01.
 GUIDE_S10_C13: list[float] = [
     142.00,
     135.86,

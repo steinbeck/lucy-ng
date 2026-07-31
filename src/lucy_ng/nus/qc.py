@@ -43,18 +43,41 @@ from lucy_ng.nus.postprocess import (
     check_calibration,
 )
 
-#: The 5 confirmed-quaternary 13C shifts (NUS-RECONSTRUCTION-GUIDE.md
-#: Sec.8/Sec.10) -- a subset of `GUIDE_S10_C13`. This is the D-03 tier-2
-#: "explicit override" default; `QcConfig.known_quaternary_shifts` is
+#: 5 13C shifts that NUS-RECONSTRUCTION-GUIDE.md Sec.8/Sec.10 *proposes* as
+#: quaternary for C20H32O2 -- a subset of `GUIDE_S10_C13`. This is the D-03
+#: tier-2 "explicit override" default; `QcConfig.known_quaternary_shifts` is
 #: overridable via config/CLI.
+#:
+#: NOT CONFIRMED -- corrected 2026-07-31. An earlier revision of this comment
+#: called these "the 5 confirmed-quaternary shifts". They are not confirmed:
+#: they come from a previous CASE agent's working hypothesis about an
+#: UNSOLVED sample (see `GUIDE_S10_C13` in `postprocess.py` for the full
+#: provenance), and that source hedges two of these five in its own words:
+#:   - 37.86 -- "evtl. ein angularer C10 (~37.86, MEDIUM)"; Sec.8 lists it as
+#:     "37.86-Kandidat"
+#:   - 79.35 -- "...ODER 4 Carbon-Ringe + Diol (falls 79.35 doch Rauschen)"
+#:
+#: Consequence for `check_quaternary_exclusion`: a FAIL against these shifts
+#: is evidence that the *hypothesis* and the data disagree. It does not by
+#: itself establish that the picked peak is an artifact -- the hypothesis
+#: being wrong (e.g. 37.86 simply is not quaternary) produces exactly the
+#: same FAIL. Read such a verdict as "needs a human decision", not as
+#: "reconstruction is bad".
+#:
+#: Sample-specific: applying this default to any compound other than
+#: C20H32O2 grades that compound against an unrelated sample's guesses.
+#: `cli/jcamp.py` currently reaches this default unconditionally when no DEPT
+#: file is present. See tracked item PROV-01.
 DEFAULT_QUATERNARY_SHIFTS: tuple[float, ...] = (142.00, 135.86, 79.35, 36.23, 37.86)
 
 #: Re-exported flat list form for convenience (tests/conftest.py mirrors
 #: this constant independently as `KNOWN_QUATERNARY_SHIFTS`).
 KNOWN_QUATERNARY_SHIFTS: list[float] = list(DEFAULT_QUATERNARY_SHIFTS)
 
-#: The 15 true protonated carbons -- `GUIDE_S10_C13` minus the 5 known
-#: quaternaries (RESEARCH.md Pitfall 3). Used only as a last-resort
+#: The 15 carbons the Sec.10 hypothesis implies are protonated --
+#: `GUIDE_S10_C13` minus the 5 proposed quaternaries (RESEARCH.md Pitfall 3).
+#: Inherits `DEFAULT_QUATERNARY_SHIFTS`' provenance caveat above: this is a
+#: derived hypothesis, not a verified set. Used only as a last-resort
 #: fallback when no trusted 1D reference file is available at all; the
 #: normal path derives the protonated set from the actual 1D peak lists
 #: read from `<peaks-dir>` (D-03 -- no re-derivation from the guide).
@@ -350,7 +373,12 @@ def check_ppm_calibration(
 def qc_check_ppm_calibration(
     hsqc_c13_shifts: Sequence[float], tol: float = DEFAULT_CALIBRATION_TOL
 ) -> QcCheckResult:
-    """Standalone wrapper: reuses `check_calibration()` against `GUIDE_S10_C13`."""
+    """Standalone wrapper: reuses `check_calibration()` against `GUIDE_S10_C13`.
+
+    Note the reference list is a C20H32O2-specific hypothesis, not ground
+    truth -- see `GUIDE_S10_C13`'s provenance note. On another compound this
+    check compares against an unrelated sample's shifts (tracked: PROV-01).
+    """
     if not hsqc_c13_shifts:
         return QcCheckResult(
             name="ppm_calibration",

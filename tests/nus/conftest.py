@@ -38,9 +38,15 @@ _FIXTURE_NAMES = {"exp2_cosy", "exp3_hsqc", "exp4_hmbc"}
 _KNOWN_BAD_PEAKS_DIR = _NUS_FIXTURES_ROOT / "known_bad_peaks"
 _CLEAN_PEAKS_DIR = _NUS_FIXTURES_ROOT / "clean_peaks_synthetic"
 
-# The 5 confirmed-quaternary 13C shifts (NUS-RECONSTRUCTION-GUIDE.md §8/§10)
-# re-exported for QC-02/QC-01 tests -- a subset of nus/postprocess.py's
-# GUIDE_S10_C13 20-shift list.
+# The 5 13C shifts that NUS-RECONSTRUCTION-GUIDE.md §8/§10 *proposes* as
+# quaternary for C20H32O2, re-exported for QC-02/QC-01 tests -- a subset of
+# nus/postprocess.py's GUIDE_S10_C13 20-shift list.
+#
+# NOT confirmed (corrected 2026-07-31): the guide is a previous CASE agent's
+# working hypothesis about an UNSOLVED sample, and it hedges 37.86 and 79.35
+# in its own words. These tests therefore pin the gate's *mechanics* against a
+# fixed input set -- they do not assert that the classification is chemically
+# correct. See nus/postprocess.py::GUIDE_S10_C13 and tracked item PROV-01.
 KNOWN_QUATERNARY_SHIFTS = [142.00, 135.86, 79.35, 36.23, 37.86]
 
 

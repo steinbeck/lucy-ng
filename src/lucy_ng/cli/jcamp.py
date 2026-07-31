@@ -204,9 +204,20 @@ def jcamp(
     (the `C20H32O2-jcamp` case), `QcConfig.default()`'s
     `known_quaternary_shifts` -- the five compiled-in Sec.8 shifts (142.00,
     135.86, 79.35, 36.23, 37.86) -- is used unconditionally, so
-    `classification_source` will read `"override"`. This is inherited,
-    byte-unchanged `qc.py` behaviour, not a choice this command makes; no CLI
-    flag here disables it, because `qc.py` is byte-protected this phase.
+    `classification_source` will read `"override"`. This is inherited
+    `qc.py` behaviour, not a choice this command makes; no CLI flag here
+    disables it (`qc.py` was byte-protected during Phase 103).
+
+    PROVENANCE WARNING (added 2026-07-31, tracked as PROV-01): those five
+    shifts are **not** confirmed quaternaries and **not** ground truth. They
+    are a previous CASE agent's working hypothesis about C20H32O2 -- an
+    UNSOLVED sample with no human reference assignment -- and the source
+    hedges two of the five in its own text. Because the default applies
+    unconditionally, running this command on ANY other compound without a
+    DEPT file grades that compound's `quaternary_exclusion` check against
+    C20H32O2's guesses. Treat a `quaternary_exclusion` FAIL as "hypothesis
+    and data disagree, a human must decide", never as proof that the
+    spectra are bad. Full provenance: `nus/postprocess.py::GUIDE_S10_C13`.
     """
     from lucy_ng.models import Spectrum1D, Spectrum2D
     from lucy_ng.models.nus import QcVerdict
