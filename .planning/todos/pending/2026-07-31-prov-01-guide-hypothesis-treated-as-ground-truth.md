@@ -66,6 +66,32 @@ cross-check's **source of truth**".
   `tests/nus/conftest.py`. "Ground truth" / "confirmed" removed wherever it was claimed.
 - Planning documents corrected so the term stops propagating.
 
+## Re-analysis result (2026-07-31, same day) — decision 2 and 3 now have evidence
+
+Full write-up: `.planning/analysis/2026-07-31-PROV-01-quaternary-reanalysis.md`.
+Read-only re-reading of the quarantined Phase-103 peak lists, deriving the quaternary set
+from the edited HSQC instead of from the hypothesis:
+
+- **37.86 ppm is a CH** (positive HSQC correlation at 1H 1.571), not a quaternary carbon. The
+  `quaternary_exclusion` FAIL was the gate correctly reporting that its input assumption is
+  wrong — not a reconstruction or threshold problem.
+- Data-derived quaternaries are **51.63, 37.19, 36.23, 35.23, 30.66** (+ 142/135.86, confirmed
+  independently by HMBC with 3 and 8 correlations). Only 36.23 and the olefinics agree with the
+  hypothesis; **3 of 5 assumed quaternaries are wrong**.
+- **But the peak lists are genuinely incomplete:** 19 of 20 carbons, and only ~24 of the
+  expected ~30-31 C-bound hydrogens. So the FAIL is not purely an artifact of the wrong ruler.
+- **The knob matrix was decided against the false hypothesis.** The winning cell (23 peaks) was
+  chosen because it matched §10's expected count; richer cells (39/50/51/62) were rejected as
+  "above zone". The H balance says 23 is too *few*. The 62-peak cell was partly rejected over a
+  "quaternary hit at 79.29" — the very carbon the C20 count requires as the missing twentieth.
+
+**Consequence for decision 2:** Phase 103's PARTIAL stands, but its stated cause does not.
+**Consequence for decision 3 (JVAL-F2):** mis-scoped. Not "recalibrate the noise model" but
+(a) `quaternary_exclusion` is conceptually inverted — the edited HSQC is what *determines* the
+quaternary set, so grading it against a supplied list can only measure agreement with an
+assumption; a sound check derives the set and tests it against hard facts (formula carbon
+count, H balance); and (b) HSQC completeness, re-judged against formula-derived criteria.
+
 ## Open — needs a decision, deliberately not taken unilaterally
 
 1. **Should `DEFAULT_QUATERNARY_SHIFTS` remain a library default at all?** Options: drop the
