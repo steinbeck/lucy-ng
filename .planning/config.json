@@ -7,7 +7,7 @@
   "workflow": {
     "auto_advance": false,
     "research": true,
-    "_auto_chain_active": true
+    "_auto_chain_active": false
   },
   "granularity": "standard"
 }

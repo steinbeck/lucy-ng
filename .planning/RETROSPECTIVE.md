@@ -247,7 +247,37 @@ The milestone's actual success bar. JVAL-01's real-data QC verdict is a critical
 - **`[~]` for partial requirements:** a checkbox that says `[x]` while the traceability table says "Partial" is a lie that outlives the milestone in the archive.
 - **Write-boundary honesty compounds:** because the D-07 boundary refused to write peaks on FAIL, JVAL-02 could be recorded as *not attempted* rather than fabricated or half-run.
 
+### Post-close correction (2026-07-31) — the biggest miss of this milestone
+
+Everything above that cites "§8/§10 ground truth" is built on a false label, found only
+*after* the milestone was closed and tagged, and only because the user said "I never made a
+reference assignment for C20H32O2".
+
+`NUS-RECONSTRUCTION-GUIDE.md` §8/§10 is not a reference assignment. It is a handover note a
+Claude instance wrote into the `analysis/` output directory of the **failed 2026-07-09 CASE
+run**, summarising what it had inferred from that sample's own 1D spectra. Its §10 heading
+says so — *"Gesicherte Fakten aus dem ersten Lauf … als Startpunkt"* — and it hedges two of
+its five "quaternary" shifts in its own text. C20H32O2 is an unsolved test dataset.
+
+So the "17/20 matched" headline measures whether two runs pick the same peaks from the same
+file. As a *cross-reader* ppm-axis check (Bruker reader vs new JCAMP reader) it is genuinely
+informative; as chemical validation it is circular. And the five shifts were compiled into
+`nus/qc.py` as a **library default**, applied unconditionally without DEPT — so any other
+compound gets graded against this sample's guesses.
+
+How it survived: the phrase "ground truth" entered from that agent-authored file into
+RESEARCH, then the roadmap success criteria, then two source modules, then three phases of
+plans, verifications and code reviews. Every later step cited the label instead of the source.
+The v10.1 lesson *"cite raw headers instead of trusting the reader's own output"* was applied
+to the ppm axis and not to the reference list — the same discipline, one step short.
+
+**The correction that generalises:** verify the provenance of a reference dataset at the point
+it is first cited, and record who produced it and how. An artefact sitting in a *run's own
+output directory* is a suspect, not a source. Tracked: PROV-01.
+
 ### Key Lessons
+0. **Check where "ground truth" came from before building on it** — a label inherited from an
+   agent's own output survived three phases here and made a headline validation circular
 1. **A test that cannot fail is worse than no test** — it converts an unknown into a false assurance. Prove a new test fails against the unfixed code before trusting it.
 2. **"Knob-independent" is a finding, not a dead end** — reproducing a failure across the whole parameter matrix is what converts "we didn't tune enough" into "this needs a different fix", and it is what made the honest close defensible.
 3. **Ask which artefact is missing before blaming the code.** Two milestones in a row (v10.0 SMILE memory, v10.1 narrow exp6) were limited by the environment or the input, not by lucy-ng.
@@ -286,4 +316,5 @@ The milestone's actual success bar. JVAL-01's real-data QC verdict is a critical
 3. A green unit suite ≠ validation — the end-to-end blind UAT against real data is the only gate that catches upstream (peak-picking) defects (v9.0)
 4. Verify the runtime model/config before attributing failures to the skill — a silent subagent-model override drove much of the v9.0 failure chain
 5. A test that cannot fail is worse than no test — prove a new test fails against the unfixed code before trusting it (v10.1: three vacuous tests shipped by the phase whose must-haves they were meant to pin)
-6. Verify agent self-reports rather than relaying them — executor, fixer and verifier each made a claim in v10.1 that did not survive an independent check
+6. Verify the provenance of any "ground truth" at the point it is first cited — v10.1's §8/§10 reference list was an agent's own handover note about an unsolved sample, which made a headline cross-check circular and put one sample's guesses into a library default (PROV-01)
+7. Verify agent self-reports rather than relaying them — executor, fixer and verifier each made a claim in v10.1 that did not survive an independent check

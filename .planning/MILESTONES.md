@@ -17,6 +17,35 @@
 
 Ruled out along the way: the JC-02/WR-04 ppm-axis defect class. A read-only diagnostic against the raw JCAMP header and the untouched sibling Bruker `acqus`/`procs` proved the narrow 1D-13C window is a genuine dataset property — `exp6`/narrow (`$SW=120.28`) was exported to JCAMP, `exp7`/wide (`$SW=160.37`) was not — and not a reader defect.
 
+### ⚠ Post-close correction (2026-07-31) — PROV-01
+
+The "§10 cross-check 17/20" figure above, and the framing of the `quaternary_exclusion`
+failure, both rest on `NUS-RECONSTRUCTION-GUIDE.md` §8/§10 being **ground truth**. It is not.
+§10 is a previous CASE agent's working hypothesis, inferred from this sample's own 1D spectra
+during the failed 2026-07-09 run; C20H32O2 is an **unsolved** dataset (Nils Schlörer, Jena)
+with no human reference assignment — confirmed by the user on 2026-07-31.
+
+What this changes:
+
+- **17/20 is a reproducibility figure, not a chemical validation.** It compares our picked
+  shifts against an earlier agent's pick of the same spectrum. It does retain real value as a
+  *cross-reader* check (the earlier list came via the Bruker reader, the new one via the JCAMP
+  reader), which is exactly the JC-02 ppm-axis risk — but only that claim.
+- **The `quaternary_exclusion` FAIL is ambiguous, not diagnostic.** It fires when hypothesis
+  and data disagree; "37.86 ppm is simply not quaternary" produces the identical FAIL. The
+  guide itself flags 37.86 as a candidate (MEDIUM) and 79.35 as possibly noise.
+- **`hsqc_coverage`'s denominator** derives from the same hypothesis.
+- **Beyond this sample:** the five shifts are compiled into `nus/qc.py` as a library default
+  that `cli/jcamp.py` reaches unconditionally without a DEPT file — so any other compound is
+  graded against C20H32O2's guesses. That part is a defect, not a labelling error.
+
+Unaffected: the reader work (JC-01..04, JCLI-01/02), the exp6/exp7 ppm-window diagnostic
+(run against raw Bruker `acqus`/`procs`, fully independent), and the PARTIAL outcome itself —
+which this correction, if anything, makes better founded.
+
+Labels corrected in code and planning docs on 2026-07-31; the behaviour questions are open and
+tracked in `todos/pending/2026-07-31-prov-01-*.md`. JVAL-F2 needs re-scoping in its light.
+
 **Known deferred items at close: 6** (JVAL-F2, JVAL-F3, CR-02, CR-03, 2 carried todos — see STATE.md *Deferred Items*). CR-02/CR-03 are real data-loss paths in `lucy jcamp`, attributable to Phase 102 (`f6de196`), filed rather than fixed.
 
 **Key accomplishments:**

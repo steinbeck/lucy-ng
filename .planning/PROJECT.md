@@ -16,7 +16,7 @@ An AI agent can autonomously determine the structure of an unknown organic compo
 
 **Target features:**
 - **JCAMP-DX 2D NTUPLES reader** — decode the DIFDUP-compressed `##DATA TABLE=` pages (one per F1 row) into the existing `Spectrum2D` model; reuse nmrglue's line decoders (vendored to avoid depending on a private API).
-- **Correct ppm axes** — map NTUPLES metadata (`VAR_DIM`, `FIRST`/`LAST`/`FACTOR`, `.NUCLEUS`, `.OBSERVE FREQUENCY`) to reversed ppm axes, cross-checked against the trusted 1D reference / §10 ground truth (the WR-04-class axis risk must be verified, not assumed).
+- **Correct ppm axes** — map NTUPLES metadata (`VAR_DIM`, `FIRST`/`LAST`/`FACTOR`, `.NUCLEUS`, `.OBSERVE FREQUENCY`) to reversed ppm axes, cross-checked against the trusted 1D reference / the §10 shift list (the WR-04-class axis risk must be verified, not assumed). ⚠ **§10 is not ground truth** — it is a prior CASE agent's hypothesis about the unsolved C20H32O2 sample, so it can cross-check the *ppm axis across two readers* but cannot confirm an assignment; see tracked item **PROV-01**.
 - **1D path** (¹H/¹³C) through the same reader into `Spectrum1D`.
 - **CLI + bridge** — `lucy jcamp …` → existing `PeakPicker2D` → `analysis/nmr_peaks/*.json` → the **unchanged** Phase-99 QC gate; `case.md` byte-unchanged.
 - **Validation** — the `C20H32O2-jcamp` dataset yields §8-quality peak lists and a fresh `/lucy-ng:case C20H32O2` converges on a finite rankable set.

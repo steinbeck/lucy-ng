@@ -1,5 +1,27 @@
 # Pitfalls Research: Automatic Bruker NUS 2D Reconstruction
 
+> ## ⚠ CORRECTION (2026-07-31) — "§8/§10 ground truth" is not ground truth
+>
+> This document repeatedly calls `NUS-RECONSTRUCTION-GUIDE.md` §8/§10 a **ground-truth**
+> shift list for C20H32O2 (see e.g. the Pitfall 6/7 rows and the QC-check list below).
+> **That label is wrong and every claim resting on it must be re-read accordingly.**
+>
+> §10 is headed *"Gesicherte Fakten aus dem ersten Lauf (aus den verlässlichen 1D-Daten —
+> als Startpunkt)"*: it is a **previous CASE agent's working hypothesis**, inferred from
+> this sample's own 1D spectra during the failed 2026-07-09 run and written into that run's
+> `analysis/` output directory. C20H32O2 is an **unsolved** test dataset (Nils Schlörer,
+> Jena) — confirmed by the user on 2026-07-31, no human reference assignment exists. The
+> guide hedges two of its five "quaternary" shifts itself (37.86 = "Kandidat"/MEDIUM;
+> 79.35 = "falls 79.35 doch Rauschen").
+>
+> Practical consequence: a cross-check against that list measures **reproducibility of peak
+> picking on the same file**, not chemical correctness. It does legitimately cross-check the
+> ppm axis across two independent readers (Bruker vs JCAMP) — that claim survives; the
+> "verified against known shifts" framing does not.
+>
+> The body below is left unedited as the historical research record of Phase 97–103.
+> Full analysis and the open decisions: `.planning/todos/pending/2026-07-31-prov-01-*.md`.
+
 **Domain:** Fully-automatic, headless reconstruction of non-uniformly-sampled (NUS) Bruker 2D NMR (COSY/HSQC/HMBC) for CASE, cross-platform (macOS Apple Silicon / Linux / Windows)
 **Researched:** 2026-07-12
 **Confidence:** HIGH for schedule/parameter facts (verified directly against this project's own acqus/acqu2s/nuslist files); MEDIUM for reconstruction-algorithm behavior (peer-reviewed methods papers); MEDIUM-LOW for backend-specific CLI/install quirks (official docs + community wikis, not independently re-run here)
