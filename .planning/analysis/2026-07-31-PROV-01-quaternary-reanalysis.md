@@ -7,6 +7,22 @@
 correlation is quaternary) instead of comparing against `DEFAULT_QUATERNARY_SHIFTS`.
 **Nothing was re-run, re-picked or modified** — this is a read-only re-reading of existing output.
 
+> ## ⚠ SUPERSEDED IN ITS SPECIFICS (2026-08-02) — read the correction first
+>
+> The findings below were derived from the **picked peak lists** (23 HSQC cross peaks at
+> `snr_floor=4000`). That list is under-picked, so its gaps propagated straight into my
+> conclusions: I reported 51.63/37.19/36.23/35.23/30.66 as the data-derived quaternary set.
+> Reading the **raw 2D matrix** instead shows that 37.19, 36.23 and 35.23 and 30.66 all *do*
+> carry HSQC correlations, and that 79.35 does too.
+>
+> This is the same error class as the one this document was written to expose: I trusted a
+> derived artefact instead of going to the source. Corrected results:
+> `.planning/analysis/2026-08-02-PROV-01-raw-matrix-classification.md`.
+>
+> Findings 1, 3 and 5 below stand. Finding 2's quaternary list and Finding 4's H-balance
+> numbers are superseded.
+
+
 ---
 
 ## Question
