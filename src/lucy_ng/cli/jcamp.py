@@ -98,6 +98,45 @@ def _parse_keyed_option(
     return by_key, bare
 
 
+def _is_own_work_root(work_root: Path) -> bool:
+    """True when `work_root` looks like a directory this command created.
+
+    CR-03 guard. `work_root` is derived from a caller-supplied `--out` and is
+    `rmtree`d on every run, so before deleting we require that it contains
+    nothing but the two subdirectories this command writes. An empty
+    directory counts as ours (a previous run that staged nothing).
+    """
+    try:
+        entries = list(work_root.iterdir())
+    except OSError:
+        return False
+    return all(e.is_dir() and e.name in ("staged", "qc_failed") for e in entries)
+
+
+def _purge_out_root(out_root: Path) -> None:
+    """Remove only the filenames this command is capable of writing.
+
+    CR-02. `out_root` is caller-supplied and may hold files we did not write
+    -- including `lucy nus pipeline` output under the identical names -- so it
+    is never `rmtree`d. Removing the closed set leaves anything unrelated
+    untouched; if that empties the directory it is removed too, preserving the
+    documented "a FAIL run leaves `out_root` absent" invariant across a
+    PASS-then-FAIL re-run.
+
+    MUST be called only after staging has confirmed there is something to
+    grade -- calling it earlier destroys the caller's previous results on a
+    run that then produces nothing.
+    """
+    if not out_root.is_dir():
+        return
+    for own_name in (*SUPPORTED_2D, *SUPPORTED_1D):
+        (out_root / f"{own_name}.json").unlink(missing_ok=True)
+    try:
+        out_root.rmdir()
+    except OSError:
+        pass  # not empty -- a file this command does not own; leave it
+
+
 def _source_block(path: Path) -> dict[str, str]:
     """Additive top-level `source` provenance block attached to every payload.
 
@@ -309,6 +348,28 @@ def jcamp(
     # `lucy nus qc <out_root>` run (102-RESEARCH.md Pitfall 3) and so a FAIL
     # run leaves `analysis/nmr_peaks/` absent.
     work_root = out_root.parent / "jcamp_ingest"
+    # CR-03: `work_root` is DERIVED from a caller-supplied `--out`, and it is
+    # `rmtree`d below. If the derivation collides with the caller's own
+    # directory the rmtree destroys data this command never wrote -- most
+    # sharply when `--out .../jcamp_ingest` makes `work_root == out_root`,
+    # which would delete the entire output directory. Fail loud instead of
+    # deleting; there is no safe way to guess what the caller meant.
+    if work_root == out_root or work_root in out_root.parents:
+        raise click.BadParameter(
+            f"--out resolves to {out_root}, but this command needs a private "
+            f"working directory at {work_root}, which would then contain or "
+            "equal the output directory and is cleared on every run. Choose "
+            "an --out path that is not named 'jcamp_ingest' and does not sit "
+            "inside a directory of that name."
+        )
+    if work_root.exists() and not _is_own_work_root(work_root):
+        raise click.BadParameter(
+            f"{work_root} already exists but does not look like a directory "
+            "this command created (expected only 'staged/' and/or "
+            "'qc_failed/' inside). It is cleared on every run, so refusing "
+            "to delete it. Move it aside, or pass an --out path whose parent "
+            "does not already hold a 'jcamp_ingest' directory."
+        )
     staged_dir = work_root / "staged"
     quarantine_dir = work_root / "qc_failed"
 
@@ -320,28 +381,20 @@ def jcamp(
     # PASS-graded consumable file can survive a later FAIL run unchanged,
     # defeating the D-07 write boundary one layer up.
     #
-    # Two different clearing strategies for two different ownership scopes:
+    # Two different clearing strategies for two different ownership scopes,
+    # and -- since CR-02 -- two different points in time:
     # - `work_root` (`jcamp_ingest/staged` + `jcamp_ingest/qc_failed`) is a
-    #   fixed, derived subdirectory name that ONLY this command ever writes
-    #   to -- nothing else can be sitting there -- so a full `rmtree` is
-    #   safe and simplest.
-    # - `out_root` is different: it is directly user-specified via `--out`
-    #   and may be a pre-existing directory the caller manages for other
-    #   purposes, so it is never `rmtree`d wholesale. Instead only the
-    #   closed set of filenames this command is ever capable of writing
-    #   there (derived from `SUPPORTED_2D`/`SUPPORTED_1D`) is removed,
-    #   leaving any unrelated file in that directory untouched. If that
-    #   empties the directory, the (now-empty) directory is removed too,
-    #   to preserve the documented "a FAIL run leaves `out_root` absent"
-    #   invariant across a PASS-then-FAIL re-run.
+    #   private scratch directory, validated above to be ours. Clearing it
+    #   here is safe: nothing the caller owns lives in it, and staging needs
+    #   it empty before STEP 3 writes the first file.
+    # - `out_root` is caller-supplied via `--out` and may hold results this
+    #   command did not produce -- `lucy nus pipeline` writes the identical
+    #   filenames. Clearing it HERE (CR-02) meant a run that later died on a
+    #   malformed input exited non-zero, wrote nothing, and had still
+    #   destroyed the caller's previous peak lists. The purge is therefore
+    #   deferred to `_purge_out_root()`, called only once STEP 4 has
+    #   confirmed something was actually staged and a verdict is coming.
     shutil.rmtree(work_root, ignore_errors=True)
-    if out_root.is_dir():
-        for own_name in (*SUPPORTED_2D, *SUPPORTED_1D):
-            (out_root / f"{own_name}.json").unlink(missing_ok=True)
-        try:
-            out_root.rmdir()
-        except OSError:
-            pass  # not empty -- a file this command does not own; leave it
 
     # STEP 3 -- read, pick and stage every file in one pass, with no QC yet.
     staged_2d: list[tuple[Spectrum2D, str, Path]] = []
@@ -432,6 +485,12 @@ def jcamp(
             err=True,
         )
         raise SystemExit(1)
+
+    # CR-02: only now, with staging confirmed non-empty and a verdict
+    # guaranteed, is it safe to clear the caller's output directory. Anything
+    # that aborts before this point leaves the caller's previous results
+    # intact.
+    _purge_out_root(out_root)
 
     # STEP 5 -- QC ONCE. This single call MUST come after every 1D and 2D
     # file has been staged, because QcReferenceData.resolve()/

@@ -982,3 +982,105 @@ class TestJcampKnobOptions:
         )
 
         assert len(calls) == 1
+
+
+class TestOutputDirectorySafety:
+    """CR-02 / CR-03 regression: `lucy jcamp` must not destroy data it did
+    not write. Both defects originate in Phase 102 (`f6de196`) and were found
+    by Phase 103's code review."""
+
+    def test_failed_run_leaves_existing_peak_lists_intact(
+        self, tmp_path: Path
+    ) -> None:
+        """CR-02: a run that stages nothing must not have purged `--out`.
+
+        Before the fix, STEP 2.5 unlinked the closed filename set BEFORE
+        STEP 3 read anything, so a run that then bailed out at STEP 4 exited
+        non-zero, wrote nothing, and had already deleted the caller's
+        previous results -- including `lucy nus pipeline` output, which uses
+        the identical filenames.
+        """
+        out = tmp_path / "peaks"
+        out.mkdir()
+        prior = {name: out / f"{name}.json" for name in ("HSQC", "13C")}
+        for path in prior.values():
+            path.write_text('{"cross_peaks": [], "provenance": "nus pipeline"}')
+        unrelated = out / "notes.txt"
+        unrelated.write_text("keep me")
+
+        bad = tmp_path / "inputs"
+        bad.mkdir()
+        (bad / "broken.dx").write_text("not a JCAMP file at all\n")
+
+        result = CliRunner().invoke(jcamp, [str(bad), "--out", str(out)])
+
+        assert result.exit_code != 0, result.output
+        for name, path in prior.items():
+            assert path.exists(), f"{name}.json was destroyed by a failed run"
+            assert "nus pipeline" in path.read_text()
+        assert unrelated.read_text() == "keep me"
+
+    def test_successful_run_still_purges_stale_peak_lists(
+        self, tmp_path: Path
+    ) -> None:
+        """The CR-02 fix must not weaken the stale-state clearing it defers.
+
+        A run that DOES stage spectra still has to remove leftovers from a
+        prior invocation, or they keep voting in `run_qc_checks()`'s
+        directory-wide glob.
+        """
+        _copy_fixtures(tmp_path)
+        out = tmp_path / "peaks"
+        out.mkdir()
+        stale = out / "COSY.json"
+        stale.write_text('{"cross_peaks": [], "provenance": "stale"}')
+
+        CliRunner().invoke(jcamp, [str(tmp_path), "--out", str(out)])
+
+        assert not stale.exists() or "stale" not in stale.read_text(), (
+            "a stale peak list from a prior run survived a run that staged "
+            "spectra -- it would keep voting in the QC verdict"
+        )
+
+    def test_out_dir_named_jcamp_ingest_is_rejected(self, tmp_path: Path) -> None:
+        """CR-03: `--out .../jcamp_ingest` made `work_root == out_root`.
+
+        `work_root = out_root.parent / "jcamp_ingest"` is `rmtree`d on every
+        run, so the collision deleted the caller's entire output directory --
+        silently, because the rmtree passes `ignore_errors=True`.
+        """
+        _copy_fixtures(tmp_path)
+        out = tmp_path / "jcamp_ingest"
+        out.mkdir()
+        precious = out / "my_important_notes.txt"
+        precious.write_text("do not delete")
+
+        result = CliRunner().invoke(jcamp, [str(tmp_path), "--out", str(out)])
+
+        assert result.exit_code == 2, result.output
+        assert precious.exists(), "CR-03: user directory was deleted"
+        assert precious.read_text() == "do not delete"
+
+    def test_foreign_jcamp_ingest_directory_is_not_deleted(
+        self, tmp_path: Path
+    ) -> None:
+        """CR-03: a caller-owned `jcamp_ingest` beside `--out` is not ours.
+
+        The derived work root collides with any directory of that name next
+        to `--out`. Refuse rather than `rmtree` someone else's files.
+        """
+        _copy_fixtures(tmp_path)
+        base = tmp_path / "project"
+        base.mkdir()
+        foreign = base / "jcamp_ingest"
+        foreign.mkdir()
+        precious = foreign / "experiment_log.csv"
+        precious.write_text("run,date\n1,2026-01-01\n")
+
+        result = CliRunner().invoke(
+            jcamp, [str(tmp_path), "--out", str(base / "peaks")]
+        )
+
+        assert result.exit_code == 2, result.output
+        assert precious.exists(), "CR-03: foreign directory was deleted"
+        assert precious.read_text().startswith("run,date")
