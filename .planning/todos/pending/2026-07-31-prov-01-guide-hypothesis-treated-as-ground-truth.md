@@ -92,6 +92,43 @@ quaternary set, so grading it against a supplied list can only measure agreement
 assumption; a sound check derives the set and tests it against hard facts (formula carbon
 count, H balance); and (b) HSQC completeness, re-judged against formula-derived criteria.
 
+## Final state of the C20H32O2 analysis (2026-08-02)
+
+Full write-up: `.planning/analysis/2026-08-02-PROV-01-raw-matrix-classification.md`
+(carries its own correction banner — two of its claims were wrong and cancelled each other).
+
+Settled:
+- **22.64 ppm is two coincident CH₂ carbons** — 1D ¹³C integral 2.02× the single-carbon
+  median, HSQC volume 1.92×. The user's hypothesis, confirmed by two independent measures.
+- Corrected assignment: **11 CH₂ + 4 CH + 2 CH₃ + 3 Cq = 20 C, 32 C-bound H, no OH**
+  (both oxygens ethers). DBE 5 = one C=C + 4 rings. §10's claimed OH at 5.32 ppm: 0.11 H.
+- **Of §8/§10's five proposed quaternaries only the two olefinics survive.** The single
+  quaternary inside the exported window is 51.63.
+- **79.35 is a real signal but most likely the minor component**, not the compound: weakest
+  tier in all three experiments, proton integrates ~0.1–0.3 H. Not needed for the formula.
+- The sample carries **~40 % of a minor component** (total ¹H integral 45 H vs 32).
+
+Not settled, and not worth more effort here: whether 79.35 belongs, and whether a further
+coincidence hides in the crowded 27.5–25.5 ppm region. Both need a cleaner sample. Solving
+this structure is not a lucy-ng deliverable — the analysis was a means of validating the
+reader, and that goal is met.
+
+## Development findings this produced (the actual value)
+
+1. **The JCAMP reader is validated by real use.** Both ppm axes, edited signs and
+   *quantitative* intensities held up through a full manual assignment: methyls integrate
+   2.98/3.02 H, methines 1.02/1.03 H, and a 2× coincidence was detectable. Far stronger
+   evidence than Phase 103's circular "17/20 vs §10". Untested: COSY, NOESY, other datasets.
+2. **The peak picker is the weak link, not the reader.** Every wrong conclusion in this
+   episode came from picked lists rather than the raw matrix.
+3. **Peak lists discard signal area and relative intensity** — exactly the information that
+   revealed the 22.64 coincidence and the minor component. A CASE agent gets 19 carbons.
+4. **The HMBC F1 resolution (0.234 ppm/point) is a real ceiling** on this dataset: 17
+   distinct F1 positions for 20 carbons.
+5. **A formula-balance check (carbon count, H count) is the non-circular replacement for
+   `quaternary_exclusion`** — it grades against the molecular formula, a hard fact, instead
+   of against an assumed shift list. This resolves PROV-01's decision 1 in principle.
+
 ## Open — needs a decision, deliberately not taken unilaterally
 
 1. **Should `DEFAULT_QUATERNARY_SHIFTS` remain a library default at all?** Options: drop the
