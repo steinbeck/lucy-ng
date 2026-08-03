@@ -43,19 +43,98 @@ c13 = JcampReader.read_1d(DATA / "C20H32O2_13C.dx")
 x13, y13 = np.asarray(c13.ppm_scale), np.asarray(c13.data, dtype=float)
 n13 = noise_mad(y13)
 
-fig, ax = plt.subplots(figsize=(13, 4.2), dpi=170)
-ax.plot(x13, y13, lw=0.55, color="#1a1a1a")
-for s in PICKED_C13:
-    ax.axvline(s, color="#c0392b", lw=0.6, alpha=0.45)
+# Alle 18 echten Kohlenstoffe im Fenster (79.35 eingeschlossen, CDCl3 nicht).
+ALL_C13 = [79.35] + PICKED_C13
+
+# y-Skala so, dass die MITTLERE Höhe der Nicht-CDCl3-Signale bei 1/3 liegt;
+# das CDCl3-Triplett (5.4x darüber) wird dabei bewusst abgeschnitten.
+heights = np.array([float(np.max(y13[(x13 > c - 0.1) & (x13 < c + 0.1)]))
+                    for c in ALL_C13])
+ytop = 3.0 * heights.mean()
+
+# Schwache Signale, die NICHT zu den 18 zugeordneten gehören (>8 sigma).
+EXTRA = [25.72, 31.42, 32.74, 26.20, 67.63, 35.67, 62.94, 26.51, 70.63]
+
+fig, ax = plt.subplots(figsize=(14, 5.2), dpi=170)
 for s in CDCL3:
-    ax.axvline(s, color="#2980b9", lw=0.6, alpha=0.5, ls=":")
-ax.set_xlim(x13.max(), x13.min())
-ax.set_title(f"1D $^{{13}}$C aus dem JCAMP-Reader — exp6 (schmal), Fenster "
-             f"{x13.max():.1f} … {x13.min():.1f} ppm\n"
-             f"rot = gepickt (17) · blau gepunktet = CDCl$_3$", fontsize=10)
+    ax.axvline(s, color="#2980b9", lw=0.7, alpha=0.45, ls=":", zorder=0)
+for k, s in enumerate(ALL_C13):
+    ax.axvline(s, color="#c0392b", lw=0.7, alpha=0.22, zorder=0,
+               label="zugeordnet (18 C)" if k == 0 else None)
+for k, s in enumerate(EXTRA):
+    ax.axvline(s, color="#e67e22", lw=0.9, alpha=0.55, ls="--", zorder=0,
+               label="nicht zugeordnet, S/N 11–23" if k == 0 else None)
+ax.plot(x13, y13, lw=0.7, color="#1a1a1a", zorder=3)
+ax.axhline(heights.mean(), color="#27ae60", lw=0.9, ls="--", alpha=0.75, zorder=1,
+           label=f"mittlere Höhe der 18 (= 1/3 der Skala)")
+ax.annotate("CDCl$_3$, abgeschnitten (5.4× über der Skala)",
+            xy=(77.03, ytop * 0.99), xytext=(70.0, ytop * 0.90),
+            color="#2980b9", fontsize=8.5, ha="left",
+            arrowprops=dict(arrowstyle="->", color="#2980b9", lw=0.9))
+ax.annotate("79.35 — S/N 18", xy=(79.35, heights[0] * 1.2),
+            xytext=(86.5, ytop * 0.45), color="#8e44ad", fontsize=8.5,
+            ha="center", arrowprops=dict(arrowstyle="->", color="#8e44ad", lw=0.9))
+ax.annotate("0.01 — TMS", xy=(0.4, ytop * 0.10), xytext=(7.0, ytop * 0.30),
+            color="#7f8c8d", fontsize=8.5, ha="center",
+            arrowprops=dict(arrowstyle="->", color="#7f8c8d", lw=0.9))
+ax.set_xlim(90, 0)
+ax.set_ylim(-ytop * 0.06, ytop)
+ax.legend(fontsize=8.5, frameon=False, loc="upper right", ncol=1)
+ax.set_title("1D $^{13}$C aus dem JCAMP-Reader — 90–0 ppm, auf die echten Signale "
+             "skaliert\n18 zugeordnete Kohlenstoffe (142.00/135.86 liegen außerhalb "
+             "des exp6-Fensters) + 9 schwache, nicht zugeordnete Signale",
+             fontsize=10)
 style(ax, "$\\delta$ / ppm", "Intensität")
 fig.tight_layout()
 fig.savefig(OUT / "01_13C_uebersicht.png")
+plt.close(fig)
+
+# ------------------------------- 1D 13C zoom: the crowded aliphatic region
+ASSIGNED_2040 = [37.86, 37.19, 36.23, 35.23, 34.21, 33.67, 30.66, 29.77,
+                 27.93, 27.16, 25.96, 23.43, 22.64, 21.78]
+EXTRA_2040 = [25.72, 26.20, 26.51, 31.42, 32.74, 35.67]
+
+ma = (x13 >= 20) & (x13 <= 40)
+xa, ya = x13[ma], y13[ma]
+fig, axes = plt.subplots(2, 1, figsize=(14, 8.6), dpi=170, sharex=True)
+for k, ax in enumerate(axes):
+    ax.axhspan(-3 * n13, 3 * n13, color="#e67e22", alpha=0.20, zorder=1)
+    for q, s in enumerate(ASSIGNED_2040):
+        ax.axvline(s, color="#c0392b", lw=0.8, alpha=0.30, zorder=0,
+                   label="zugeordnet (14 C)" if (k == 0 and q == 0) else None)
+    for q, s in enumerate(EXTRA_2040):
+        ax.axvline(s, color="#e67e22", lw=1.0, alpha=0.65, ls="--", zorder=0,
+                   label="nicht zugeordnet" if (k == 0 and q == 0) else None)
+    ax.plot(xa, ya, lw=1.0, color="#1a1a1a", zorder=3)
+    ax.set_xlim(40, 20)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.grid(alpha=0.15, lw=0.5)
+    ax.set_ylabel("Intensität")
+
+full = float(np.max(ya))
+axes[0].set_ylim(-full * 0.05, full * 1.12)
+for s in ASSIGNED_2040:
+    h = float(np.max(y13[(x13 > s - 0.08) & (x13 < s + 0.08)]))
+    axes[0].text(s, h + full * 0.03, f"{s:g}", rotation=90, fontsize=7.5,
+                 ha="center", va="bottom", color="#c0392b")
+axes[0].legend(fontsize=8.5, frameon=False, loc="upper left")
+axes[0].set_title("1D $^{13}$C, 40–20 ppm — der dichte aliphatische Bereich\n"
+                  "oben: volle Skala der Region (14 zugeordnete Kohlenstoffe)",
+                  fontsize=10)
+
+weak = float(np.max([np.max(y13[(x13 > s - 0.08) & (x13 < s + 0.08)])
+                     for s in EXTRA_2040]))
+axes[1].set_ylim(-weak * 0.25, weak * 1.6)
+for s in EXTRA_2040:
+    h = float(np.max(y13[(x13 > s - 0.08) & (x13 < s + 0.08)]))
+    axes[1].text(s, h + weak * 0.10, f"{s:g}", rotation=90, fontsize=7.5,
+                 ha="center", va="bottom", color="#b9770e")
+axes[1].set_title(f"unten: {full/weak:.0f}× gedehnt — die schwachen, nicht "
+                  f"zugeordneten Signale (orange gestrichelt); "
+                  f"orange Band = ±3σ Rauschen", fontsize=10)
+axes[1].set_xlabel("$\\delta$ / ppm")
+fig.tight_layout()
+fig.savefig(OUT / "07_13C_zoom_20-40ppm.png")
 plt.close(fig)
 
 # ------------------------------------------------- 1D 13C zoom: is 79.35 real?
