@@ -45,6 +45,20 @@ REMOTE_DATA = "/mnt/raid_drive/chris/case-data"
 REMOTE_RESULTS = "/mnt/raid_drive/chris/case-uat-results"
 REMOTE_HARNESS = "tests/case-benchmark/blind_case_batch.py"
 
+# The harness takes its paths from the environment, not from flags -- omitting
+# CASE_DATA_DIR makes it resolve datasets against '.' and silently report
+# skip(no-dataset) for every case, which looks like a completed chunk.
+REMOTE_TRUTH = "/mnt/raid_drive/chris/nmr-dataset-assembly/downloaded_datasets.tsv"
+REMOTE_ENV = {
+    "CASE_DATA_DIR": REMOTE_DATA,
+    "CASE_RESULTS_DIR": REMOTE_RESULTS,
+    # Hard blindness lockout: the harness physically moves this file to
+    # CASE_STASH_DIR for the batch and restores it in a finally. That is why
+    # this watchdog never kills a chunk -- a SIGKILL skips the finally and
+    # leaves the ground truth stashed.
+    "CASE_ANSWERKEY_PATHS": REMOTE_TRUTH,
+}
+
 # Defaults chosen to leave roughly half of each window for interactive work.
 DEFAULT_SEVEN_DAY_MAX = 55.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
@@ -193,8 +207,9 @@ def pending_cases() -> tuple[list[str], set[str]]:
 def launch(cases: list[str], concurrency: int, dry_run: bool) -> None:
     joined = " ".join(shlex.quote(c) for c in cases)
     logfile = f"/tmp/uat_chunk_{int(time.time())}.log"
+    env = " ".join(f"export {k}={shlex.quote(v)};" for k, v in REMOTE_ENV.items())
     cmd = (
-        f"cd {REMOTE_REPO} && source .venv/bin/activate && "
+        f"cd {REMOTE_REPO} && source .venv/bin/activate && {env} "
         f"nohup python {REMOTE_HARNESS} {joined} "
         f"-k {concurrency} --mode full --results {REMOTE_RESULTS} "
         f"> {logfile} 2>&1 &"
