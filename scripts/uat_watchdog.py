@@ -200,7 +200,7 @@ def contaminated_cases() -> set[str]:
     return names
 
 
-def pending_cases() -> tuple[list[str], set[str]]:
+def pending_cases(results_dir: str = REMOTE_RESULTS) -> tuple[list[str], set[str]]:
     """Return (runnable cases in natural order, skipped-as-contaminated).
 
     Done means the run produced a `final_results.md`, NOT merely that a
@@ -212,7 +212,7 @@ def pending_cases() -> tuple[list[str], set[str]]:
     out = ssh_run(
         f"comm -23 "
         f"<(ls -d {REMOTE_DATA}/*/ | xargs -n1 basename | sort) "
-        f"<(ls {REMOTE_RESULTS}/CASE*/analysis/final_results.md 2>/dev/null "
+        f"<(ls {results_dir}/CASE*/analysis/final_results.md 2>/dev/null "
         f"  | awk -F/ '{{print $(NF-2)}}' | sort)"
     )
     cases = [c.strip() for c in out.splitlines() if c.strip()]
@@ -262,14 +262,16 @@ def preflight() -> None:
         )
 
 
-def launch(cases: list[str], concurrency: int, dry_run: bool) -> None:
+def launch(cases: list[str], concurrency: int, dry_run: bool,
+           results_dir: str = REMOTE_RESULTS) -> None:
     joined = " ".join(shlex.quote(c) for c in cases)
     logfile = f"/tmp/uat_chunk_{int(time.time())}.log"
-    env = " ".join(f"export {k}={shlex.quote(v)};" for k, v in REMOTE_ENV.items())
+    env_map = dict(REMOTE_ENV, CASE_RESULTS_DIR=results_dir)
+    env = " ".join(f"export {k}={shlex.quote(v)};" for k, v in env_map.items())
     cmd = (
         f"cd {REMOTE_REPO} && source .venv/bin/activate && {env} "
         f"nohup python {REMOTE_HARNESS} {joined} "
-        f"-k {concurrency} --mode full --results {REMOTE_RESULTS} "
+        f"-k {concurrency} --mode full --results {results_dir} "
         f"> {logfile} 2>&1 &"
     )
     if dry_run:
@@ -294,6 +296,12 @@ def main() -> int:
     p.add_argument("--snapshot", type=Path, default=SNAPSHOT)
     p.add_argument("--limit", type=int, default=0,
                    help="stop after N chunks (0 = until cases run out)")
+    p.add_argument("--cases", nargs="+", metavar="CASE",
+                   help="run exactly these cases instead of everything "
+                        "pending; use with --results-dir for paired re-runs")
+    p.add_argument("--results-dir", default=REMOTE_RESULTS,
+                   help="remote results root. Point paired re-runs somewhere "
+                        "else so the 4.8 baseline stays untouched")
     p.add_argument("--dry-run", action="store_true",
                    help="report decisions, never launch anything")
     p.add_argument("--once", action="store_true",
@@ -315,7 +323,20 @@ def main() -> int:
             elif not ok:
                 log(f"holding: {reason}")
             else:
-                pending, blocked = pending_cases()
+                if args.cases:
+                    # Intersect the request with what is genuinely still
+                    # outstanding *in this results dir*, so re-invoking the
+                    # same command resumes rather than re-running finished
+                    # cases. Order follows the request, not the scan.
+                    outstanding, _ = pending_cases(args.results_dir)
+                    pending = [c for c in args.cases if c in set(outstanding)]
+                    blocked = set()
+                    if not pending:
+                        log("every requested case already has a result in "
+                            f"{args.results_dir} — nothing to do")
+                        return 0
+                else:
+                    pending, blocked = pending_cases(args.results_dir)
                 if blocked:
                     log(f"SKIPPING {len(blocked)}: {describe_blocked(blocked)}")
                 if not pending:
@@ -325,7 +346,7 @@ def main() -> int:
                 log(f"clear ({reason}) — {len(pending)} case(s) pending")
                 if not args.dry_run:
                     preflight()
-                launch(batch, args.concurrency, args.dry_run)
+                launch(batch, args.concurrency, args.dry_run, args.results_dir)
                 launched += 1
                 if args.dry_run:
                     return 0
