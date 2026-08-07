@@ -30,7 +30,15 @@ CASE_DIR="$1"; RESULTS_DIR="$2"; MODE="${3:-full}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CASE_PROJECT_DIR="${CASE_PROJECT_DIR:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
-CLAUDE_MODEL="${CLAUDE_MODEL:-claude-opus-4-8}"
+# No silent default. A benchmark whose model is implicit is unreadable six
+# months later, and the previous default (claude-opus-4-8) quietly kept
+# producing 4.8 results long after Opus 5 had become the session default.
+# Name the model or the run does not start.
+if [ -z "${CLAUDE_MODEL:-}" ]; then
+  echo "CLAUDE_MODEL is unset. Benchmark runs must name their model explicitly" >&2
+  echo "  so results stay attributable, e.g. CLAUDE_MODEL=claude-opus-5" >&2
+  exit 2
+fi
 CASE_ANSWERKEY_DIR="${CASE_ANSWERKEY_DIR:-}"
 MAX_ATTEMPTS="${CASE_RUN_MAX_ATTEMPTS:-8}"
 CALL_TIMEOUT="${CASE_RUN_CALL_TIMEOUT:-3600}"

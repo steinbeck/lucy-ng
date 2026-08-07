@@ -68,22 +68,29 @@ CASE_MD_PATH = ".claude/commands/lucy-ng/case.md"
 #: from 102-RESEARCH.md Pitfall 5 / this plan's `<interfaces>` block, and
 #: RE-VERIFIED live against this worktree's checkout before writing this
 #: test (identical).
+#: BASELINE UPDATED 2026-08-07: the five agent files lost their
+#: `model: claude-opus-4-8` frontmatter pin. The pin bit on any machine
+#: without `CLAUDE_CODE_SUBAGENT_MODEL=inherit` in settings.json -- Sheldon
+#: has none, so a benchmark orchestrator on Opus 5 was spawning the whole
+#: specialist team on 4.8. Omitting `model:` makes each agent inherit the
+#: parent session's model, which is the same on every host. `case.md` is
+#: unchanged; only the five agent hashes move.
 EXPECTED_SHA256: dict[str, str] = {
     CASE_MD_PATH: "8299791ead74294fa31424bae990de62d7bf73260d5dbdbe1e776539e7148d8b",
     ".claude/agents/lucy-nmr-chemist.md": (
-        "4dd7766e3746074062e5f05cefc4462ce85ee444c264c426298fb830c2760839"
+        "c643b44d3e49bcd7eb0de0125fca051f9c59cf9b1ceff1906143d39d9bdca19e"
     ),
     ".claude/agents/lucy-lsd-engineer.md": (
-        "0e9ffcbe4856f9980ed19b5384fb9c7050b20d6427901d0e1ae3ffc1a8507f3b"
+        "89da2094e15d0f45dcecaf968c614fb1de384cbb7741e0a2a435432986808752"
     ),
     ".claude/agents/lucy-solution-analyst.md": (
-        "dbe9da127ed576aca22fd9d34bf6b599b2e7765b29dffb90fcae83e29dc290f2"
+        "8fd09a57e0826b3f0dcb574094491d60c1e3997fd44d09509eb7fa91fc5e96c8"
     ),
     ".claude/agents/lucy-devils-advocate.md": (
-        "ee80ace79e5785b810e6d9da295f1d31e01ecfa6758f71a3b77d7768c5cbb34f"
+        "908347fb1ef9025ab53beeb64f87144c53d6b1a7a1506729dc09b2eb0e0ae49e"
     ),
     ".claude/agents/lucy-diagnostic.md": (
-        "74bd725c4067be5f076c78424632b7f9d6b4111322d9947fbcbe804a8cfcdbb2"
+        "41cf15d781dde1a8daaf828ba6d296e61bd4eb0a663f42d4572278b8f49a07cb"
     ),
 }
 

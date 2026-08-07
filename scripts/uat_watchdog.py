@@ -52,6 +52,10 @@ REMOTE_TRUTH = "/mnt/raid_drive/chris/nmr-dataset-assembly/downloaded_datasets.t
 REMOTE_ENV = {
     "CASE_DATA_DIR": REMOTE_DATA,
     "CASE_RESULTS_DIR": REMOTE_RESULTS,
+    # blind_case_run.sh defaults to claude-opus-4-8, which is what the first
+    # 102 runs used. Pinning Opus 5 from here on is deliberate -- note that it
+    # makes the two halves of the benchmark not strictly comparable.
+    "CLAUDE_MODEL": "claude-opus-5",
     # Hard blindness lockout: the harness physically moves this file to
     # CASE_STASH_DIR for the batch and restores it in a finally. That is why
     # this watchdog never kills a chunk -- a SIGKILL skips the finally and
@@ -66,6 +70,13 @@ DEFAULT_CHUNK = 4
 DEFAULT_CONCURRENCY = 1
 DEFAULT_POLL_SECONDS = 300
 DEFAULT_MAX_SNAPSHOT_AGE = 900  # 15 min
+
+
+# Datasets deliberately out of the benchmark. CASE217 is ethane -- degenerate
+# and mislabelled; `CASE-UAT-LOG.md` records "remove CASE217" as a follow-up.
+# It never produces a final_results.md, so without this it would be retried
+# on every pass.
+RETIRED = {"CASE217"}
 
 
 class Halt(Exception):
@@ -190,18 +201,65 @@ def contaminated_cases() -> set[str]:
 
 
 def pending_cases() -> tuple[list[str], set[str]]:
-    """Return (runnable cases in natural order, skipped-as-contaminated)."""
+    """Return (runnable cases in natural order, skipped-as-contaminated).
+
+    Done means the run produced a `final_results.md`, NOT merely that a
+    results directory exists. The harness creates the directory before the
+    first attempt, so a run that fails instantly -- an unauthenticated
+    `claude`, say -- leaves an empty directory behind. Keying on the
+    directory would silently retire those cases as finished.
+    """
     out = ssh_run(
         f"comm -23 "
         f"<(ls -d {REMOTE_DATA}/*/ | xargs -n1 basename | sort) "
-        f"<(ls -d {REMOTE_RESULTS}/CASE*/ 2>/dev/null | xargs -n1 basename | sort)"
+        f"<(ls {REMOTE_RESULTS}/CASE*/analysis/final_results.md 2>/dev/null "
+        f"  | awk -F/ '{{print $(NF-2)}}' | sort)"
     )
     cases = [c.strip() for c in out.splitlines() if c.strip()]
     cases.sort(key=lambda c: (len(c), c))  # CASE104 before CASE1040
 
     tainted = contaminated_cases()
-    blocked = {c for c in cases if c in tainted}
+    blocked = {c for c in cases if c in tainted or c in RETIRED}
     return [c for c in cases if c not in blocked], blocked
+
+
+def describe_blocked(blocked: set[str]) -> str:
+    """Give each excluded case its own reason -- they are not the same."""
+    tainted = contaminated_cases()
+    parts = []
+    leaky = sorted(c for c in blocked if c in tainted)
+    retired = sorted(c for c in blocked if c in RETIRED and c not in tainted)
+    if leaky:
+        parts.append(f"{', '.join(leaky)} (own directory holds a previous "
+                     f"run's final_results.md — a run there would not be blind)")
+    if retired:
+        parts.append(f"{', '.join(retired)} (retired: degenerate/mislabelled, "
+                     f"never produces a result)")
+    return "; ".join(parts)
+
+
+def preflight() -> None:
+    """Refuse to launch unless Sheldon can actually run a case.
+
+    An unauthenticated `claude` fails in ~1.5 s per attempt, so a chunk
+    "completes" in seconds having produced nothing but empty result
+    directories. Left unchecked the watchdog would march through all 155
+    remaining cases in minutes and retire every one of them.
+    """
+    out = ssh_run(
+        "bash -lc 'command -v claude >/dev/null || echo NO_BINARY; "
+        "echo hi | timeout 25 claude -p 2>&1 | head -3'",
+        timeout=60,
+    )
+    if "NO_BINARY" in out:
+        raise Halt("`claude` is not on PATH for a login shell on Sheldon")
+    if "Not logged in" in out or "/login" in out:
+        raise Halt(
+            "Claude Code on Sheldon is not authenticated "
+            "('Not logged in · Please run /login').\n"
+            "  Log in there interactively, then re-run this watchdog:\n"
+            "    ssh -p 2222 chris@35.198.180.5   →   claude   →   /login"
+        )
 
 
 def launch(cases: list[str], concurrency: int, dry_run: bool) -> None:
@@ -259,15 +317,14 @@ def main() -> int:
             else:
                 pending, blocked = pending_cases()
                 if blocked:
-                    log(f"SKIPPING {len(blocked)} contaminated dataset(s): "
-                        f"{', '.join(sorted(blocked))} — their own directory "
-                        f"holds a previous run's final_results.md, so a run "
-                        f"there would not be blind")
+                    log(f"SKIPPING {len(blocked)}: {describe_blocked(blocked)}")
                 if not pending:
                     log("no runnable cases left — benchmark complete")
                     return 0
                 batch = pending[: args.chunk]
                 log(f"clear ({reason}) — {len(pending)} case(s) pending")
+                if not args.dry_run:
+                    preflight()
                 launch(batch, args.concurrency, args.dry_run)
                 launched += 1
                 if args.dry_run:

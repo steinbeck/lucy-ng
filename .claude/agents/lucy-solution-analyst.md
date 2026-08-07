@@ -10,7 +10,6 @@ tools:
   - Bash
   - Glob
   - Grep
-model: claude-opus-4-8
 ---
 
 <!-- MAINTENANCE NOTE: This is a repo .claude/agents/*.md file symlinked into ~/.claude.
