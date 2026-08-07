@@ -56,9 +56,11 @@ REMOTE_ENV = {
     # 102 runs used. Pinning Opus 5 from here on is deliberate -- note that it
     # makes the two halves of the benchmark not strictly comparable.
     "CLAUDE_MODEL": "claude-opus-5",
-    # Pin the CLI too. 2.1.224 breaks `/lucy-ng:case` ("Execution error" on
-    # every invocation); 2.1.205 is what the 102 baseline runs used, so
-    # pinning it also keeps the toolchain constant across the comparison.
+    # Pin the CLI for comparability, not because anything is broken: the 102
+    # baseline runs used 2.1.204/205, so holding it fixed keeps a later
+    # difference attributable to the model. ("Execution error" in a run log
+    # is `claude -p` being killed by the 3600 s call timeout, not a fault --
+    # see blind_case_run.sh.)
     "CLAUDE_BIN": "/home/chris/.local/share/claude/versions/2.1.205",
     # Hard blindness lockout: the harness physically moves this file to
     # CASE_STASH_DIR for the batch and restores it in a finally. That is why

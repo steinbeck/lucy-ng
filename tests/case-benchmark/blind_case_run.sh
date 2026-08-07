@@ -31,12 +31,19 @@ CASE_DIR="$1"; RESULTS_DIR="$2"; MODE="${3:-full}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CASE_PROJECT_DIR="${CASE_PROJECT_DIR:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
-# Which `claude` binary runs the benchmark. Pinning matters: CLI 2.1.224
-# breaks `/lucy-ng:case` outright ("Execution error" on every invocation,
-# both models, with and without agent teams), while 2.1.205 -- the version
-# the first 102 runs used -- works. Pinning also keeps the CLI constant
-# across the 4.8 baseline and any later comparison, so a difference can be
-# attributed to the model rather than to the toolchain.
+# Which `claude` binary runs the benchmark. The reason to pin is
+# comparability: the 102 baseline runs used 2.1.204/205, so holding the CLI
+# fixed keeps a later difference attributable to the model rather than to
+# the toolchain.
+#
+# It is NOT because 2.1.224 is broken. An earlier note here claimed that,
+# on the strength of "Execution error" appearing in a run log. That line is
+# what `claude -p` emits when `timeout` kills it -- CASE_RUN_CALL_TIMEOUT is
+# 3600 s, and any case needing longer hits it once per attempt and is
+# resumed, which is exactly what the resume-backstop exists for. CASE104 hit
+# it three times and solved anyway (kaempferol, 4 iterations, ~2.5 h). The
+# baseline runs show none of it only because they finished inside the hour
+# (typical runtimes 1700-2100 s).
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
 
 # No silent default. A benchmark whose model is implicit is unreadable six
