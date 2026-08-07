@@ -21,7 +21,8 @@
 #
 # Env (see README.md):
 #   CASE_PROJECT_DIR   lucy-ng repo root (for .venv/bin). Default: repo of this script.
-#   CLAUDE_MODEL       model id. Default: claude-opus-4-8
+#   CLAUDE_MODEL       model id. REQUIRED, no default.
+#   CLAUDE_BIN         claude binary to use. Default: `claude` on PATH.
 #   CASE_ANSWERKEY_DIR optional dir the fence explicitly forbids reading.
 #   CASE_RUN_MAX_ATTEMPTS (default 8), CASE_RUN_CALL_TIMEOUT s (3600),
 #   CASE_RUN_DEADLINE_S total per dataset (9000)
@@ -30,6 +31,14 @@ CASE_DIR="$1"; RESULTS_DIR="$2"; MODE="${3:-full}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CASE_PROJECT_DIR="${CASE_PROJECT_DIR:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+# Which `claude` binary runs the benchmark. Pinning matters: CLI 2.1.224
+# breaks `/lucy-ng:case` outright ("Execution error" on every invocation,
+# both models, with and without agent teams), while 2.1.205 -- the version
+# the first 102 runs used -- works. Pinning also keeps the CLI constant
+# across the 4.8 baseline and any later comparison, so a difference can be
+# attributed to the model rather than to the toolchain.
+CLAUDE_BIN="${CLAUDE_BIN:-claude}"
+
 # No silent default. A benchmark whose model is implicit is unreadable six
 # months later, and the previous default (claude-opus-4-8) quietly kept
 # producing 4.8 results long after Opus 5 had become the session default.
@@ -74,13 +83,13 @@ NUDGE="Continue the in-progress CASE workflow for ${CASE_DIR} (formula ${MF}). T
 run_claude () { # $1 new|resume
   if [ "$1" = new ]; then
     CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 timeout "$CALL_TIMEOUT" \
-      claude -p "/lucy-ng:case $CASE_DIR $MF$SMOKE" --session-id "$SID" \
+      "$CLAUDE_BIN" -p "/lucy-ng:case $CASE_DIR $MF$SMOKE" --session-id "$SID" \
       --model "$CLAUDE_MODEL" --dangerously-skip-permissions \
       --append-system-prompt "$FENCE" --add-dir "$CASE_DIR" \
       >> "$RESULTS_DIR/run.log" 2>&1
   else
     CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 timeout "$CALL_TIMEOUT" \
-      claude --resume "$SID" -p "$NUDGE" \
+      "$CLAUDE_BIN" --resume "$SID" -p "$NUDGE" \
       --model "$CLAUDE_MODEL" --dangerously-skip-permissions \
       --append-system-prompt "$FENCE" --add-dir "$CASE_DIR" \
       >> "$RESULTS_DIR/run.log" 2>&1

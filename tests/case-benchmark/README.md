@@ -47,6 +47,7 @@ NMR + molecular formula alone. Any leak of the answer invalidates the result, so
 |-----|---------|---------|
 | `CASE_DATA_DIR` | batch | **required** — dir holding the `CASE<name>/` dataset folders |
 | `CASE_RESULTS_DIR` | all | results root (default: `./results`, gitignored) |
+| `CLAUDE_BIN` | run | claude binary (default: `claude` on PATH). Pin it — CLI 2.1.224 breaks `/lucy-ng:case`; 2.1.205 works and is what the baseline runs used. |
 | `CASE_PROJECT_DIR` | run | lucy-ng repo root for `.venv/bin` (default: this repo) |
 | `CLAUDE_MODEL` | run | **required** — model id, e.g. `claude-opus-5`. No default: an unattributable benchmark is worthless, and the old `claude-opus-4-8` default silently outlived its session default. |
 | `CASE_GROUNDTRUTH` | grade | **required for grading** — TSV path (see below); never committed |

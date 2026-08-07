@@ -56,6 +56,10 @@ REMOTE_ENV = {
     # 102 runs used. Pinning Opus 5 from here on is deliberate -- note that it
     # makes the two halves of the benchmark not strictly comparable.
     "CLAUDE_MODEL": "claude-opus-5",
+    # Pin the CLI too. 2.1.224 breaks `/lucy-ng:case` ("Execution error" on
+    # every invocation); 2.1.205 is what the 102 baseline runs used, so
+    # pinning it also keeps the toolchain constant across the comparison.
+    "CLAUDE_BIN": "/home/chris/.local/share/claude/versions/2.1.205",
     # Hard blindness lockout: the harness physically moves this file to
     # CASE_STASH_DIR for the batch and restores it in a finally. That is why
     # this watchdog never kills a chunk -- a SIGKILL skips the finally and
@@ -246,13 +250,15 @@ def preflight() -> None:
     directories. Left unchecked the watchdog would march through all 155
     remaining cases in minutes and retire every one of them.
     """
+    binary = REMOTE_ENV["CLAUDE_BIN"]
     out = ssh_run(
-        "bash -lc 'command -v claude >/dev/null || echo NO_BINARY; "
-        "echo hi | timeout 25 claude -p 2>&1 | head -3'",
+        f"bash -lc 'command -v {shlex.quote(binary)} >/dev/null "
+        f"|| echo NO_BINARY; "
+        f"timeout 25 {shlex.quote(binary)} -p hi </dev/null 2>&1 | head -3'",
         timeout=60,
     )
     if "NO_BINARY" in out:
-        raise Halt("`claude` is not on PATH for a login shell on Sheldon")
+        raise Halt(f"{REMOTE_ENV['CLAUDE_BIN']} is not executable on Sheldon")
     if "Not logged in" in out or "/login" in out:
         raise Halt(
             "Claude Code on Sheldon is not authenticated "
