@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-08-08T11:14:24Z",
+  "phase": null,
+  "phase_name": "none — v10.1 closed 2026-07-28, awaiting next milestone",
+  "phase_dir": ".planning",
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": 1, "name": "PROV-01: relabel the false ground truth in code and planning docs", "status": "done", "commit": "3f304b7"},
+    {"id": 2, "name": "PROV-01: re-analyse C20H32O2 from the raw matrices", "status": "done", "commit": "fab2f5e"},
+    {"id": 3, "name": "PROV-01: correct my own overclaims after the 22.64 doubling", "status": "done", "commit": "df524f6"},
+    {"id": 4, "name": "Fix CR-02/CR-03 data-loss paths in lucy jcamp", "status": "done", "commit": "7dfe2ce"},
+    {"id": 5, "name": "Agents inherit session model; CLAUDE_MODEL required", "status": "done", "commit": "f9aa7b3"},
+    {"id": 6, "name": "Quota watchdog for the blind benchmark", "status": "done", "commit": "070fc6b"},
+    {"id": 7, "name": "Retract the false CLI-regression claim", "status": "done", "commit": "ae139ac"},
+    {"id": 8, "name": "Paired 15-case Opus-5 sample", "status": "in_progress", "progress": "chunk 1 of 4 launched (CASE13 CASE15 CASE22 CASE41); 0 of 15 finished"}
+  ],
+  "remaining_tasks": [
+    {"id": 8, "name": "Finish the paired 15-case sample", "status": "in_progress"},
+    {"id": 9, "name": "Grade paired results against the same cases' 4.8 verdicts", "status": "not_started"},
+    {"id": 10, "name": "PROV-01 open decisions (library default, JVAL-F2 re-scope, DEPT)", "status": "not_started"},
+    {"id": 11, "name": "Correct CASE-UAT-LOG.md — it says FINAL over a stale 16-run subset", "status": "not_started"},
+    {"id": 12, "name": "Decide whether to run the 155 outstanding datasets", "status": "not_started"}
+  ],
+  "blockers": [
+    {"description": "Benchmark is quota-bound: ~4 percentage points of the weekly window per case", "type": "external", "workaround": "watchdog paces it; weekly window resets 2026-08-11T03:00"},
+    {"description": "Watchdog only launches while ~/.claude/usage-snapshot.json is fresh (<2 h), which requires an open Claude Code session on this Mac", "type": "technical", "workaround": "deliberate safety property; raise --max-snapshot-age to run longer unattended"}
+  ],
+  "human_actions_pending": [
+    {"action": "Decide whether DEFAULT_QUATERNARY_SHIFTS stays a library default at all", "context": "PROV-01 decision 1 — it grades any DEPT-less compound against C20H32O2's guesses", "blocking": false},
+    {"action": "Decide whether to run the 155 outstanding datasets after seeing the paired result", "context": "roughly 5-9 cases/week at the old thresholds", "blocking": false}
+  ],
+  "decisions": [
+    {"decision": "Keep the 102 existing results as the 4.8 baseline; run a paired 15-case sample instead of re-running all 257", "rationale": "the 155 outstanding are the easier tail, so their rate alone would attribute difficulty to the model", "phase": null},
+    {"decision": "Pin CLAUDE_BIN to 2.1.205", "rationale": "comparability with the baseline — NOT because any CLI is broken; that claim was retracted", "phase": null},
+    {"decision": "Agents drop their model: pin and inherit the session model", "rationale": "the pin was inert on the Mac but live on Sheldon, splitting orchestrator and team across two models", "phase": null},
+    {"decision": "Stop the C20H32O2 structure elucidation", "rationale": "not a lucy-ng deliverable; sample ~40 % impure, HMBC F1 resolution 0.234 ppm/point", "phase": null}
+  ],
+  "uncommitted_files": [],
+  "next_action": "tail -5 /tmp/uat_watchdog_paired.log && python3 scripts/uat_watchdog.py --once --dry-run — then, if chunk 1 finished, grade the paired directory (NOT the baseline results dir, which grade_blind.py would overwrite)",
+  "context_notes": "Watchdog PID 94833 runs unattended and survives /clear. Cron job c8cf15f0 (30-min status polling) does NOT — re-create with /loop 30m if wanted. Never kill a blind_case_batch process: it stashes the ground-truth table and restores it in a finally; recover from ~/.case-uat-stash/manifest.json. Judge long runs by artefacts in analysis/, never by log lines — 'Execution error' is a timeout, not a fault."
+}
