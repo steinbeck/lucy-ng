@@ -180,6 +180,21 @@ Every HMBC correlation must reference atoms defined by MULT. Every proton refere
 
 If referencing undefined atom: flag CRITICAL.
 
+This applies to **exchangeable OH/NH protons too**, where the H-side index is a heteroatom, not a carbon. LSD's HMBC handler validates the H-side against `htoc[]`, which only the HSQC/HMQC handler writes, with no element restriction — so `HSQC 17 17` on a hydroxyl oxygen is both legal and mandatory:
+
+```bash
+# every H-side atom of an HMBC line must carry its own HSQC declaration.
+# strip `;` comments first -- they are standard in LSD files and would
+# otherwise be read as the last field.
+sed 's/;.*//' compound.lsd | awk '/^HMBC/ {print $NF}' | sort -u > /tmp/h_used
+sed 's/;.*//' compound.lsd | awk '/^HSQC/ {print $3}'  | sort -u > /tmp/h_declared
+comm -23 /tmp/h_used /tmp/h_declared   # any output = CRITICAL
+```
+
+(The H-side is always the last field, so grouped C-side forms like `HMBC (5 6) 10` are handled correctly.)
+
+Missing declarations abort the solver outright (`exit 255, error 250`) rather than degrading gracefully — so this check must run before release, not after a failed solve.
+
 ### Badlist Completeness
 
 For natural products, expect DEFF F1 "ring3" + DEFF F2 "ring4" + FEXP (native form) OR DEFF NOT C1CC1 + DEFF NOT C1CCC1 (legacy form). `grep -c "^DEFF F" compound.lsd` must be >= 2 (native) OR `grep -c "^DEFF NOT" compound.lsd` must be >= 2 (legacy). If neither condition holds: flag WARNING.

@@ -79,6 +79,18 @@ HMBC (5 6) 10  ; H10 correlates to either C5 or C6 (ambiguous/grouped)
 
 **CORRELATION ORDER RULE (CRITICAL):** ALL HSQC commands MUST appear BEFORE any HMBC commands. LSD defines proton positions through HSQC. Error if violated: "Cannot set HMBC correlation because H-Y is not defined by an HMQC command."
 
+**HETEROATOM-PROTON RULE (CRITICAL):** Any proton used as the H-side of an HMBC line needs its own `HSQC X X` declaration first — including exchangeable OH/NH protons, where X is the *heteroatom* index, not a carbon. Omitting it does not merely drop the correlation, it **aborts the run**: `exit 255, error 250`.
+
+```
+MULT 17 O 3 1   ; hydroxyl oxygen, 1H
+HSQC 17 17      ; REQUIRED before any `HMBC ? 17` -- defines H17
+HMBC 5 17       ; chelated OH proton -> C5
+```
+
+These `HSQC` lines on heteroatoms are **information-free**: they declare that the H exists, they do not assert connectivity. Emit them for every OH/NH proton you correlate; never skip one to "avoid injecting connectivity".
+
+Verified against LSD (CASE96, 2026-08-09): the HMBC handler opens with `non_nul(250, hestvalide(p2), ...)`; `hestvalide()` reads `htoc[]`, which only the HSQC/HMQC handler writes, and its checks carry **no element restriction** — O and N are legal as P1. Acetic-acid control: `HMBC 1 4` without the declaration → `exit 255, error 250`; identical file plus `HSQC 4 4` → 1 solution. Solution-count invariance on a loose C4H10O2 skeleton (4 with and without) confirms no false connectivity is injected, and the constraints are genuinely active, not silently ignored (unsatisfiable variant → No solution; 4-bond variant → error 293).
+
 ### Bond and Property Constraints
 
 ```
@@ -344,7 +356,7 @@ Before every LSD run, verify:
 2. Heteroatoms from formula added
 3. sp2 count is EVEN
 4. HSQC before HMBC in file
-5. HMBC references only defined H positions
+5. HMBC references only defined H positions — every H-side atom has its own `HSQC X X`, **including exchangeable OH/NH protons on heteroatom indices** (missing one aborts the run with `exit 255, error 250`, it does not merely drop the correlation)
 6. Heteroatom constraints: BOND for C=O only when convergent evidence confirms it (Cq via DEPT/HSQC + 160-220 ppm shift + unambiguous C=O context + O in formula — three independent sources). For ALL other heteroatom placements: leave OPEN unless direct HMBC/HSQC/exchangeable-H evidence establishes connectivity. NEVER emit `PROP X O n` or hard heteroatom BOND from a single detect-neighbours value alone — especially a 'typical' (~0.5-0.9) value or when carbon is the dominant neighbour. Devils-advocate G-PROP-EVIDENCE gate will BLOCK. (FIX-10)
 7. NO ELIM on first run (ELIM is added only after all HMBC are included and 0 plausible solutions remain — see ELIM Escalation)
 8. Ring exclusion DEFF F1 "ring3" + DEFF F2 "ring4" + FEXP "NOT F1 AND NOT F2" present
