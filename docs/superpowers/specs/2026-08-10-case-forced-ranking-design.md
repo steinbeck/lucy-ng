@@ -1,7 +1,9 @@
 # CASE budget-forced ranking — design
 
 **Date:** 2026-08-10
-**Status:** approved, not yet implemented
+**Status:** design approved, **expected benefit downgraded** — see *Verification result*
+before implementing. This mechanism does not improve the hit rate; it converts
+empty runs into reported ones and saves wall-clock.
 **Scope:** `.claude/commands/lucy-ng/case.md`, `.claude/agents/lucy-lsd-engineer.md`, `.claude/agents/lucy-solution-analyst.md`
 
 ## Problem
@@ -137,23 +139,63 @@ an honest report without a structure: what was attempted, what failed, which set
 stayed too large. That is still more than today's empty result, and it keeps the
 run from inventing a ranking over a set it never had.
 
-## Verification
+## Verification result (run 2026-08-10)
 
-Retrospective, without launching a single CASE run: rank CASE80's
-`probe_C.smi` (283 solutions) with the shifts from its own
-`analysis/peaks/` pick and check whether the ground-truth InChIKey — from
-`downloaded_datasets.tsv`, as `grade_blind.py` uses it — appears in the set.
+The retrospective check was run before implementing. It came out **negative**, and
+the expected benefit must be restated accordingly.
 
-- Truth present → the mechanism would have rescued this case; proceed.
-- Truth absent → it saves the wall-clock but not the result. Still worth having,
-  but the expected benefit is smaller and should be stated plainly rather than
-  assumed.
+Method: for each case, compute the first InChIKey block of every converted SMILES
+on disk and compare against the ground truth in `downloaded_datasets.tsv` — the
+same comparison `grade_blind.py` makes. Positive control on three solved cases
+(CASE85, CASE13, CASE69) finds the truth every time, so the method is sound.
 
-Run the same check for CASE48 and CASE98 where a converted set under 2000 exists.
+Fallback sets existed everywhere — CASE48 `top_candidates.smi` (500), CASE98
+`ranking/survivors_final.smi` (215), CASE46 `shortlist.smi` (460), CASE80
+`probe_C.smi` (283). None contains the truth. Widening the search to *every*
+converted solution in the case directory:
 
-There are no unit tests here — these files are prompt text, not code. The
-mechanism is verified by the retrospective check above and, once implemented, by
-re-running the three failures under the new skill.
+| case | SMILES checked | truth in search space |
+|---|---|---|
+| CASE175 | 600707 | no |
+| CASE48 | 192125 | no |
+| CASE98 | 30824 | no |
+| CASE80 | 283 only¹ | undetermined |
+
+¹ The 473894-solution main set was never converted (607 MB `.sol`), so it cannot
+be checked.
+
+**LSD never generated the correct structure** — not even among 600000 candidates
+for CASE175. The failure is not *when* the run stops but that the constraint set
+excludes the answer. This is the CASE4 defect class (a hard-coded multiplicity
+model excluded the truth; fixed in Phase 88), not a stopping defect.
+
+### What this mechanism is still worth
+
+- Three `NO_RESULT` become three `WRONG`: a reported, ranked, caveated answer
+  with its constraint provenance instead of an empty directory. Better input for
+  diagnosis, and honest either way.
+- Wall-clock per hard case drops from 180 to about 126 minutes — roughly 30 %
+  quota saved on exactly the cases that cost the most.
+- For interactive users the difference between "here is my best set, forced at
+  budget, low confidence" and three hours of silence is the whole product.
+
+### What it is NOT worth
+
+It will not move the hit rate. Anyone reading this spec expecting the paired
+benchmark's 10/15 to improve will be disappointed; the three rescued runs would
+all be scored `WRONG`.
+
+There are no unit tests here — these files are prompt text, not code. Once
+implemented, verify by re-running the three failures and confirming they now
+produce a labelled forced ranking within budget.
+
+## Follow-up this verification opened
+
+The real lever on the hit rate is upstream: **why is the truth absent from the
+search space?** That is diagnosable without new runs — take the known structure,
+check it against the constraint file that was actually solved, and identify which
+constraint it violates. Worth its own investigation; it is not in this spec's
+scope.
 
 ## Out of scope
 
