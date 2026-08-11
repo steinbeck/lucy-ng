@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>de.doktor-steinbeck.lucyng-uat-watchdog</string>
+
+  <!-- The script recomputes what is outstanding, refuses to start a second
+       watchdog, and exits 0 when every dataset has a result. That makes it
+       safe to run at every login and after every crash. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>/Users/steinbeck/Dropbox/develop/lucy-ng/scripts/uat_run_remaining.sh</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Restart only on a crash. A clean exit means either "nothing left to do"
+       or "another watchdog already owns this" -- relaunching those would spin. -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+
+  <!-- Give the machine a moment after login before touching the network. -->
+  <key>ThrottleInterval</key>
+  <integer>120</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/steinbeck/Library/Logs/lucyng-uat-watchdog.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/steinbeck/Library/Logs/lucyng-uat-watchdog.log</string>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/steinbeck/Dropbox/develop/lucy-ng</string>
+</dict>
+</plist>
