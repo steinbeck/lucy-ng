@@ -27,6 +27,7 @@ WHAT IT WILL NOT DO
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import shlex
 import subprocess
@@ -206,20 +207,49 @@ def contaminated_cases() -> set[str]:
     return names
 
 
+# A run that exhausted its deadline and produced nothing is FINISHED, not
+# pending. Keying "done" on final_results.md alone made such cases reappear in
+# every chunk forever; blind_case_batch then skip(done)'d them and the chunk
+# ran at reduced width. Observed 2026-08-09: three exhausted cases occupied
+# three of four slots, so the last five cases ran one at a time.
+#
+# The original concern stays valid though -- a run that dies instantly (an
+# unauthenticated `claude`, say) also writes meta.json, and retiring those
+# would silently drop them. Runtime separates the two: a genuine exhausted
+# attempt burns at least one deadline round, an instant death burns seconds.
+EXHAUSTED_MIN_RUNTIME_S = 600
+
+_PENDING_PROBE = """
+import glob, json, os, sys
+data, res, floor = sys.argv[1], sys.argv[2], int(sys.argv[3])
+todo = {os.path.basename(p.rstrip("/")) for p in glob.glob(data + "/CASE*/")}
+done = {p.split("/")[-3] for p in glob.glob(res + "/CASE*/analysis/final_results.md")}
+for p in glob.glob(res + "/CASE*/meta.json"):
+    try:
+        m = json.load(open(p))
+    except Exception:
+        continue
+    if m.get("final_results") or (m.get("runtime_s") or 0) >= floor:
+        done.add(p.split("/")[-2])
+print("\\n".join(sorted(todo - done)))
+"""
+
+
 def pending_cases(results_dir: str = REMOTE_RESULTS) -> tuple[list[str], set[str]]:
     """Return (runnable cases in natural order, skipped-as-contaminated).
 
-    Done means the run produced a `final_results.md`, NOT merely that a
-    results directory exists. The harness creates the directory before the
-    first attempt, so a run that fails instantly -- an unauthenticated
-    `claude`, say -- leaves an empty directory behind. Keying on the
-    directory would silently retire those cases as finished.
+    Done means the run produced a `final_results.md`, OR a `meta.json`
+    recording an attempt that ran at least EXHAUSTED_MIN_RUNTIME_S before
+    giving up. The second clause retires genuine failures so they stop
+    consuming a chunk slot on every pass; the runtime floor keeps
+    instant-death runs (which also write meta.json) pending, since those
+    deserve a retry.
     """
+    probe = base64.b64encode(_PENDING_PROBE.encode()).decode()
     out = ssh_run(
-        f"comm -23 "
-        f"<(ls -d {REMOTE_DATA}/*/ | xargs -n1 basename | sort) "
-        f"<(ls {results_dir}/CASE*/analysis/final_results.md 2>/dev/null "
-        f"  | awk -F/ '{{print $(NF-2)}}' | sort)"
+        f"echo {probe} | base64 -d | python3 - "
+        f"{shlex.quote(REMOTE_DATA)} {shlex.quote(results_dir)} "
+        f"{EXHAUSTED_MIN_RUNTIME_S}"
     )
     cases = [c.strip() for c in out.splitlines() if c.strip()]
     cases.sort(key=lambda c: (len(c), c))  # CASE104 before CASE1040
