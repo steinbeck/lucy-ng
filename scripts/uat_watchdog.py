@@ -301,10 +301,12 @@ def preflight() -> None:
 
 
 def launch(cases: list[str], concurrency: int, dry_run: bool,
-           results_dir: str = REMOTE_RESULTS) -> None:
+           results_dir: str = REMOTE_RESULTS, deadline: int = 0) -> None:
     joined = " ".join(shlex.quote(c) for c in cases)
     logfile = f"/tmp/uat_chunk_{int(time.time())}.log"
     env_map = dict(REMOTE_ENV, CASE_RESULTS_DIR=results_dir)
+    if deadline:
+        env_map["CASE_RUN_DEADLINE_S"] = str(deadline)
     env = " ".join(f"export {k}={shlex.quote(v)};" for k, v in env_map.items())
     cmd = (
         f"cd {REMOTE_REPO} && source .venv/bin/activate && {env} "
@@ -337,6 +339,10 @@ def main() -> int:
     p.add_argument("--cases", nargs="+", metavar="CASE",
                    help="run exactly these cases instead of everything "
                         "pending; use with --results-dir for paired re-runs")
+    p.add_argument("--deadline", type=int, default=0,
+                   help="CASE_RUN_DEADLINE_S per dataset (0 = harness default "
+                        "9000 s). Raise it for cases that ran out of time "
+                        "rather than out of ideas.")
     p.add_argument("--results-dir", default=REMOTE_RESULTS,
                    help="remote results root. Point paired re-runs somewhere "
                         "else so the 4.8 baseline stays untouched")
@@ -384,7 +390,8 @@ def main() -> int:
                 log(f"clear ({reason}) — {len(pending)} case(s) pending")
                 if not args.dry_run:
                     preflight()
-                launch(batch, args.concurrency, args.dry_run, args.results_dir)
+                launch(batch, args.concurrency, args.dry_run,
+                       args.results_dir, args.deadline)
                 launched += 1
                 if args.dry_run:
                     return 0
