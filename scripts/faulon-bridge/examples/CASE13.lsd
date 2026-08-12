@@ -1,0 +1,195 @@
+; === CONSTRAINT INVENTORY v2 ===
+; {
+;   "version": 2, "iteration": 3, "formula": "C12H12N2O3", "timestamp": "2026-08-08T11:57:00Z",
+;   "mult_count": 17, "hsqc_count": 6,
+;   "hmbc_batches": [
+;     {"batch": 1, "count": 5, "correlations": ["3 11", "7 11", "10 12", "1 5", "8 7"]},
+;     {"batch": 2, "count": 5, "correlations": ["10 5", "(4 5) 10", "(4 5) 5", "3 6", "2 5"]},
+;     {"batch": 3, "count": 5, "correlations": ["12 10", "(4 5) 6", "1 6", "3 7", "11 7"]}
+;   ],
+;   "hmbc_total": 15, "grouped_hmbc": ["(4 5) 10", "(4 5) 5", "(4 5) 6"],
+;   "bond_constraints": ["1 15", "2 16"],
+;   "cosy_equiv_pairs": [],
+;   "cosy_data_pairs": ["6 7 3 3", "10 12 3 3"],
+;   "list_prop_constraints": [], "elim_value": null, "elim_budget": 0,
+;   "deff_not_patterns": [],
+;   "ring_exclusion_enabled": true,
+;   "deff_fexp": {
+;     "status": "none",
+;     "fragment_smiles": null, "fragment_atoms": null, "fragment_avgdev": null,
+;     "fragment_filename": null, "deff_command": null, "fexp_command": null,
+;     "search_result_count": 0,
+;     "conflict_reason": "fragment search unavailable: data/reference/lucy-ng-fragments.db not built (lucy fragment search aborted again at iteration 3). No goodlist fragment injected."
+;   },
+;   "detection_results": {
+;     "hybridisation_queries": "NO DATA (has_data=false, v4 schema defect, total_observations=0 for every shift)",
+;     "neighbours_queries": "NO DATA (has_data=false, all element frequencies 0.0)",
+;     "hhb_result": "has_data=true but allowed_pairs=[] and forbidden_pairs=[] (51 DB compounds) -> no constraint",
+;     "grouping_detected": ["tol 0.25: none", "tol 0.50: [148.38, 148.83] span 0.45 centroid 148.61 (HMBC F1 overlap only)"],
+;     "aromatic_cosy": "lucy detect aromatic-cosy -> 'No aromatic equivalence pairs detected' (no 2C-equivalent CH)"
+;   },
+;   "applied_from_detection": [
+;     "148.83/148.38 F1 overlap -> APPLIED in batch 2 as grouped 'HMBC (4 5) 10' and 'HMBC (4 5) 5', and in batch 3 as grouped 'HMBC (4 5) 6'; no committed single carbon anywhere. ALL THREE F1-overlap correlations are now applied, all grouped."
+;   ],
+;   "pending_from_detection": [
+;     "BOND 10 13 (N-CH2, from dC 47.65 / dH 4.613 shift heuristic) -- STILL NOT APPLIED as a hard BOND. Its evidential basis (the reciprocal 3J pair) is now supplied to LSD as DATA instead: 'HMBC 10 5' + grouped 'HMBC (4 5) 10' are both in batch 2, so LSD may derive the N(Et)-CH= motif itself rather than being forced into it.",
+;     "BOND 2 17 (COOH -OH on C 166.78) -- NOT APPLIED: exchangeable H at 14.5 ppm proves an OH/NH exists but does not localise it. O17 left unplaced.",
+;     "HMBC 8 5 (119.28<-H8.892, rel_col 7.6, flagged possible 4J) -- DEFERRED",
+;     "HMBC 8 11 (119.28<-H2.733, rel_col 5.0, inside t1 ridge of 2.733) -- DEFERRED as probable t1 artifact",
+;     "HMBC 9 5 / HMBC 9 10 (109.81 low-confidence, rel_col 3.9 / 4.1) -- DEFERRED",
+;     "HMBC 4 7 (148.83<-H7.393, rel_col 5.1, likely t1 ridge) -- DEFERRED"
+;   ],
+;   "deferred_confident_hmbc": [
+;     {"lsd": "6 7", "peak": "136.21<-H7.393", "rel_col": 13.8, "status": "deferred", "note": "weakest of the confident set (rel_col 13.8, ~20x below the next); a 2J INSIDE the ortho pair that COSY 6 7 3 3 already fixes, so it carries no new connectivity. Sole remaining deferral."}
+;   ],
+;   "promoted_to_applied_in_batch_3": ["12 10", "(4 5) 6", "1 6", "3 7", "11 7"],
+;   "deferred_confident_hmbc_arithmetic": "16 confident total - 5 (batch 1) - 5 (batch 2) - 5 (batch 3) = 1 ledger entry. Reconciles.",
+;   "sp2_count": 12,
+;   "sp2_atoms": "C 1-9 (9) + N 14 (1) + O 15,16 (2) = 12 EVEN",
+;   "h_budget": "11 CH-bound (5,6,7 =1H each; 10 =2H; 11,12 =3H each) + 1 exchangeable on O17 = 12 = H of C12H12N2O3",
+;   "persistence_check_iteration_02": "Self-applied DA baseline: MULT x17 verbatim OK; HSQC x6 verbatim OK; HMBC 3 11 / 7 11 / 10 12 / 1 5 / 8 7 verbatim OK; COSY 6 7 3 3 + COSY 10 12 3 3 explicit range retained OK; BOND 1 15 + BOND 2 16 retained (NOT relaxed) OK; all three ring-exclusion lines verbatim OK; grouped_hmbc 0 -> 2 (monotonically non-decreasing) OK; sp2=12 / H=12 reconcile OK; no ELIM introduced OK.",
+;   "persistence_check_iteration_03": "Self-applied DA baseline against iteration_02/compound.lsd (file READ from disk and copied forward byte-for-byte, then batch 3 INSERTED -- nothing reconstructed): MULT x17 verbatim OK; HSQC x6 verbatim OK; batch-1 HMBC 3 11 / 7 11 / 10 12 / 1 5 / 8 7 verbatim OK; batch-2 HMBC 10 5 / (4 5) 10 / (4 5) 5 / 3 6 / 2 5 verbatim OK; COSY 6 7 3 3 + COSY 10 12 3 3 explicit 3 3 range retained OK; BOND 1 15 + BOND 2 16 retained, BOND 2 16 NOT relaxed (no zero-solution trigger: iteration 02 gave 1009) OK; all three ring-exclusion lines verbatim OK; grouped_hmbc 2 -> 3 monotonically non-decreasing OK; hmbc_total 10 -> 15 OK; sp2=12 EVEN / H=12 reconcile unchanged OK; elim_budget still 0, no ELIM introduced OK."
+; }
+; === END CONSTRAINT INVENTORY ===
+;
+; ---------------------------------------------------------------------------
+; ATOM DEFINITIONS (MULT) -- from DEPT-135 (Priority 1) + edited HSQC + formula
+; idx  shift    assignment
+;  1   178.80   Cq, sp2, in-ring/conjugated C=O
+;  2   166.78   Cq, sp2, carbonyl-region C
+;  3   164.96   Cq, sp2, bears CH3 25.52 (2J, strongest HMBC); dC(CH3) 25.5 excludes acetyl/acetoxy
+;  4   148.83   Cq, sp2
+;  5   148.38   CH, sp2, dH 8.892 singlet, NO COSY partner (isolated CH)
+;  6   136.21   CH, sp2, dH 8.653 d 8.3
+;  7   122.46   CH, sp2, dH 7.393 d 8.1
+;  8   119.28   Cq, sp2
+;  9   109.81   Cq, sp2 (upfield -- electron-rich / push-pull position)
+; 10    47.65   CH2, sp3, dH 4.613 q 7.2
+; 11    25.52   CH3, sp3, dH 2.733 s
+; 12    15.43   CH3, sp3, dH 1.534 t 7.2
+; 13   (N)      N, 3 connections, 0 H  -- position OPEN
+; 14   (N)      N, sp2, 0 H            -- position OPEN (sp2 required by parity: 9 sp2 C is odd)
+; 15   (O)      sp2 O, carbonyl oxygen of atom 1
+; 16   (O)      sp2 O, carbonyl oxygen of atom 2
+; 17   (O)      sp3 O-H, carries the exchangeable H (~14.5 ppm, very broad) -- placement OPEN
+; ---------------------------------------------------------------------------
+MULT 1 C 2 0     ; 178.80 Cq
+MULT 2 C 2 0     ; 166.78 Cq
+MULT 3 C 2 0     ; 164.96 Cq
+MULT 4 C 2 0     ; 148.83 Cq
+MULT 5 C 2 1     ; 148.38 CH  (H 8.892)
+MULT 6 C 2 1     ; 136.21 CH  (H 8.653)
+MULT 7 C 2 1     ; 122.46 CH  (H 7.393)
+MULT 8 C 2 0     ; 119.28 Cq
+MULT 9 C 2 0     ; 109.81 Cq
+MULT 10 C 3 2    ; 47.65 CH2 (H 4.613)
+MULT 11 C 3 3    ; 25.52 CH3 (H 2.733)
+MULT 12 C 3 3    ; 15.43 CH3 (H 1.534)
+MULT 13 N 3 0    ; nitrogen, 3 bonds, no H -- position OPEN
+MULT 14 N 2 0    ; nitrogen, sp2, no H -- position OPEN
+MULT 15 O 2 0    ; carbonyl O
+MULT 16 O 2 0    ; carbonyl O
+MULT 17 O 3 1    ; O-H (the single exchangeable H) -- placement OPEN
+;
+; ---------------------------------------------------------------------------
+; ONE-BOND CORRELATIONS (HSQC) -- ALL HSQC BEFORE ANY HMBC
+; ---------------------------------------------------------------------------
+HSQC 5 5         ; 148.38 / 8.892
+HSQC 6 6         ; 136.21 / 8.653
+HSQC 7 7         ; 122.46 / 7.393
+HSQC 10 10       ; 47.65 / 4.613
+HSQC 11 11       ; 25.52 / 2.733
+HSQC 12 12       ; 15.43 / 1.534
+;
+; ---------------------------------------------------------------------------
+; COSY (3J H-H, experimental peak data; explicit 3 3 range = ELIM-immune)
+; Both are J-matched, unambiguous, and are the hardest data in the set.
+; ---------------------------------------------------------------------------
+COSY 6 7 3 3     ; H 8.653 <-> H 7.393, J 8.2 Hz ortho 2-spin pair
+COSY 10 12 3 3   ; H 4.613 <-> H 1.534, J 7.2 Hz (q/t) ethyl CH2-CH3
+;
+; ---------------------------------------------------------------------------
+; HMBC BATCH 1 (5 correlations) -- carried forward VERBATIM from iteration 01
+; ---------------------------------------------------------------------------
+HMBC 3 11        ; 164.96 <- H 2.733  rel_col 565 (strongest); C unique (nearest 148.83, 16.1 ppm); 2J CH3->Cq
+HMBC 7 11        ; 122.46 <- H 2.733  rel_col 263; C unique (nearest 119.28, 3.18 ppm > 3.0); 3J CH3->CH
+HMBC 10 12       ; 47.65  <- H 1.534  rel_col 503; both nodes fully isolated; 2J ethyl CH3->CH2
+HMBC 1 5         ; 178.80 <- H 8.892  rel_col 335; C unique (nearest 166.78, 12.0 ppm); H unique singlet
+HMBC 8 7         ; 119.28 <- H 7.393  rel_col 327; C unique (nearest 122.46, 3.18 ppm > 3.0); Cq node
+;
+; ---------------------------------------------------------------------------
+; HMBC BATCH 2 (5 correlations) -- NEW in iteration 02
+; DA-mandated content: the reciprocal N(Et)-CH= pair (47.65<-H8.892 and
+; 148.38<-H4.613) MUST appear here, and every correlation touching the
+; unresolved 148.83/148.38 F1 pair is written in the parenthesised GROUP form
+; so that no single carbon is committed.
+; ---------------------------------------------------------------------------
+HMBC 10 5        ; 47.65 <- H 8.892   rel_col 176; DA-mandated. Reciprocal half of the N(Et)-CH= evidence.
+; C 47.65 fully isolated (nearest 25.52, 22 ppm); H 8.892 unique singlet.
+HMBC (4 5) 10    ; 148.83/148.38 <- H 4.613  rel_col 163.8 / 220.4; DA-mandated other half of the pair.
+; GROUPED: the two carbons are unresolved in HMBC F1 (span 0.45 ppm) and BOTH
+; peaks are present, so LSD must be free to satisfy this with atom 4 OR atom 5.
+HMBC (4 5) 5     ; 148.83/148.38 <- H 8.892  rel_col 301.1 / 80.3; GROUPED for the same F1 reason.
+; Note the atom-5 branch is a 1J self-term (H5 sits on C5) and so cannot be
+; satisfied at 2-3 bonds; the group therefore resolves to atom 4 without my
+; having to assert it. Second-strongest unused correlation in the dataset.
+HMBC 3 6         ; 164.96 <- H 8.653  rel_col 276; C isolated (nearest 148.83, 16.1 ppm), H isolated
+; doublet. Ties the CH3-bearing sp2 carbon to the ortho CH pair.
+HMBC 2 5         ; 166.78 <- H 8.892  rel_col 203; C isolated (nearest 164.96, 1.8 ppm -- see note).
+; NOTE: 166.78 and 164.96 are 1.82 ppm apart, i.e. inside the 3.0 ppm uniqueness
+; rule, but they are cleanly resolved in this HMBC (F1 res: c_obs 166.77 vs 164.97,
+; two separate columns of the guided matrix) and 164.96<-H8.892 is ABSENT from the
+; peak list, so there is no group to form. Committed as a single carbon.
+;
+; ---------------------------------------------------------------------------
+; HMBC BATCH 3 (5 correlations) -- NEW in iteration 03
+; This exhausts the confident HMBC set except the single information-free
+; 136.21<-H7.393 (2J inside the COSY-fixed ortho pair), which stays in the
+; deferred_confident_hmbc ledger. Every correlation touching the unresolved
+; 148.83/148.38 F1 pair remains in parenthesised GROUP form.
+; ---------------------------------------------------------------------------
+HMBC 12 10       ; 15.43 <- H 4.613   rel_col 248; 2J ethyl, reciprocal of applied HMBC 10 12.
+; Both nodes fully isolated in C and in H. Zero-risk closure of the ethyl unit.
+HMBC (4 5) 6     ; 148.83/148.38 <- H 8.653  rel_col 267.8 / 63.1; GROUPED (F1 overlap, span 0.45 ppm,
+; both peaks observed). Third and last F1-overlap correlation; ties the ortho CH
+; pair to the 148.6 region without committing atom 4 vs atom 5.
+HMBC 1 6         ; 178.80 <- H 8.653  rel_col 114; C isolated (nearest 166.78, 12.0 ppm), H isolated
+; doublet. With the already-applied HMBC 1 5 this gives carbonyl 178.80 a 3J from
+; BOTH ring CH systems -- the cross-conjugated in-ring C=O evidence.
+HMBC 3 7         ; 164.96 <- H 7.393  rel_col 100; C isolated (nearest 166.78, 1.8 ppm but cleanly
+; resolved as separate F1 columns, c_obs 164.97 vs 166.94-weak-only), H isolated.
+HMBC 11 7        ; 25.52 <- H 7.393   rel_col 33; reciprocal of applied HMBC 7 11, so it re-states an
+; already-encoded CH3/CH proximity from the other direction. C 25.52 isolated
+; (nearest 15.43, 10.1 ppm). Lowest-intensity member of the batch but geometrically
+; consistent and 2.4x above the strongest deferred artifact.
+;
+; ---------------------------------------------------------------------------
+; HETEROATOM CONSTRAINTS -- carbonyl exception only (FIX-10 / G-PROP-EVIDENCE)
+; Carried forward verbatim. BOND 2 16 RETAINED (DA WARNING-1 flags it as the
+; softest constraint and first to relax on 0 solutions -- iteration 01 returned
+; 25635 solutions, so there is no zero-solution trigger and no reason to relax
+; it; relaxing it would also collapse the parity argument for MULT 14 N 2 0).
+;   atom 1 (178.80): Cq (DEPT-135 + HSQC absence) + 160-220 ppm + 3J from BOTH
+;     ring CH (H 8.892 and H 8.653) = conjugated in-ring carbonyl + O in formula.
+;   atom 2 (166.78): Cq (DEPT-135 + HSQC absence) + 160-220 ppm + no attached H,
+;     only a single 3J from H 8.892 + very broad exchangeable H at 14.5 ppm
+;     (chelated acid/amide-type carbonyl context) + O in formula.
+; The 3rd carbonyl-region carbon (164.96) is NOT given an O: its 2J partner CH3
+; at dC 25.52 excludes acetyl (dC ~26/197) and acetoxy (dC ~21/170).
+; Nitrogen placement (both N) and the O-H placement are left OPEN deliberately.
+; ---------------------------------------------------------------------------
+BOND 1 15        ; C 178.80 = O
+BOND 2 16        ; C 166.78 = O
+;
+; ---------------------------------------------------------------------------
+; RING EXCLUSION (native DEFF/FEXP badlist) -- MUST persist in EVERY iteration
+; F1/F2 reserved for ring exclusion; fragment goodlist would use F3+.
+; ---------------------------------------------------------------------------
+DEFF F1 "ring3"
+DEFF F2 "ring4"
+FEXP "NOT F1 AND NOT F2"
+;
+; No ELIM (elim_budget = 0) -- coordinator instruction for this turn is explicitly
+; "do not introduce ELIM yet", and one confident correlation (136.21<-H7.393)
+; plus all low-confidence deferrals remain unapplied, so ELIM is premature.
+EXIT
