@@ -16,6 +16,11 @@
 # run is stopped early: the finished subset is then skewed small, and its hit
 # rate is NOT comparable to the 4.8 baseline's.
 #
+# Quota ceilings are NOT passed here on purpose: uat_watchdog.py's
+# DEFAULT_SEVEN_DAY_MAX / DEFAULT_FIVE_HOUR_MAX are the single source of truth.
+# This script used to hard-code --seven-day-max 80, which silently overrode a
+# lowered default and would have started a chunk at 72 %.
+#
 # NOTE (zsh): `$CASES` does not word-split here the way it would in bash --
 # `${=CASES}` is required, otherwise the watchdog receives one argument
 # holding 154 names and reports "nothing to do".
@@ -87,7 +92,6 @@ echo "first (smallest): $(echo ${=CASES} | cut -d' ' -f1-6)"
 if [[ "$1" == "--dry-run" ]]; then
   exec python3 -u scripts/uat_watchdog.py --cases ${=CASES} \
     --results-dir "$RESULTS" --chunk 4 -k 2 \
-    --seven-day-max 80 --five-hour-max 75 \
     --max-snapshot-age 7200 --once --dry-run
 fi
 
@@ -103,7 +107,6 @@ nohup caffeinate -i -m python3 -u scripts/uat_watchdog.py \
   --cases ${=CASES} \
   --results-dir "$RESULTS" \
   --chunk 4 -k 2 \
-  --seven-day-max 80 --five-hour-max 75 \
   --max-snapshot-age 7200 --poll 600 \
   >> "$LOG" 2>&1 &
 

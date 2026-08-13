@@ -71,9 +71,15 @@ REMOTE_ENV = {
 }
 
 # Defaults chosen to leave roughly half of each window for interactive work.
-DEFAULT_SEVEN_DAY_MAX = 55.0
+DEFAULT_SEVEN_DAY_MAX = 60.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
 DEFAULT_CHUNK = 4
+
+# A running chunk used to be untouchable: the loop logged "chunk still running"
+# and ignored the gate entirely, so four cases x 3 h could keep burning quota
+# long after the ceiling was crossed. Past this margin above the ceiling the
+# watchdog stops the chunk instead of watching it.
+ABORT_MARGIN_PCT = 5.0
 DEFAULT_CONCURRENCY = 1
 DEFAULT_POLL_SECONDS = 300
 DEFAULT_MAX_SNAPSHOT_AGE = 900  # 15 min
@@ -134,12 +140,44 @@ def window(snapshot: dict, name: str) -> tuple[float | None, datetime | None]:
     return pct, reset
 
 
+_last_seven: float | None = None
+
+
+def implausible(snapshot: dict) -> str | None:
+    """Reject a usage reading that cannot be true, instead of acting on it.
+
+    Observed 2026-08-13: the 7-day figure went 70 % -> 23 % -> 72 % across
+    consecutive polls, four days before its reset. A drop of that size without
+    a reset having passed means the snapshot is wrong, and a wrong LOW reading
+    is the dangerous direction -- it would wave a chunk through at a moment the
+    ceiling was actually exceeded. Treat it as no reading at all.
+    """
+    global _last_seven
+    seven, reset = window(snapshot, "seven_day")
+    if seven is None:
+        return None
+    prev = _last_seven
+    _last_seven = seven
+    if prev is None or seven >= prev:
+        return None
+    reset_passed = reset is not None and datetime.now(timezone.utc) >= reset
+    if reset_passed or (prev - seven) <= 2.0:
+        return None                       # genuine reset, or rounding jitter
+    _last_seven = prev                    # keep the trustworthy value
+    return (f"7-day window dropped {prev:.0f} % -> {seven:.0f} % with no reset "
+            f"due -- snapshot not trusted")
+
+
 def gate(snapshot: dict, args) -> tuple[bool, str]:
     """Decide whether a new chunk may start. Returns (ok, reason)."""
     age = snapshot["_age_seconds"]
     if age > args.max_snapshot_age:
         return False, (f"snapshot is {age/60:.0f} min old (limit "
                        f"{args.max_snapshot_age/60:.0f}) -- is Claude Code open?")
+
+    bogus = implausible(snapshot)
+    if bogus:
+        return False, bogus
 
     five, five_reset = window(snapshot, "five_hour")
     seven, seven_reset = window(snapshot, "seven_day")
@@ -171,6 +209,56 @@ def ssh_run(remote_cmd: str, timeout: int = 60) -> str:
     if proc.returncode != 0:
         raise Halt(f"ssh failed ({proc.returncode}): {proc.stderr.strip()[:300]}")
     return proc.stdout
+
+
+_ABORT_SCRIPT = """
+set -u
+# SIGTERM first: blind_case_batch stashes the ground-truth table and only puts
+# it back in a finally. SIGKILL skips that and leaves the answer key hidden,
+# which silently breaks the next grading run.
+pkill -TERM -f '[b]lind_case_batch.py' 2>/dev/null || true
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  pgrep -f '[b]lind_case_batch.py' >/dev/null || break
+  sleep 1
+done
+pkill -KILL -f '[b]lind_case_batch.py' 2>/dev/null || true
+pkill -TERM -f '[t]imeout 3600' 2>/dev/null || true
+sleep 3
+pkill -KILL -f '[t]imeout 3600' 2>/dev/null || true
+pkill -KILL -f '[c]laude -p /lucy-ng:case' 2>/dev/null || true
+pkill -KILL -f '[c]laude --resume' 2>/dev/null || true
+
+# Whatever the finally did or did not manage, reconcile against the manifest.
+python3 - <<'PYEOF'
+import json, os, shutil
+man = os.path.expanduser("~/.case-uat-stash/manifest.json")
+if not os.path.exists(man):
+    print("stash clean")
+else:
+    for src, dst in json.load(open(man)):
+        if os.path.exists(dst):
+            print(f"already restored: {dst}")
+        elif os.path.exists(src):
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.move(src, dst)
+            print(f"restored: {dst}")
+        else:
+            print(f"LOST: neither {src} nor {dst} exists")
+    os.remove(man)
+PYEOF
+echo "batches_left=$(pgrep -f '[b]lind_case_batch.py' | wc -l)"
+echo "agents_left=$(pgrep -f '[t]imeout 3600' | wc -l)"
+"""
+
+
+def abort_chunk() -> str:
+    """Stop a running chunk and make sure the answer key is back in place.
+
+    Used when the quota ceiling is crossed mid-chunk. Returns the remote
+    output so the caller can log what happened.
+    """
+    probe = base64.b64encode(_ABORT_SCRIPT.encode()).decode()
+    return ssh_run(f"echo {probe} | base64 -d | bash", timeout=90)
 
 
 def chunk_running() -> bool:
@@ -363,7 +451,23 @@ def main() -> int:
             ok, reason = gate(snapshot, args)
 
             if chunk_running():
-                log(f"chunk still running — waiting ({reason})")
+                # A running chunk is normally left alone -- killing one wastes
+                # the work already done. But past ABORT_MARGIN_PCT above the
+                # ceiling that trade flips: four cases x 3 h keep burning quota
+                # the user needs elsewhere. abort_chunk() stops it the safe way
+                # and puts the answer key back.
+                seven, _ = window(snapshot, "seven_day")
+                over = (seven is not None
+                        and seven >= args.seven_day_max + ABORT_MARGIN_PCT)
+                if over:
+                    log(f"ABORTING running chunk — 7d at {seven:.0f} % is "
+                        f"{ABORT_MARGIN_PCT:.0f} pt past the {args.seven_day_max:.0f} % "
+                        f"ceiling")
+                    for line in abort_chunk().splitlines():
+                        if line.strip():
+                            log(f"  abort: {line.strip()}")
+                else:
+                    log(f"chunk still running — waiting ({reason})")
             elif not ok:
                 log(f"holding: {reason}")
             else:
