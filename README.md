@@ -208,6 +208,8 @@ A Python API mirrors the CLI for custom workflows — see
 
 ## Installation
 
+To install lucy-ng, simply ask your AI to look at this repo and do the installation for you. Alternatively, you can follow the instructions below.
+
 ### CLI only
 
 ```bash
