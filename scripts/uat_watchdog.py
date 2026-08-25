@@ -141,29 +141,40 @@ def window(snapshot: dict, name: str) -> tuple[float | None, datetime | None]:
 
 
 _last_seven: float | None = None
+_last_reset: datetime | None = None
 
 
 def implausible(snapshot: dict) -> str | None:
     """Reject a usage reading that cannot be true, instead of acting on it.
 
     Observed 2026-08-13: the 7-day figure went 70 % -> 23 % -> 72 % across
-    consecutive polls, four days before its reset. A drop of that size without
-    a reset having passed means the snapshot is wrong, and a wrong LOW reading
-    is the dangerous direction -- it would wave a chunk through at a moment the
+    consecutive polls, four days before its reset. A wrong LOW reading is the
+    dangerous direction -- it would wave a chunk through at a moment the
     ceiling was actually exceeded. Treat it as no reading at all.
+
+    A drop is legitimate when the window itself turned over. Do NOT test that
+    against the CURRENT snapshot's resets_at: right after a reset that field
+    already names the NEXT window, so the check would never fire and every
+    real reset would be rejected as noise (which is exactly what happened on
+    2026-08-25, 75 % -> 1 %). Compare against the window we saw last instead:
+    a changed resets_at means a new window, and a previously-announced reset
+    that has since passed means the same.
     """
-    global _last_seven
+    global _last_seven, _last_reset
     seven, reset = window(snapshot, "seven_day")
     if seven is None:
         return None
-    prev = _last_seven
-    _last_seven = seven
+    prev, prev_reset = _last_seven, _last_reset
+    _last_seven, _last_reset = seven, reset
     if prev is None or seven >= prev:
         return None
-    reset_passed = reset is not None and datetime.now(timezone.utc) >= reset
-    if reset_passed or (prev - seven) <= 2.0:
-        return None                       # genuine reset, or rounding jitter
-    _last_seven = prev                    # keep the trustworthy value
+    if prev_reset is not None and reset is not None and reset != prev_reset:
+        return None                       # window rolled over -- drop is real
+    if prev_reset is not None and datetime.now(timezone.utc) >= prev_reset:
+        return None                       # the reset we were told about happened
+    if (prev - seven) <= 2.0:
+        return None                       # rounding jitter
+    _last_seven, _last_reset = prev, prev_reset   # keep the trustworthy pair
     return (f"7-day window dropped {prev:.0f} % -> {seven:.0f} % with no reset "
             f"due -- snapshot not trusted")
 
