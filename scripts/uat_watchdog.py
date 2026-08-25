@@ -80,6 +80,25 @@ DEFAULT_CHUNK = 4
 # long after the ceiling was crossed. Past this margin above the ceiling the
 # watchdog stops the chunk instead of watching it.
 ABORT_MARGIN_PCT = 5.0
+
+# The snapshot only refreshes when an interactive session renders its
+# statusline, i.e. when the user types. Overnight it goes stale and the
+# watchdog used to stop entirely -- roughly half of the available time was
+# lost that way. There is no programmatic alternative: the OAuth usage
+# endpoint is undocumented and Cloudflare-blocked, hooks do not receive
+# rate_limits (anthropics/claude-code#33820), and the Admin APIs cover the
+# API platform, not the subscription windows.
+#
+# So extrapolate instead: assume the benchmark keeps burning quota at
+# STALE_DRIFT_PCT_PER_HOUR while unobserved, and treat that estimate as if it
+# were measured. Two points per hour is deliberately pessimistic -- the paired
+# sample burnt about 1.5 per case at k=2, so the estimate outruns reality and
+# the ceiling arrives early rather than late.
+#
+# Past STALE_HARD_LIMIT_S the estimate has drifted too far to mean anything,
+# and the watchdog stops for real.
+STALE_DRIFT_PCT_PER_HOUR = 2.0
+STALE_HARD_LIMIT_S = 12 * 3600
 DEFAULT_CONCURRENCY = 1
 DEFAULT_POLL_SECONDS = 300
 DEFAULT_MAX_SNAPSHOT_AGE = 900  # 15 min
@@ -179,12 +198,42 @@ def implausible(snapshot: dict) -> str | None:
             f"due -- snapshot not trusted")
 
 
+def stale_gate(snapshot: dict, args, age: float) -> tuple[bool, str]:
+    """Decide on an aged snapshot by extrapolating from its last real reading.
+
+    The stale snapshot still carries the last genuinely measured value and the
+    moment it was taken, so no extra state is needed. Deliberately NOT routed
+    through implausible(): an estimate must never become the reference the next
+    real reading is judged against, or a fresh low value after a reset would
+    look like a drop from an invented number.
+    """
+    if age > STALE_HARD_LIMIT_S:
+        return False, (f"snapshot is {age/3600:.1f} h old (hard limit "
+                       f"{STALE_HARD_LIMIT_S/3600:.0f} h) -- estimate would be "
+                       f"meaningless; open Claude Code to refresh")
+
+    seven, seven_reset = window(snapshot, "seven_day")
+    if seven is None:
+        return False, f"snapshot is {age/60:.0f} min old and carries no 7-day figure"
+
+    # A reset during the blind window wipes the debt; anything else accrues it.
+    if seven_reset is not None and datetime.now(timezone.utc) >= seven_reset:
+        return False, (f"snapshot is {age/60:.0f} min old and its window reset "
+                       f"meanwhile -- waiting for a real reading")
+
+    est = seven + STALE_DRIFT_PCT_PER_HOUR * (age / 3600.0)
+    shown = (f"estimated 7d {est:.0f} % (last measured {seven:.0f} % "
+             f"{age/60:.0f} min ago, +{STALE_DRIFT_PCT_PER_HOUR:.0f} pt/h)")
+    if est >= args.seven_day_max:
+        return False, f"{shown} -- at or past the {args.seven_day_max:.0f} % ceiling"
+    return True, shown
+
+
 def gate(snapshot: dict, args) -> tuple[bool, str]:
     """Decide whether a new chunk may start. Returns (ok, reason)."""
     age = snapshot["_age_seconds"]
     if age > args.max_snapshot_age:
-        return False, (f"snapshot is {age/60:.0f} min old (limit "
-                       f"{args.max_snapshot_age/60:.0f}) -- is Claude Code open?")
+        return stale_gate(snapshot, args, age)
 
     bogus = implausible(snapshot)
     if bogus:
