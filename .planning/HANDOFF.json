@@ -1,45 +1,136 @@
 {
   "version": "1.0",
-  "timestamp": "2026-08-08T11:14:24Z",
+  "timestamp": "2026-08-27T08:06:54.337Z",
   "phase": null,
-  "phase_name": "none — v10.1 closed 2026-07-28, awaiting next milestone",
-  "phase_dir": ".planning",
+  "phase_name": "none \u2014 v10.1 closed PARTIAL and archived 2026-07-28; awaiting next milestone",
+  "phase_dir": null,
   "plan": null,
   "task": null,
   "total_tasks": null,
   "status": "paused",
+  "context": "default (documentation reconciliation + one small CLI feature + compute-host ops; no GSD phase active)",
   "completed_tasks": [
-    {"id": 1, "name": "PROV-01: relabel the false ground truth in code and planning docs", "status": "done", "commit": "3f304b7"},
-    {"id": 2, "name": "PROV-01: re-analyse C20H32O2 from the raw matrices", "status": "done", "commit": "fab2f5e"},
-    {"id": 3, "name": "PROV-01: correct my own overclaims after the 22.64 doubling", "status": "done", "commit": "df524f6"},
-    {"id": 4, "name": "Fix CR-02/CR-03 data-loss paths in lucy jcamp", "status": "done", "commit": "7dfe2ce"},
-    {"id": 5, "name": "Agents inherit session model; CLAUDE_MODEL required", "status": "done", "commit": "f9aa7b3"},
-    {"id": 6, "name": "Quota watchdog for the blind benchmark", "status": "done", "commit": "070fc6b"},
-    {"id": 7, "name": "Retract the false CLI-regression claim", "status": "done", "commit": "ae139ac"},
-    {"id": 8, "name": "Paired 15-case Opus-5 sample", "status": "in_progress", "progress": "chunk 1 of 4 launched (CASE13 CASE15 CASE22 CASE41); 0 of 15 finished"}
+    {
+      "id": 1,
+      "name": "Reconcile .planning/STATE.md and PROJECT.md with reality (4 weeks of drift, 26 uncatalogued commits)",
+      "status": "done",
+      "commit": null
+    },
+    {
+      "id": 2,
+      "name": "Record the benchmark's mixed-provenance decision as a decision, not a defect",
+      "status": "done",
+      "commit": null
+    },
+    {
+      "id": 3,
+      "name": "Update auto-memory (MEMORY.md, benchmark ops, C20H32O2 reference)",
+      "status": "done",
+      "commit": "n/a \u2014 outside repo"
+    },
+    {
+      "id": 4,
+      "name": "Kill 39 orphaned lucy webview servers on the compute host (~8 GB reclaimed)",
+      "status": "done",
+      "commit": "n/a \u2014 remote op"
+    },
+    {
+      "id": 5,
+      "name": "LUCY_NO_WEBVIEW opt-out in `lucy webview serve` + tests + harness export",
+      "status": "done",
+      "commit": null
+    }
   ],
   "remaining_tasks": [
-    {"id": 8, "name": "Finish the paired 15-case sample", "status": "in_progress"},
-    {"id": 9, "name": "Grade paired results against the same cases' 4.8 verdicts", "status": "not_started"},
-    {"id": 10, "name": "PROV-01 open decisions (library default, JVAL-F2 re-scope, DEPT)", "status": "not_started"},
-    {"id": 11, "name": "Correct CASE-UAT-LOG.md — it says FINAL over a stale 16-run subset", "status": "not_started"},
-    {"id": 12, "name": "Decide whether to run the 155 outstanding datasets", "status": "not_started"}
+    {
+      "id": 6,
+      "name": "Commit the five modified files (2 planning + 3 code/harness)",
+      "status": "not_started"
+    },
+    {
+      "id": 7,
+      "name": "Decide whether to refresh the skill-file SHA baseline (guard red since 2026-08-09)",
+      "status": "not_started"
+    },
+    {
+      "id": 8,
+      "name": "Push \u2014 2 commits outstanding plus whatever is committed now",
+      "status": "not_started"
+    },
+    {
+      "id": 9,
+      "name": "Resume the blind benchmark once the 7-day quota window resets (2026-09-01T03:00Z)",
+      "status": "not_started"
+    }
   ],
   "blockers": [
-    {"description": "Benchmark is quota-bound: ~4 percentage points of the weekly window per case", "type": "external", "workaround": "watchdog paces it; weekly window resets 2026-08-11T03:00"},
-    {"description": "Watchdog only launches while ~/.claude/usage-snapshot.json is fresh (<2 h), which requires an open Claude Code session on this Mac", "type": "technical", "workaround": "deliberate safety property; raise --max-snapshot-age to run longer unattended"}
+    {
+      "description": "7-day quota at 61 %, above the watchdog's 60 % ceiling \u2014 no new benchmark chunk will launch until the window resets on 2026-09-01T03:00Z",
+      "type": "external",
+      "workaround": "None needed. Nothing is running and nothing is burning quota; the watchdog resumes on its own after the reset."
+    },
+    {
+      "description": "Skill-file byte-freeze guard has been failing for lucy-devils-advocate.md and lucy-lsd-engineer.md since 2026-08-09",
+      "type": "technical",
+      "workaround": "Pre-existing, NOT caused by this session's work. d62d833 changed both agent files without refreshing the SHA baseline (last set by f9aa7b3, 2026-08-07). The refresh procedure is documented inside tests/test_skill_files_unchanged.py."
+    }
   ],
   "human_actions_pending": [
-    {"action": "Decide whether DEFAULT_QUATERNARY_SHIFTS stays a library default at all", "context": "PROV-01 decision 1 — it grades any DEPT-less compound against C20H32O2's guesses", "blocking": false},
-    {"action": "Decide whether to run the 155 outstanding datasets after seeing the paired result", "context": "roughly 5-9 cases/week at the old thresholds", "blocking": false}
+    {
+      "action": "Decide whether to refresh the skill-file SHA baseline",
+      "context": "Refreshing blesses the current file contents. d62d833 was a deliberate, reviewed skill change, so the refresh is the follow-up that was missed \u2014 but it is the user's call, not the agent's.",
+      "blocking": false
+    },
+    {
+      "action": "Approve committing and pushing",
+      "context": "Five files modified, nothing committed; two older commits unpushed.",
+      "blocking": false
+    },
+    {
+      "action": "PROV-01 behaviour decision on DEFAULT_QUATERNARY_SHIFTS",
+      "context": "Drop the library default / require an explicit per-sample override / warn loudly when used. Gates QC-gate behaviour. Open since 2026-07-31.",
+      "blocking": false
+    },
+    {
+      "action": "Review spec 49057ef (budget-forced ranking, benefit verified negative)",
+      "context": "Waiting since 2026-08-10.",
+      "blocking": false
+    }
   ],
   "decisions": [
-    {"decision": "Keep the 102 existing results as the 4.8 baseline; run a paired 15-case sample instead of re-running all 257", "rationale": "the 155 outstanding are the easier tail, so their rate alone would attribute difficulty to the model", "phase": null},
-    {"decision": "Pin CLAUDE_BIN to 2.1.205", "rationale": "comparability with the baseline — NOT because any CLI is broken; that claim was retracted", "phase": null},
-    {"decision": "Agents drop their model: pin and inherit the session model", "rationale": "the pin was inert on the Mac but live on Sheldon, splitting orchestrator and team across two models", "phase": null},
-    {"decision": "Stop the C20H32O2 structure elucidation", "rationale": "not a lucy-ng deliverable; sample ~40 % impure, HMBC F1 resolution 0.234 ppm/point", "phase": null}
+    {
+      "decision": "Put the webview opt-out in `lucy webview serve` behind LUCY_NO_WEBVIEW, not in case.md",
+      "rationale": "case.md is byte-frozen with a committed SHA-256 guard and its launch block explicitly forbids extra arguments. An environment variable is the only switch that reaches through the frozen call; a CLI flag would not. case.md stayed byte-unchanged, confirmed via git.",
+      "phase": null
+    },
+    {
+      "decision": "Only 1/true/yes/on disable; 0/false/no/empty keep the dashboard",
+      "rationale": "A host setting LUCY_NO_WEBVIEW=0 to mean 'keep the dashboard' must never silently lose it. Guarded by a dedicated parametrised test.",
+      "phase": null
+    },
+    {
+      "decision": "Check the opt-out BEFORE _require_webview()",
+      "rationale": "Doing nothing needs no dependency, so a disabled run also succeeds on a host without the [webview] extra.",
+      "phase": null
+    },
+    {
+      "decision": "Leave the post-run webview running for interactive CASE runs",
+      "rationale": "case.md line 945 leaves it up deliberately (WV-07) so a run can be reviewed afterwards. That is correct for interactive use; only headless benchmark runs are leakage. The opt-out targets exactly those.",
+      "phase": null
+    },
+    {
+      "decision": "Record the benchmark's mixed provenance as an accepted decision, not an open defect",
+      "rationale": "The user decided in discussion to keep runs spanning two skill states AND two team models (4.8 -> Opus 5) rather than re-run: a clean series costs far too much time and quota, and the measured effect is large enough that it would only gain precision. A pending-todo framing was wrong and was deleted.",
+      "phase": null
+    }
   ],
-  "uncommitted_files": [],
-  "next_action": "tail -5 /tmp/uat_watchdog_paired.log && python3 scripts/uat_watchdog.py --once --dry-run — then, if chunk 1 finished, grade the paired directory (NOT the baseline results dir, which grade_blind.py would overwrite)",
-  "context_notes": "Watchdog PID 94833 runs unattended and survives /clear. Cron job c8cf15f0 (30-min status polling) does NOT — re-create with /loop 30m if wanted. Never kill a blind_case_batch process: it stashes the ground-truth table and restores it in a finally; recover from ~/.case-uat-stash/manifest.json. Judge long runs by artefacts in analysis/, never by log lines — 'Execution error' is a timeout, not a fault."
+  "uncommitted_files": [
+    ".planning/STATE.md",
+    ".planning/PROJECT.md",
+    "src/lucy_ng/cli/webview.py",
+    "tests/test_cli_webview.py",
+    "tests/case-benchmark/blind_case_run.sh"
+  ],
+  "next_action": "Ask the user about the SHA-baseline refresh, then commit the five files in two logical commits (planning reconciliation; webview opt-out) and push together with ea5969c and eb87f0e.",
+  "context_notes": "Nothing is half-built. Tests are green (1485 passed; the only 2 failures are the pre-existing byte-freeze ones). The session's real theme was that several confident conclusions came from measurement setups that were themselves broken and returned plausible numbers instead of errors \u2014 see the anti-pattern table in .continue-here.md before trusting any number you did not generate and verify yourself."
 }
