@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-08-27T08:06:54.337Z",
+  "timestamp": "2026-08-27T09:15:00.000Z",
   "phase": null,
   "phase_name": "none \u2014 v10.1 closed PARTIAL and archived 2026-07-28; awaiting next milestone",
   "phase_dir": null,
@@ -14,13 +14,13 @@
       "id": 1,
       "name": "Reconcile .planning/STATE.md and PROJECT.md with reality (4 weeks of drift, 26 uncatalogued commits)",
       "status": "done",
-      "commit": null
+      "commit": "4283bdf"
     },
     {
       "id": 2,
       "name": "Record the benchmark's mixed-provenance decision as a decision, not a defect",
       "status": "done",
-      "commit": null
+      "commit": "4283bdf"
     },
     {
       "id": 3,
@@ -38,54 +38,36 @@
       "id": 5,
       "name": "LUCY_NO_WEBVIEW opt-out in `lucy webview serve` + tests + harness export",
       "status": "done",
-      "commit": null
+      "commit": "2d15561"
+    },
+    {
+      "id": 6,
+      "name": "Refresh the frozen agent-file hashes after d62d833 (guard red 18 days)",
+      "status": "done",
+      "commit": "8554948"
+    },
+    {
+      "id": 7,
+      "name": "Commit in three thematic commits and push",
+      "status": "done",
+      "commit": "4283bdf, 2d15561, 8554948"
     }
   ],
   "remaining_tasks": [
     {
-      "id": 6,
-      "name": "Commit the five modified files (2 planning + 3 code/harness)",
-      "status": "not_started"
-    },
-    {
-      "id": 7,
-      "name": "Decide whether to refresh the skill-file SHA baseline (guard red since 2026-08-09)",
-      "status": "not_started"
-    },
-    {
       "id": 8,
-      "name": "Push \u2014 2 commits outstanding plus whatever is committed now",
-      "status": "not_started"
-    },
-    {
-      "id": 9,
-      "name": "Resume the blind benchmark once the 7-day quota window resets (2026-09-01T03:00Z)",
+      "name": "Resume the blind benchmark once the 7-day quota window resets (2026-09-01T03:00Z) \u2014 the watchdog does this by itself",
       "status": "not_started"
     }
   ],
   "blockers": [
     {
-      "description": "7-day quota at 61 %, above the watchdog's 60 % ceiling \u2014 no new benchmark chunk will launch until the window resets on 2026-09-01T03:00Z",
+      "description": "7-day quota at 61 %, above the watchdog's 60 % ceiling \u2014 no new benchmark chunk launches until the window resets on 2026-09-01T03:00Z",
       "type": "external",
-      "workaround": "None needed. Nothing is running and nothing is burning quota; the watchdog resumes on its own after the reset."
-    },
-    {
-      "description": "Skill-file byte-freeze guard has been failing for lucy-devils-advocate.md and lucy-lsd-engineer.md since 2026-08-09",
-      "type": "technical",
-      "workaround": "Pre-existing, NOT caused by this session's work. d62d833 changed both agent files without refreshing the SHA baseline (last set by f9aa7b3, 2026-08-07). The refresh procedure is documented inside tests/test_skill_files_unchanged.py."
+      "workaround": "None needed. Nothing is running, nothing is burning quota, and the watchdog resumes on its own."
     }
   ],
   "human_actions_pending": [
-    {
-      "action": "Decide whether to refresh the skill-file SHA baseline",
-      "context": "Refreshing blesses the current file contents. d62d833 was a deliberate, reviewed skill change, so the refresh is the follow-up that was missed \u2014 but it is the user's call, not the agent's.",
-      "blocking": false
-    },
-    {
-      "action": "Approve committing and pushing",
-      "context": "Five files modified, nothing committed; two older commits unpushed.",
-      "blocking": false
-    },
     {
       "action": "PROV-01 behaviour decision on DEFAULT_QUATERNARY_SHIFTS",
       "context": "Drop the library default / require an explicit per-sample override / warn loudly when used. Gates QC-gate behaviour. Open since 2026-07-31.",
@@ -94,6 +76,11 @@
     {
       "action": "Review spec 49057ef (budget-forced ranking, benefit verified negative)",
       "context": "Waiting since 2026-08-10.",
+      "blocking": false
+    },
+    {
+      "action": "Decide what to do with the modified uv.lock",
+      "context": "+558 lines of matplotlib dependencies, changed before this session began, provenance unknown. Deliberately left uncommitted on 2026-08-27 rather than blessing those versions by accident.",
       "blocking": false
     }
   ],
@@ -122,15 +109,14 @@
       "decision": "Record the benchmark's mixed provenance as an accepted decision, not an open defect",
       "rationale": "The user decided in discussion to keep runs spanning two skill states AND two team models (4.8 -> Opus 5) rather than re-run: a clean series costs far too much time and quota, and the measured effect is large enough that it would only gain precision. A pending-todo framing was wrong and was deleted.",
       "phase": null
+    },
+    {
+      "decision": "Refresh the frozen agent-file hashes rather than revert d62d833",
+      "rationale": "The edit (heteroatom protons need their own HSQC declaration or LSD aborts) is deliberate and verified against the solver's own check. case.md and the other three agent files still matched byte for byte, so the drift was fully explained. Guard re-verified by mutation: one extra byte makes it fail. User approved 2026-08-27.",
+      "phase": null
     }
   ],
-  "uncommitted_files": [
-    ".planning/STATE.md",
-    ".planning/PROJECT.md",
-    "src/lucy_ng/cli/webview.py",
-    "tests/test_cli_webview.py",
-    "tests/case-benchmark/blind_case_run.sh"
-  ],
-  "next_action": "Ask the user about the SHA-baseline refresh, then commit the five files in two logical commits (planning reconciliation; webview opt-out) and push together with ea5969c and eb87f0e.",
-  "context_notes": "Nothing is half-built. Tests are green (1485 passed; the only 2 failures are the pre-existing byte-freeze ones). The session's real theme was that several confident conclusions came from measurement setups that were themselves broken and returned plausible numbers instead of errors \u2014 see the anti-pattern table in .continue-here.md before trusting any number you did not generate and verify yourself."
+  "uncommitted_files": [],
+  "next_action": "Nothing is pending in the repo. The next substantive step is the PROV-01 behaviour decision, or /gsd-new-milestone once the benchmark campaign finishes.",
+  "context_notes": "Everything is committed and pushed (origin/master == master, 0 outstanding). Full suite 1487 passed, 0 failed -- green for the first time since 2026-08-09, when the agent-file guard went red. The session's theme: several confident conclusions rested on measurement setups that were themselves broken and returned a plausible number instead of an error. See the anti-pattern table in .continue-here.md before trusting any number you did not both generate and verify."
 }
