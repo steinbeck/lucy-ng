@@ -35,6 +35,32 @@ def _require_webview() -> None:
         ) from exc
 
 
+#: Environment variable that suppresses the dashboard.
+#:
+#: ``case.md`` launches a dashboard per CASE run and deliberately leaves it
+#: running afterwards (WV-07) so the run can be reviewed. On a headless
+#: benchmark host nobody ever looks, and the servers accumulate — 39 orphans
+#: holding ~8 GB were found on the compute host on 2026-08-27. ``case.md`` is
+#: byte-frozen and its launch block forbids extra arguments, so an environment
+#: variable is the only switch that reaches through the frozen call.
+WEBVIEW_OPT_OUT_ENV = "LUCY_NO_WEBVIEW"
+
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+
+def _webview_disabled() -> bool:
+    """Return True when the opt-out variable is set to an affirmative value.
+
+    Only ``1``/``true``/``yes``/``on`` (case-insensitive) disable the server.
+    Anything else — including ``0``, ``false`` and the empty string — leaves it
+    enabled, so setting the variable to a negative value can never silently
+    cost someone their dashboard.
+    """
+    import os
+
+    return os.environ.get(WEBVIEW_OPT_OUT_ENV, "").strip().lower() in _TRUTHY
+
+
 @webview.command("serve")
 @click.argument("analysis_dir", type=click.Path(path_type=Path))
 @click.option("--port", "-p", type=int, default=None, help="TCP port to listen on.")
@@ -64,7 +90,24 @@ def serve(
 
     Idempotent: if a server is already running for the directory, returns
     the existing state without starting a new process.
+
+    Honours the ``LUCY_NO_WEBVIEW`` opt-out: when set, nothing is started and
+    the command succeeds, so ``case.md``'s launch block takes its success
+    branch and the CASE run proceeds untouched.
     """
+    if _webview_disabled():
+        if output_format == "json":
+            click.echo(
+                json.dumps(
+                    {"url": None, "pid": None, "port": None, "disabled": True}
+                )
+            )
+        else:
+            click.echo(
+                f"Webview dashboard not started: {WEBVIEW_OPT_OUT_ENV} is set."
+            )
+        return
+
     _require_webview()
 
     import lucy_ng.webview.server as server

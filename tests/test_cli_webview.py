@@ -108,6 +108,197 @@ class TestImportSafety:
 
 
 # ---------------------------------------------------------------------------
+# TestWebviewOptOut — LUCY_NO_WEBVIEW makes `serve` a no-op
+#
+# Motivation: headless benchmark runs on the compute host never look at a
+# dashboard, but `case.md` launches one per run and deliberately leaves it
+# running (WV-07 line 945, "Do NOT add a stop call"). 39 orphaned servers
+# holding ~8 GB had accumulated by 2026-08-27. `case.md` is byte-frozen and
+# its launch block forbids extra arguments, so an environment variable is the
+# only switch that reaches through the frozen call.
+# ---------------------------------------------------------------------------
+
+
+class TestWebviewOptOut:
+    """`LUCY_NO_WEBVIEW` turns `webview serve` into a successful no-op."""
+
+    @pytest.fixture
+    def started(self, monkeypatch: pytest.MonkeyPatch) -> list[object]:
+        """Replace ``server.start`` so no test here ever spawns real uvicorn.
+
+        Written after an earlier revision of these tests left eight live
+        servers behind on the dev machine: the opt-out path is what is under
+        test, so the enabled path must be faked, never executed.
+        """
+        import lucy_ng.webview.server as server
+
+        calls: list[object] = []
+
+        class FakeState:
+            url = "http://127.0.0.1:9999"
+            pid = 4242
+            port = 9999
+
+        def fake_start(*args: Any, **kwargs: Any) -> Any:
+            calls.append(args)
+            return FakeState()
+
+        monkeypatch.setattr(server, "start", fake_start)
+        return calls
+
+    def test_serve_disabled_starts_no_server(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        started: list[object],
+    ) -> None:
+        """With the variable set, `serve` exits 0 and never calls server.start."""
+        if webview is None:
+            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+
+        calls = started
+        monkeypatch.setenv("LUCY_NO_WEBVIEW", "1")
+
+        result = CliRunner().invoke(webview, ["serve", str(tmp_path)])
+
+        assert result.exit_code == 0, (
+            "Opt-out must exit 0 so case.md's launch block takes its success "
+            f"branch and the CASE run continues.\nOutput: {result.output}"
+        )
+        assert calls == [], "server.start() was called despite the opt-out"
+
+    def test_serve_disabled_emits_no_url(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        started: list[object],
+    ) -> None:
+        """The no-op message must not look like a running server to case.md.
+
+        case.md scrapes the text output for "Webview server running at <url>"
+        and records it in the CASE-PROGRESS.md Dashboard field. A disabled run
+        must not yield a URL there.
+        """
+        if webview is None:
+            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+
+        monkeypatch.setenv("LUCY_NO_WEBVIEW", "1")
+        result = CliRunner().invoke(webview, ["serve", str(tmp_path)])
+
+        assert "running at" not in result.output, (
+            f"Disabled output must not advertise a URL.\nGot: {result.output}"
+        )
+        assert "LUCY_NO_WEBVIEW" in result.output, (
+            "The message should name the variable so the reason is traceable.\n"
+            f"Got: {result.output}"
+        )
+
+    def test_serve_disabled_without_webview_extra(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The opt-out is checked before the extra is required.
+
+        A disabled run must succeed on a host without fastapi/uvicorn — the
+        point is to do nothing, which needs no dependency.
+        """
+        if webview is None:
+            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+
+        import builtins
+
+        original_import = builtins.__import__
+
+        def blocking_import(name: str, *args: Any, **kwargs: Any) -> Any:
+            if name in ("fastapi", "uvicorn"):
+                raise ImportError(f"No module named '{name}'")
+            return original_import(name, *args, **kwargs)
+
+        for mod in list(sys.modules.keys()):
+            if mod.split(".")[0] in ("fastapi", "uvicorn"):
+                monkeypatch.delitem(sys.modules, mod, raising=False)
+
+        monkeypatch.setattr(builtins, "__import__", blocking_import)
+        monkeypatch.setenv("LUCY_NO_WEBVIEW", "1")
+
+        result = CliRunner().invoke(webview, ["serve", str(tmp_path)])
+
+        assert result.exit_code == 0, (
+            "Disabled serve must not require the webview extra.\n"
+            f"Output: {result.output}"
+        )
+
+    def test_serve_disabled_json_format(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        started: list[object],
+    ) -> None:
+        """`--format json` stays valid JSON with a null url and a disabled flag."""
+        if webview is None:
+            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+
+        monkeypatch.setenv("LUCY_NO_WEBVIEW", "1")
+        result = CliRunner().invoke(
+            webview, ["serve", str(tmp_path), "--format", "json"]
+        )
+
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["disabled"] is True
+        assert payload["url"] is None
+
+    @pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", "on"])
+    def test_truthy_values_disable(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        started: list[object],
+        value: str,
+    ) -> None:
+        """Common affirmative spellings all disable the server."""
+        if webview is None:
+            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+
+        monkeypatch.setenv("LUCY_NO_WEBVIEW", value)
+        result = CliRunner().invoke(webview, ["serve", str(tmp_path)])
+
+        assert result.exit_code == 0
+        assert started == [], (
+            f"LUCY_NO_WEBVIEW={value!r} should disable the server, "
+            "but server.start() was called"
+        )
+        assert "running at" not in result.output, (
+            f"LUCY_NO_WEBVIEW={value!r} should disable the server"
+        )
+
+    @pytest.mark.parametrize("value", ["0", "false", "no", "off", ""])
+    def test_falsy_values_do_not_disable(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        started: list[object],
+        value: str,
+    ) -> None:
+        """Negative spellings must NOT disable — the server is attempted.
+
+        Guards the inversion bug: a benchmark host setting LUCY_NO_WEBVIEW=0 to
+        mean "keep the dashboard" must not silently lose it.
+        """
+        if webview is None:
+            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+
+        monkeypatch.setenv("LUCY_NO_WEBVIEW", value)
+
+        result = CliRunner().invoke(webview, ["serve", str(tmp_path)])
+
+        assert result.exit_code == 0, f"Output: {result.output}"
+        assert started, (
+            f"LUCY_NO_WEBVIEW={value!r} must NOT disable the server, "
+            "but server.start() was never called"
+        )
+
+
+# ---------------------------------------------------------------------------
 # TestPackaging — WV-08: pyproject.toml declares webview optional extra
 # ---------------------------------------------------------------------------
 

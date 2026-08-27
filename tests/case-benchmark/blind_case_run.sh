@@ -26,6 +26,8 @@
 #   CASE_ANSWERKEY_DIR optional dir the fence explicitly forbids reading.
 #   CASE_RUN_MAX_ATTEMPTS (default 8), CASE_RUN_CALL_TIMEOUT s (3600),
 #   CASE_RUN_DEADLINE_S total per dataset (9000)
+#   LUCY_NO_WEBVIEW    suppress the per-run dashboard. Defaults to 1 here;
+#                      set 0 to keep the dashboard for a debugging run.
 set -u
 CASE_DIR="$1"; RESULTS_DIR="$2"; MODE="${3:-full}"
 
@@ -74,6 +76,13 @@ MF="$(tr -d '[:space:]' < "$MF_FILE")"
 
 # put lucy on PATH if a repo venv exists
 [ -d "$CASE_PROJECT_DIR/.venv/bin" ] && export PATH="$CASE_PROJECT_DIR/.venv/bin:$PATH"
+
+# No dashboard for benchmark runs. case.md launches one per run and
+# deliberately never stops it (WV-07), which is right for interactive use and
+# pure leakage here -- nobody looks at a headless run. 39 orphaned servers
+# holding ~8 GB had piled up on the compute host by 2026-08-27. Set to 0 to
+# get the dashboard back for a single debugging run.
+export LUCY_NO_WEBVIEW="${LUCY_NO_WEBVIEW:-1}"
 
 rm -rf "$CASE_DIR/analysis"
 SCRATCH="$(mktemp -d "${TMPDIR:-/tmp}/blindcase.XXXXXX")"
