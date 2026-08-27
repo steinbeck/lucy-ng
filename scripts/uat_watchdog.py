@@ -70,8 +70,17 @@ REMOTE_ENV = {
     "CASE_ANSWERKEY_PATHS": REMOTE_TRUTH,
 }
 
-# Defaults chosen to leave roughly half of each window for interactive work.
-DEFAULT_SEVEN_DAY_MAX = 60.0
+# Defaults chosen to leave room in each window for interactive work.
+#
+# The 7-day ceiling was lowered 60 -> 50 on 2026-08-27: the user's other AI
+# tooling now consumes a substantial share of the weekly window, so the
+# benchmark has to leave more of it alone. The 5-hour ceiling is unchanged --
+# it is the short-term throttle, and it was not the constraint.
+#
+# Consequence to keep in mind: with ABORT_MARGIN_PCT below, a chunk already
+# running is stopped at 55 % rather than 65 %, so the benchmark gives up its
+# slot earlier and more often. That is the intent, not a side effect.
+DEFAULT_SEVEN_DAY_MAX = 50.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
 DEFAULT_CHUNK = 4
 
