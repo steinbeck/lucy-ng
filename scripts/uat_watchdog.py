@@ -72,15 +72,20 @@ REMOTE_ENV = {
 
 # Defaults chosen to leave room in each window for interactive work.
 #
-# The 7-day ceiling was lowered 60 -> 50 on 2026-08-27: the user's other AI
-# tooling now consumes a substantial share of the weekly window, so the
-# benchmark has to leave more of it alone. The 5-hour ceiling is unchanged --
-# it is the short-term throttle, and it was not the constraint.
+# The 7-day ceiling was lowered 60 -> 50 -> 40 on 2026-08-27, in two steps the
+# same afternoon. The reason for the second step: the weekly window moved from
+# 61 % to 75 % in eight hours while the benchmark consumed NOTHING (the compute
+# host had been idle since 2026-08-26 17:06). That entire rise came from the
+# user's other AI tooling, so the benchmark's share has to be small enough that
+# it never competes with interactive work. The 5-hour ceiling is unchanged --
+# it is the short-term throttle, and it was not the constraint (10 % at the
+# time of the change).
 #
 # Consequence to keep in mind: with ABORT_MARGIN_PCT below, a chunk already
-# running is stopped at 55 % rather than 65 %, so the benchmark gives up its
-# slot earlier and more often. That is the intent, not a side effect.
-DEFAULT_SEVEN_DAY_MAX = 50.0
+# running is stopped at 45 % rather than 65 %, so the benchmark gives up its
+# slot earlier and more often, and partly-finished cases are resumed on a later
+# poll more frequently. That is the intent, not a side effect.
+DEFAULT_SEVEN_DAY_MAX = 40.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
 DEFAULT_CHUNK = 4
 
