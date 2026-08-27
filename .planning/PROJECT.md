@@ -86,7 +86,30 @@ An AI agent can autonomously determine the structure of an unknown organic compo
 
 ## Current State
 
-**Version:** v9.3 shipped 2026-07-12 (v9.2 2026-07-07, v9.1 2026-06-29, v9.0 2026-06-17)
+**Version:** v10.1 closed PARTIAL and archived 2026-07-28 (tag `v10.1` on origin); v9.3 shipped 2026-07-12 (v9.2 2026-07-07, v9.1 2026-06-29, v9.0 2026-06-17)
+
+**Since the v10.1 close (2026-07-31 → present) — milestone-less validation work, 26 commits.**
+Not in any ROADMAP or phase directory by design. Full account in STATE.md
+§ Post-Milestone Validation Work; the three things that change how the sections below read:
+
+1. **A blind CASE benchmark is running on Sheldon** over a 258-dataset set, RDKit-graded.
+   Snapshot 2026-08-25: 69 runs finished, **65 graded — 80 % top-1, 89 % correct at any
+   rank**. ⚠ Two caveats travel with that number, permanently. Compare only against the
+   **size-matched** baseline row (31 % / 55 %), never the all-sizes row — the set is ordered
+   smallest-first. And the 65 span **two skill states and two team models** (`f9aa7b3`
+   switched the team from Opus 4.8 to Opus 5 on 08-07; `d62d833` added the heteroatom-proton
+   rule on 08-09). That mixing was **accepted deliberately on cost grounds** — a homogeneous
+   re-run was judged too expensive for a result this unambiguous — so it is a property to
+   state alongside the number, not an open defect. See STATE.md § Key Decisions (2026-08).
+2. **PROV-01 concluded (2026-08-02) and it re-reads Phase 103's PARTIAL.** 37.86 ppm is a
+   **CH**, not a quaternary carbon — the knob-independent `quaternary_exclusion` FAIL was the
+   gate correctly reporting a wrong *input assumption*, not a reconstruction or threshold
+   problem. The PARTIAL stands; its stated cause does not, and **JVAL-F2 is mis-scoped**.
+   The JCAMP reader, by contrast, came out *validated by real use* — a much stronger result
+   than Phase 103's circular "17/20 vs §10". The peak picker is the weak link, not the reader.
+3. **On the harder benchmark cases the truth is outside the search space** — LSD never
+   generates the correct structure (CASE175: absent from 600,707 candidates). A generation
+   problem, not a ranking problem; verified with a positive control on three solved cases.
 
 **In progress (v10.1):** Phase 103 (End-to-End Validation on `C20H32O2-jcamp`, JVAL-01/02) **CLOSED PARTIAL** 2026-07-28 — verification `passed` (9/9) for the phase's *own* deliverables, but both requirements close **NOT achieved** by the plan's D-10 honest-partial-close branch, on a user-approved checkpoint decision. What worked: all six real `.dx` files read in **one** governed `lucy jcamp` invocation with zero read failures — HMBC included, unblocked by a D-09 reader fix (13C ppm ceiling 230→250; the real HMBC legitimately reaches 234.81 ppm) — NOESY correctly skipped; the full 31-cell D-03 knob matrix recorded including losing cells; a 20-row §10 cross-check at **17/20** within ±0.5 ppm. **JVAL-01 NOT achieved:** QC verdict is a critical FAIL on `quaternary_exclusion` (a ~37.9 ppm HSQC hit reproduced in *all 8* HSQC matrix cells — knob-independent, not under-tuned) and `hsqc_coverage` (11/16 = 69 %). **JVAL-02 NOT attempted:** the FAIL correctly wrote no consumable peaks via the D-07 write boundary, so the fresh blind CASE handoff had nothing to read — recorded as not attempted, not as failed or achieved. A coordinator-ordered read-only ppm-axis diagnostic **cleared the JC-02/WR-04 risk class**: the narrow 1D-13C window is a genuine dataset property (raw Bruker `exp6`/narrow `$SW=120.28` vs `exp7`/wide `$SW=160.37`, only exp6 exported to JCAMP), confirmed against `acqus`/`procs` independently of our own reader. Tracked next steps: **JVAL-F2** (noise/quaternary-override recalibration) and **JVAL-F3** (re-export exp7/wide). Code review found 3 Critical: **CR-01** was this phase's own (a bare `--threshold` silently discarded a keyed `--snr-floor`) — fixed fail-loud, pinned by a mutation-confirmed regression test, plus three previously-vacuous tests repaired; **CR-02/CR-03** (jcamp `--out` purge runs before any input is read; unvalidated `work_root` `rmtree`) are Phase-102 data-loss defects, filed as tracked follow-ups rather than silently fixed. Full suite 1469 passed; byte-frozen paths (`nus/qc.py`, both pickers, `cli/pick.py`, `.claude/`) and the known-bad QC fixtures unchanged by diff.
 
@@ -95,7 +118,7 @@ Phase 102 (CLI + Peak-Pick Bridge + QC Reuse, JCLI-01/02) **COMPLETE & verified*
 Phase 101 (JCAMP-DX Reader, JC-01..04) **COMPLETE & verified** 2026-07-23 — pure-Python `readers/jcamp.py` decodes 1D→`Spectrum1D` and 2D NTUPLES DIFDUP pages→`Spectrum2D` (closing nmrglue's `None` gap) via a vendored New-BSD line decoder (`_jcampdx_decode.py`, zero nmrglue-private-API), with verified reversed ppm axes (OFFSET+SF formula) cross-checked against the trusted 1D reference — a check that caught a real F1-anchor bug. CI-runnable committed real fixture; full suite 1408 passed. Next: Phase 103 (End-to-End Validation on `C20H32O2-jcamp`) — driving the real, uncommitted 2048×2048 dataset to a green §8 verdict and CASE convergence is explicitly Phase-103/JVAL work, deliberately not claimed by Phase 102 (D-05).
 
 **What shipped in v9.3 (CASE Web-View Stage 2, phases 93–96):** The read-only dashboard grew into a full spectral-inspection suite — a persistent 4-tab bar (Run Log / 1D / 2D Spectra / Tables) over a markdown-rendered run log (hand-rolled XSS-safe DOM renderer), data tables (¹³C signals, HSQC/HMBC/COSY correlations with HMBC flag colours, LSD constraint inventory), and **real rendered 1D + 2D NMR spectra with the picked peaks overlaid** (reversed ppm axes; HMBC flag-coloured markers; COSY diagonal). New `tables.py` + `spectra.py` routers; `.run_manifest.json` raw-Bruker-path wiring; matplotlib in the `[webview]` extra (OO-API/lazy, WV-08, base CLI dependency-free); 2D block-max decimation + MAD contour levels + mtime PNG cache. Validation-only across CASE1–9 (no new milestone UAT).
-**Codebase:** Python package (`src/lucy_ng/`) + `src/lucy_ng/webview/` (optional `[webview]` extra), test suite **1174 tests** at v9.2 close
+**Codebase:** Python package (`src/lucy_ng/`) + `src/lucy_ng/webview/` (optional `[webview]` extra), test suite **1482 tests** collected (2026-08-25; 1468 at the Phase-103 close, 1174 at v9.2 close)
 **Database:** SQLite with 928K compounds, 7.9M HOSE statistics + fragment library (2.4M SSCs)
 **Agent definitions:** 4-agent CASE team + case.md orchestrator (in `repo/.claude/`, symlinked into `~/.claude`)
 **New CLI (v9.1):** `lucy identify` (structure→identity gate); `lucy pick hsqc` now reports `multiplicity_edited`; `lucy lsd rank` unified onto the shared 13C predictor.
@@ -212,7 +235,7 @@ Phase 101 (JCAMP-DX Reader, JC-01..04) **COMPLETE & verified** 2026-07-23 — pu
 
 - [~] **JVAL-01** — real `C20H32O2-jcamp` spectra never cleared the QC gate. All six `.dx` read in one governed run with zero failures and the full 31-cell knob matrix exhausted, but the verdict is a **critical FAIL**: `quaternary_exclusion` (a ~37.9 ppm HSQC hit reproduced in *all 8* HSQC matrix cells — knob-independent, not under-tuned) and `hsqc_coverage` (69 %). Tracked: **JVAL-F2** (noise/quaternary-override recalibration), **JVAL-F3** (re-export `exp7`/wide — completes §10 coverage but does not fix `quaternary_exclusion`).
 - [~] **JVAL-02** — **not attempted**, not failed. The FAIL correctly produced no consumable peaks via the D-07 boundary, so a fresh blind CASE session had nothing to read.
-- [ ] **CR-02 / CR-03** — two real data-loss paths in `lucy jcamp`, attributable to Phase 102 (`f6de196`): the `--out` purge runs before any input is read, and `work_root` can `rmtree` a caller-owned directory. Found by Phase 103's code review, filed rather than fixed.
+- [x] **CR-02 / CR-03** — two real data-loss paths in `lucy jcamp`, attributable to Phase 102 (`f6de196`): the `--out` purge ran before any input was read, and `work_root` could `rmtree` a caller-owned directory. Found by Phase 103's code review, filed rather than fixed at the close — **fixed 2026-08-03 in `7dfe2ce`**, outside any phase.
 
 Ruled out and worth remembering: the **JC-02/WR-04 ppm-axis defect class is cleared** for this dataset. The narrow 1D-¹³C window is a genuine export property — `exp6`/narrow (`$SW=120.28`) was exported to JCAMP, `exp7`/wide (`$SW=160.37`) was not — proven against raw Bruker `acqus`/`procs` independently of our own reader, rather than trusting the reader's self-report.
 

@@ -4,8 +4,8 @@ milestone: v10.1
 milestone_name: JCAMP-DX 2D Ingestion
 status: Awaiting next milestone
 stopped_at: Phase 103 closed PARTIAL (JVAL-01/JVAL-02 honest partial close, D-10)
-last_updated: "2026-07-28T17:58:44.847Z"
-last_activity: 2026-07-28 — Milestone v10.1 completed and archived
+last_updated: "2026-08-25T12:00:00.000Z"
+last_activity: 2026-08-25 — Post-milestone validation work (blind CASE benchmark, PROV-01 analysis); no phase in progress
 progress:
   total_phases: 3
   completed_phases: 3
@@ -25,10 +25,11 @@ See: .planning/PROJECT.md (updated 2026-07-21)
 
 ## Current Position
 
-Phase: Milestone v10.1 complete
+Phase: Milestone v10.1 complete and archived (2026-07-28)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-07-28 — Milestone v10.1 completed and archived
+Status: Awaiting next milestone — but **not idle**: unplanned, milestone-less validation
+work has been running since 2026-07-31 (see § Post-Milestone Validation Work below).
+Last activity: 2026-08-25 — blind CASE benchmark running on Sheldon; PROV-01 analysis concluded 2026-08-02
 
 ## Milestone v10.1 Phases
 
@@ -57,9 +58,9 @@ Items acknowledged and deferred at **v10.1 JCAMP-DX 2D Ingestion milestone close
 |----------|------|--------|------|
 | JVAL-F2 | Real-data noise/threshold-model and/or QC quaternary-override recalibration for CS-reconstructed matrices — ⚠ **needs re-scoping, see PROV-01** | tracked | Closes JVAL-01's `quaternary_exclusion` critical FAIL (~37.9 ppm HSQC hit, reproduced in all 8 HSQC matrix cells — knob-independent). Needs edits to files byte-frozen in Phase 103. |
 | JVAL-F3 | Re-export `exp7`/wide (`$SW=160.37`) from the raw `C20H32O2` Bruker tree as JCAMP-DX | tracked | Only `exp6`/narrow (`$SW=120.28`, window `[-10.14, 110.14]` ppm) was exported, so 142.00/135.86 ppm are physically absent. Completes §10 coverage but does **not** fix `quaternary_exclusion`, which sits inside exp6's own window. |
-| CR-02 | `lucy jcamp` purges the `--out` peak-list filenames *before* STEP 3 reads any input | tracked | Real data-loss path: a run failing on malformed input exits non-zero, writes nothing, and still destroys pre-existing peak lists (same filenames/schema `lucy nus pipeline` writes). **Phase-102 defect** (`f6de196`), found by Phase 103's code review. Filed, not fixed. |
-| CR-03 | `work_root = out_root.parent / "jcamp_ingest"` is unvalidated against `--out` | tracked | On collision, `shutil.rmtree` deletes a caller-owned directory. **Phase-102 defect** (`f6de196`), found by Phase 103's code review. Filed, not fixed. |
-| PROV-01 | `NUS-RECONSTRUCTION-GUIDE.md` §8/§10 is a prior agent's hypothesis about an UNSOLVED sample, but was labelled ground truth and compiled into `nus/qc.py` as a library default | **tracked, new 2026-07-31** | Found after the v10.1 close, when the user confirmed no reference assignment exists for C20H32O2. Makes Phase 103's "17/20" a reproducibility figure, not chemical validation, and makes the `quaternary_exclusion` FAIL ambiguous. `cli/jcamp.py` reaches the default unconditionally without DEPT, so other compounds are graded against this sample's guesses. Labels corrected; behaviour questions open. See `todos/pending/2026-07-31-prov-01-*.md`. |
+| CR-02 | `lucy jcamp` purges the `--out` peak-list filenames *before* STEP 3 reads any input | **FIXED 2026-08-03** (`7dfe2ce`) | Real data-loss path: a run failing on malformed input exits non-zero, writes nothing, and still destroys pre-existing peak lists (same filenames/schema `lucy nus pipeline` writes). **Phase-102 defect** (`f6de196`), found by Phase 103's code review. Filed at the v10.1 close, **fixed 2026-08-03** in `7dfe2ce` (`fix(jcamp): stop destroying data the command did not write`) — outside any phase. |
+| CR-03 | `work_root = out_root.parent / "jcamp_ingest"` is unvalidated against `--out` | **FIXED 2026-08-03** (`7dfe2ce`) | On collision, `shutil.rmtree` deletes a caller-owned directory. **Phase-102 defect** (`f6de196`), found by Phase 103's code review. Filed at the v10.1 close, **fixed 2026-08-03** in `7dfe2ce` (`fix(jcamp): stop destroying data the command did not write`) — outside any phase. |
+| PROV-01 | `NUS-RECONSTRUCTION-GUIDE.md` §8/§10 is a prior agent's hypothesis about an UNSOLVED sample, but was labelled ground truth and compiled into `nus/qc.py` as a library default | **tracked; analysis CONCLUDED 2026-08-02, behaviour decisions still open** | Found after the v10.1 close, when the user confirmed no reference assignment exists for C20H32O2. Makes Phase 103's "17/20" a reproducibility figure, not chemical validation, and makes the `quaternary_exclusion` FAIL ambiguous. `cli/jcamp.py` reaches the default unconditionally without DEPT, so other compounds are graded against this sample's guesses. Labels corrected; behaviour questions open. See `todos/pending/2026-07-31-prov-01-*.md`. |
 | todo | 2026-06-25-case4-azulene-regiochemistry-enumeration-gap | carried (from v9.1) | Still open; unrelated to the JCAMP scope. |
 | todo | 2026-06-30-ranking-tests-hardfail-without-hosegen | carried (from v9.1) | Still open; test-infra backlog, unrelated to the JCAMP scope. |
 
@@ -94,6 +95,118 @@ Items acknowledged and deferred at **v10.0 milestone close (PARTIAL) on 2026-07-
 |----------|------|--------|------|
 | RECON-F1 | hmsIST/mddnmr fallback backend for in-lucy-ng NUS self-reconstruction | tracked | SMILE cannot complete on the dev host (~6.5 GB memory abort, D-04 tuning budget exhausted). Named next step to close v10.0's VAL-01/02. Note: v10.1's `C20H32O2-jcamp` data was itself produced by `mddnmr`, so this is the natural follow-on. |
 | todo | 2026-06-25-case4-azulene-regiochemistry-enumeration-gap | carried (from v9.1) | Still open; unrelated to NUS/JCAMP scope. |
+
+## Post-Milestone Validation Work (2026-07-31 → present, milestone-less)
+
+⚠ **Read this before trusting the sections above.** Everything from here down was written at
+the v10.1 close. The work below happened *after* it, deliberately outside the GSD phase
+structure (validation and analysis, not a milestone), so it appears in no ROADMAP, no
+REQUIREMENTS and no phase directory. 26 commits, `4554e2d..eb87f0e`.
+
+### 1. Blind CASE benchmark on Sheldon — RUNNING
+
+Large-scale blind evaluation of the CASE skill against a 258-dataset set, headless and
+RDKit-graded (`tests/case-benchmark/grade_blind.py`, ground truth supplied externally via
+`$CASE_GROUNDTRUTH`, never committed). Results live on the compute host, not in this repo:
+`/mnt/raid_drive/chris/case-uat-results-opus5-rest/`.
+
+**Measured 2026-08-25** (directory counts live; grades from `scorecard.tsv`, generated 2026-08-24):
+
+| Quantity | Value |
+|----------|-------|
+| Datasets in the set | 258 |
+| Runs finished (`analysis/final_results.md` present) | 69 |
+| Runs **graded** in `scorecard.tsv` | 65 |
+| `SOLVED_TOP1` | 52 → **80 %** of graded |
+| Correct at any rank (TOP1 + RANK_2/3/6/7/12) | 58 → **89 %** of graded |
+| `WRONG` | 7 |
+
+**Three caveats that must travel with those numbers:**
+
+1. **Compare only against the size-matched baseline row.** The 4.8-generation baseline
+   (31 % top-1 / 55 % correct) was measured on a different size distribution.
+2. **The 65 runs are not one homogeneous measurement series — and that was accepted
+   deliberately.** Both the skill *and* the team's model changed mid-campaign:
+   `f9aa7b3` (08-07) stopped the agents from being pinned, so an Opus-5 orchestrator no
+   longer spawns its team on Opus 4.8 — runs before it had a **4.8 team**, runs after an
+   **Opus-5 team**; `d62d833` (08-09) added the heteroatom-proton HSQC rule, which changes
+   what the solver is given on exactly the dataset class this set is full of.
+   **Decision (see § Key Design Decisions, 2026-08): accept the mixed provenance and keep
+   the runs.** A clean re-run would cost a large amount of wall-clock time and quota for a
+   result that is already directionally unambiguous. The obligation this creates is not a
+   re-run — it is to **state the mixed provenance next to the number**, every time, rather
+   than presenting a single clean percentage.
+3. **The grades are 4 runs behind the finished runs** (65 graded vs 69 finished) and one day
+   old. Regrading needs rdkit, which is not in Sheldon's system python.
+
+**Operational state:** the run restarts with `./scripts/uat_run_remaining.sh`; a LaunchAgent
+keeps the watchdog alive across reboots (`499d6d0`). The quota watchdog aborts chunks 5 points
+above a 60 % ceiling. The real operational bottleneck turned out **not** to be the quota but
+**snapshot freshness** — the status line only renders on keyboard activity. Every alternative
+was checked and ruled out (OAuth endpoint 403/429, hooks receive no `rate_limits`, admin APIs
+on the wrong domain); solved by ageing the snapshot at 2 pt/h with a hard 12 h ceiling
+(`eb87f0e`, `ea5969c`, `6d2d126`).
+
+### 2. PROV-01 analysis — CONCLUDED 2026-08-02 (behaviour decisions still open)
+
+Five commits (`3f304b7`, `8380a90`, `e63b979`, `fab2f5e`, `df524f6`). Full write-ups:
+`.planning/analysis/2026-07-31-PROV-01-quaternary-reanalysis.md` and
+`.planning/analysis/2026-08-02-PROV-01-raw-matrix-classification.md`; running record in the
+todo `2026-07-31-prov-01-*.md`.
+
+**This materially changes how Phase 103's PARTIAL must be read:**
+
+- **37.86 ppm is a CH, not a quaternary carbon.** The knob-independent
+  `quaternary_exclusion` critical FAIL was the gate correctly reporting that *its own input
+  assumption is wrong* — not a reconstruction or threshold problem. Phase 103's PARTIAL
+  stands; its stated cause does not.
+- Of the five assumed quaternaries only the two olefinics survive. The corrected C20H32O2
+  assignment is 11 CH₂ + 4 CH + 2 CH₃ + 3 Cq (20 C, 32 C-bound H, both oxygens ethers), and
+  the sample carries ~40 % of a minor component.
+- **JVAL-F2 is mis-scoped** as "recalibrate the noise model". The real finding: grading a
+  derived quantity against a supplied list can only measure agreement with an assumption. A
+  **formula-balance check** (carbon count, H balance) is the non-circular replacement.
+- **The JCAMP reader came out validated by real use** — both ppm axes, edited signs and
+  quantitative intensities survived a full manual assignment (methyls 2.98/3.02 H, a 2×
+  carbon coincidence detectable). Far stronger evidence than Phase 103's circular "17/20".
+- **The peak picker is the weak link, not the reader**, and peak lists discard the area and
+  relative-intensity information that made the coincidence visible at all.
+
+Still open and deliberately not decided unilaterally: whether `DEFAULT_QUATERNARY_SHIFTS`
+should remain a library default at all (a behaviour change), and re-scoping JVAL-F2.
+
+### 3. faulon-ng bridge spike — `7ef2aa1`
+
+Converts lucy-ng constraints into faulon-ng (`scripts/faulon-bridge`). ⚠ **The first verdict
+recorded for this spike was wrong and has been retracted**: "faulon-ng does not find the
+truth" came from a phantom 5J correlation produced by my own converter. Without it the truth
+ranks ahead. The stale verdict may still be sitting in
+`~/Downloads/CASE13-faulon-ng-Machbarkeitstest.pdf`.
+
+### 4. Related finding — the truth is outside the search space
+
+On the harder benchmark cases LSD never *generates* the correct structure (CASE175: absent
+from 600,707 candidates). This is a generation problem, not a ranking problem, and it bounds
+what any ranking improvement can achieve. Verified with a positive control on three solved
+cases (the method does find the truth when it is present). Consistent with `49057ef`, which
+downgraded the expected benefit of budget-forced ranking after verifying it negative.
+
+### 5. Other changes outside any phase
+
+- `d62d833` — skill: heteroatom protons need their own HSQC line or LSD aborts.
+- `f9aa7b3` — CASE agent team inherits the session model; `CLAUDE_MODEL` now required.
+- `9074a32` / `49057ef` — spec for budget-forced ranking, then its honest downgrade after
+  verifying the benefit negative. **The spec still awaits review.**
+- `267e6cf` — README points at AI-assisted installation first.
+- `58af676` — 20–40 ppm ¹³C panel added to the JCAMP render script.
+
+### Housekeeping actually outstanding
+
+- **2 commits unpushed** (`ea5969c`, `eb87f0e`).
+- **Infographic deck is stale** — `docs/infographics/` last touched 2026-07-09, so it missed
+  the v10.1 close entirely (CLAUDE.md names this recurring milestone-close maintenance).
+- Tags `v4.0` / `v5.0` exist locally but were never pushed (`v10.1` *is* on origin).
+- Test suite now collects **1482** tests (1468 at the Phase-103 close).
 
 ## Completed Milestones
 
@@ -134,6 +247,23 @@ Items acknowledged and deferred at **v10.0 milestone close (PARTIAL) on 2026-07-
 - v9.3 roadmap created (2026-07-07): phases 93-96. Derived from 8 requirements (LOG-01, TAB-01, TBL-01..03, SP1-01, SP2-01, SP-02) with authoritative override: spectra = **real Bruker traces + peak overlay** (not peak-only sticks). Research HIGH confidence across all phases; no research gate needed for any phase.
 - v10.0 roadmap created (2026-07-12): phases 97-100, continuing numbering from the last shipped phase (96). Derived from 20 requirements (NUS-01..05, RECON-01..05, QC-01..03, PICK-01..03, PORT-01..02, VAL-01..02), following the research-converged build order (SUMMARY.md § Implications for Roadmap): backend+params/schedule → reconstruction+processing (highest-uncertainty) → peak-pick bridge+QC gate+CLI (crux-risk mitigation as its own deliverable) → cross-platform hardening+end-to-end validation. 20/20 requirements mapped, no orphans. Closed 2026-07-20 as PARTIAL (VAL-01/02 blocked by SMILE memory abort; see VALIDATION.md).
 - v10.1 roadmap created (2026-07-21): phases 101-103, continuing numbering from the last v10.0 phase (100). Derived from 8 requirements (JC-01..04, JCLI-01..02, JVAL-01..02) following the suggested three-stage shape from the milestone brief: reader (no external binary, highest-risk = ppm-axis correctness) → CLI/bridge/QC reuse (mechanically low-risk — reuses Phase-99 unchanged) → end-to-end validation on `C20H32O2-jcamp` (partly human-gated). 8/8 requirements mapped, no orphans. v10.0's Phase-100 PARTIAL section is preserved unchanged as historical record; v10.1 does not touch or supersede it.
+
+### Key Decisions (2026-08, outside any milestone)
+
+- [2026-08, benchmark]: **Accept the blind campaign's mixed provenance rather than re-running
+  it.** Two changes landed mid-campaign — the team's model (4.8 → Opus 5 via `f9aa7b3`,
+  08-07) and the CASE skill (`d62d833`, 08-09). Both affect results, and the campaign
+  therefore does not measure one fixed system. **Taken knowingly, in discussion, on cost
+  grounds:** re-running the completed cases for a homogeneous series would consume a great
+  deal of time and quota, and the effect being measured (Opus-5 + current skill vs. the 4.8
+  baseline) is large enough that a clean series would not change the conclusion, only its
+  precision. **What follows from it:** the mixed provenance is a permanent property of this
+  dataset and must be stated wherever the numbers are, not treated as an open defect to fix.
+  A single unqualified percentage is the failure mode to avoid.
+- [2026-08, benchmark]: **Order the remaining set ascending by heavy-atom count.** Buys the
+  most finished cases per unit of quota. Consequence carried alongside every number: a subset
+  stopped early is size-biased, so it may only be compared against the size-matched baseline
+  row (≤ 24 heavy atoms: 31 % top-1 / 55 % correct), never against the all-sizes row.
 
 ### Key Design Decisions for v10.1
 
@@ -192,17 +322,32 @@ Decisions are logged in PROJECT.md Key Decisions table.
 ### Pending Todos
 
 - **[2026-06-25] CASE4 azulene-regiochemistry-enumeration gap** — carried seed; not in v10.1 scope. See `.planning/todos/pending/2026-06-25-case4-azulene-regiochemistry-enumeration-gap.md`.
+- **[2026-07-31] PROV-01 behaviour decision** — should `DEFAULT_QUATERNARY_SHIFTS` remain a library default at all? Options recorded in the todo (drop it / require an explicit per-sample override / warn loudly when used). Gates behaviour, so it is a user call, not an agent call. See `.planning/todos/pending/2026-07-31-prov-01-guide-hypothesis-treated-as-ground-truth.md`.
+- **[2026-08-10] Spec `49057ef` awaits review** — budget-forced ranking for CASE runs, with its expected benefit downgraded after being verified negative.
+- **[2026-07-28] Infographic deck refresh** — `docs/infographics/` missed the v10.1 close (last touched 2026-07-09). CLAUDE.md names this recurring milestone-close maintenance; rebuild via `docs/infographics/build.py`, never `deck.html`.
 - **RECON-F1** — hmsIST/mddnmr fallback backend for in-lucy-ng NUS self-reconstruction (tracked from v10.0 close). Not in v10.1 scope (JCAMP ingestion is complementary, not the fallback itself), but noted as the natural next reconstruction-side step given `C20H32O2-jcamp` was itself produced by `mddnmr`.
-- **JVAL-F2** (tracked from Phase 103 PARTIAL close) — real-data recalibration of the 2D noise/threshold model and/or the QC gate's quaternary-override mechanism for CS-reconstructed matrices; needs edits to files byte-frozen in Phase 103 (`nus/qc.py`, `PeakPicker2D`). See `.planning/REQUIREMENTS.md` § Future Requirements.
+- **JVAL-F2** (tracked from Phase 103 PARTIAL close) — ⚠ **MIS-SCOPED, needs re-writing before it is worked on.** As filed it reads "real-data recalibration of the 2D noise/threshold model and/or the QC gate's quaternary-override mechanism". The PROV-01 re-analysis (2026-08-02) invalidated that premise: 37.86 ppm is a **CH**, so `quaternary_exclusion` was correctly reporting a wrong *input assumption*, not a mis-tuned noise model. The substantive replacement is a **formula-balance check** (carbon count + H balance against the molecular formula — a hard fact) instead of grading a derived quantity against a supplied shift list. Note `.planning/REQUIREMENTS.md` no longer exists (git-rm'd at the v10.1 close); the surviving record is the v10.1 archive plus the PROV-01 todo.
 - **JVAL-F3** (tracked from Phase 103 PARTIAL close) — re-export `exp7`/wide as JCAMP-DX into `C20H32O2-jcamp` to complete the §10 1D-13C coverage gap; explicitly would NOT by itself fix `quaternary_exclusion` (JVAL-F2's job). See `.planning/REQUIREMENTS.md` § Future Requirements.
 
 ### Blockers/Concerns
 
-None blocking further work. v10.1 milestone effectively closes PARTIAL: JC-01..04/JCLI-01..02
+None blocking further work. v10.1 milestone closed PARTIAL: JC-01..04/JCLI-01..02
 (Phases 101-102) fully shipped; JVAL-01/JVAL-02 (Phase 103) partial, with **JVAL-F2**
-and **JVAL-F3** tracked as the named next steps (see Pending Todos above). Milestone-close
-bookkeeping (`/gsd-complete-milestone`, infographic-deck refresh) is a separate command,
-not yet run.
+and **JVAL-F3** tracked as the named next steps (see Pending Todos above).
+
+**Corrected 2026-08-25:** this paragraph previously ended "Milestone-close bookkeeping
+(`/gsd-complete-milestone`, infographic-deck refresh) is a separate command, not yet run."
+That was half true and had gone stale. Verified:
+
+- `/gsd-complete-milestone` **did run** on 2026-07-28 — tag `v10.1` exists locally *and* on
+  origin, `.planning/milestones/v10.1-{ROADMAP,REQUIREMENTS}.md` are archived, RETROSPECTIVE
+  and PROJECT.md were updated, `REQUIREMENTS.md` git-rm'd.
+- The **infographic-deck refresh did not run** — `docs/infographics/` was last touched
+  2026-07-09. That half is still outstanding.
+
+⚠ **JVAL-F2's description in the Deferred table is mis-scoped** — see § Post-Milestone
+Validation Work, item 2. Its premise ("recalibrate the noise model") was invalidated by the
+PROV-01 re-analysis: 37.86 ppm is a CH, so the gate was reporting a wrong input assumption.
 
 ### Strategic Reference
 
@@ -212,13 +357,28 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-07-28T07:14:28.707Z
-Stopped at: Phase 103 closed PARTIAL (JVAL-01/JVAL-02 honest partial close, D-10)
-Resume with: `/gsd-verify-phase 103` (to verify the honest-partial-close evidence), then consider `/gsd-complete-milestone` for v10.1 (PARTIAL) or a future phase to address JVAL-F2/JVAL-F3
+Last session: 2026-08-25 (documentation reconciliation — no code changed)
+Stopped at: v10.1 archived; milestone-less validation work in progress (blind CASE benchmark
+running on Sheldon, PROV-01 analysis concluded)
+Resume with: nothing is half-finished in the GSD sense. The open calls are (a) the PROV-01
+behaviour decision on `DEFAULT_QUATERNARY_SHIFTS`, (b) re-scoping JVAL-F2 under the corrected
+framing, (c) reviewing spec `49057ef`, and (d) `/gsd-new-milestone` when the benchmark
+campaign is done.
+
+⚠ **This file is not the live source for the benchmark.** Its numbers are a dated snapshot;
+the running state is on Sheldon (`/mnt/raid_drive/chris/case-uat-results-opus5-rest/`).
 
 ---
-*Last updated: 2026-07-28 — Phase 103 (End-to-End Validation, C20H32O2-jcamp) CLOSED PARTIAL. All six real `.dx` files read via one governed `lucy jcamp` invocation with zero read failures (HMBC unblocked by the D-09 reader fix); the full 31-cell D-03 knob matrix run and logged; QC verdict is a genuinely knob-independent critical FAIL (`quaternary_exclusion` hits at every one of the 8 HSQC matrix cells; `hsqc_coverage` capped by a verified real 1D-13C acquisition-window gap). A coordinator-requested read-only diagnostic against the raw JCAMP header and the untouched sibling Bruker tree's `acqus`/`procs` files (exp6/narrow vs exp7/wide) confirmed the window is a genuine dataset property, not a lucy-ng ppm-axis defect (JC-02/WR-04 risk class cleared). JVAL-01 and JVAL-02 both close PARTIAL; JVAL-F2 and JVAL-F3 filed as tracked next steps. Full suite 1468 passing, zero regressions. v10.1 milestone now effectively closes PARTIAL overall.*
+*Last updated: 2026-08-25 — documentation reconciliation, no code changed. STATE.md had drifted ~4 weeks: its header claimed 2026-07-28 while the file had been edited on 07-31, the v10.1 close was recorded as "not yet run" although it had run, CR-02/CR-03 were listed as unfixed although `7dfe2ce` fixed them on 08-03, and 26 commits of post-milestone validation work (blind CASE benchmark, PROV-01 analysis, faulon-ng spike) appeared nowhere. All four corrected; the previous Phase-103 close note is preserved in the v10.1 milestone archive.*
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+Ordered by what actually blocks something:
+
+1. **Decide PROV-01's behaviour question** — may `DEFAULT_QUATERNARY_SHIFTS` stay a library
+   default? Everything downstream of the QC gate waits on this, and it is a user call.
+2. **Re-scope JVAL-F2** under the corrected framing (formula balance, not noise model).
+3. **Review spec `49057ef`** (budget-forced ranking, benefit verified negative).
+4. **Push the 2 outstanding commits**; refresh the stale infographic deck.
+5. **`/gsd-new-milestone`** — sensibly once the benchmark campaign finishes, so its findings
+   can shape the milestone instead of arriving mid-flight.
