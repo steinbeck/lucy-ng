@@ -75,19 +75,38 @@ CASE_MD_PATH = ".claude/commands/lucy-ng/case.md"
 #: specialist team on 4.8. Omitting `model:` makes each agent inherit the
 #: parent session's model, which is the same on every host. `case.md` is
 #: unchanged; only the five agent hashes move.
+#: BASELINE UPDATED 2026-08-27 (retroactive): `d62d833` (2026-08-09,
+#: "docs(skill): heteroatom protons need their own HSQC line or LSD aborts")
+#: added the HETEROATOM-PROTON rule to `lucy-lsd-engineer.md` and
+#: `lucy-devils-advocate.md` (+28/-1 lines) but did NOT refresh this table in
+#: the same commit, as the procedure above requires. This guard therefore
+#: failed for those two files for 18 days. The edit itself was deliberate and
+#: is substantively correct -- any proton used as the H-side of an HMBC line
+#: needs its own `HSQC X X` declaration or LSD aborts, verified against the
+#: solver's own `hestvalide` check (CASE96, 2026-08-09) -- so the resolution
+#: is (b) update the baseline, not (a) revert. Approved by the user on
+#: 2026-08-27. `case.md` and the other three agent files still match the
+#: 2026-08-07 baseline exactly, so the drift is fully accounted for by
+#: `d62d833` and nothing else.
+#:
+#: NOTE FOR THE BENCHMARK: `d62d833` landed mid-campaign, so the blind CASE
+#: runs in `case-uat-results-opus5-rest/` span two skill states. That mixed
+#: provenance was accepted deliberately (see `.planning/STATE.md`
+#: "Key Decisions (2026-08)"); this red guard was its earliest machine-readable
+#: trace and went unnoticed.
 EXPECTED_SHA256: dict[str, str] = {
     CASE_MD_PATH: "8299791ead74294fa31424bae990de62d7bf73260d5dbdbe1e776539e7148d8b",
     ".claude/agents/lucy-nmr-chemist.md": (
         "c643b44d3e49bcd7eb0de0125fca051f9c59cf9b1ceff1906143d39d9bdca19e"
     ),
     ".claude/agents/lucy-lsd-engineer.md": (
-        "89da2094e15d0f45dcecaf968c614fb1de384cbb7741e0a2a435432986808752"
+        "d482f7b4618f1f50a8febdfa09384a2160231a6a3e1bc743039bc42220d0a401"
     ),
     ".claude/agents/lucy-solution-analyst.md": (
         "8fd09a57e0826b3f0dcb574094491d60c1e3997fd44d09509eb7fa91fc5e96c8"
     ),
     ".claude/agents/lucy-devils-advocate.md": (
-        "908347fb1ef9025ab53beeb64f87144c53d6b1a7a1506729dc09b2eb0e0ae49e"
+        "1745718828c147dd7d28a2c7c9f1c0a6d18f65f1adf06b98568daf09eaa86247"
     ),
     ".claude/agents/lucy-diagnostic.md": (
         "41cf15d781dde1a8daaf828ba6d296e61bd4eb0a663f42d4572278b8f49a07cb"
