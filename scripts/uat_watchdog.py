@@ -72,20 +72,24 @@ REMOTE_ENV = {
 
 # Defaults chosen to leave room in each window for interactive work.
 #
-# The 7-day ceiling was lowered 60 -> 50 -> 40 on 2026-08-27, in two steps the
-# same afternoon. The reason for the second step: the weekly window moved from
-# 61 % to 75 % in eight hours while the benchmark consumed NOTHING (the compute
-# host had been idle since 2026-08-26 17:06). That entire rise came from the
-# user's other AI tooling, so the benchmark's share has to be small enough that
-# it never competes with interactive work. The 5-hour ceiling is unchanged --
-# it is the short-term throttle, and it was not the constraint (10 % at the
-# time of the change).
+# The 7-day ceiling has come down 60 -> 50 -> 40 (2026-08-27) -> 30
+# (2026-09-01). Each step for the same reason: the user's interactive Claude
+# use keeps growing, and the weekly window has to last the week for THEM, not
+# for the benchmark. The 2026-09-01 datapoint that triggered this step: 21 % of
+# the weekly window gone twelve hours after the reset, with the benchmark
+# running only since 09:13 that morning. The 5-hour ceiling stays at 70 % --
+# it is the short-term throttle and has never been the binding constraint.
+#
+# Read this before lowering it further: at 30 % the benchmark is a guest with a
+# small allowance. It will spend much of the week blocked, and that is the
+# intended trade. If it needs to make real progress again, the lever is NOT
+# this number -- it is moving the runs off the user's personal quota.
 #
 # Consequence to keep in mind: with ABORT_MARGIN_PCT below, a chunk already
-# running is stopped at 45 % rather than 65 %, so the benchmark gives up its
+# running is stopped at 35 % rather than 65 %, so the benchmark gives up its
 # slot earlier and more often, and partly-finished cases are resumed on a later
 # poll more frequently. That is the intent, not a side effect.
-DEFAULT_SEVEN_DAY_MAX = 40.0
+DEFAULT_SEVEN_DAY_MAX = 30.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
 DEFAULT_CHUNK = 4
 
