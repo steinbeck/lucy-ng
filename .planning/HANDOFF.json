@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-08-27T09:15:00.000Z",
+  "timestamp": "2026-09-02T18:45:00.000Z",
   "phase": null,
   "phase_name": "none \u2014 v10.1 closed PARTIAL and archived 2026-07-28; awaiting next milestone",
   "phase_dir": null,
@@ -51,36 +51,58 @@
       "name": "Commit in three thematic commits and push",
       "status": "done",
       "commit": "4283bdf, 2d15561, 8554948"
+    },
+    {
+      "id": 8,
+      "name": "Lower the weekly quota ceiling in three steps: 60 -> 50 -> 40 -> 30 %",
+      "status": "done",
+      "commit": "d7d397e, 00c49c9, 8a1d84e"
+    },
+    {
+      "id": 9,
+      "name": "Bring the compute host's checkout up to date \u2014 it was 10 commits behind (2026-08-13), so the webview opt-out had never taken effect there",
+      "status": "done",
+      "commit": "n/a \u2014 remote pull to 8a1d84e"
     }
   ],
   "remaining_tasks": [
     {
-      "id": 8,
-      "name": "Resume the blind benchmark once the 7-day quota window resets (2026-09-01T03:00Z) \u2014 the watchdog does this by itself",
+      "id": 10,
+      "name": "Wait for the weekly window to fall back under 30 % (or for the 2026-09-08T03:00Z reset) \u2014 the watchdog resumes on its own",
+      "status": "not_started"
+    },
+    {
+      "id": 11,
+      "name": "Regrade the campaign: scorecard.tsv covers 65 runs and dates from 2026-08-24, but 111 have finished",
       "status": "not_started"
     }
   ],
   "blockers": [
     {
-      "description": "7-day quota at 61 %, above the watchdog's 60 % ceiling \u2014 no new benchmark chunk launches until the window resets on 2026-09-01T03:00Z",
+      "description": "Weekly window at 38 %, ceiling 30 % \u2014 nothing launches until it falls back under 30 % or the window resets on 2026-09-08T03:00Z",
       "type": "external",
-      "workaround": "None needed. Nothing is running, nothing is burning quota, and the watchdog resumes on its own."
+      "workaround": "None needed and none wanted: this is the ceiling working as intended. The running chunk was aborted at 14:51 on 2026-09-02 when usage hit 36 %, cleanly (batches_left=0, agents_left=0, no webview leftovers)."
     }
   ],
   "human_actions_pending": [
     {
-      "action": "PROV-01 behaviour decision on DEFAULT_QUATERNARY_SHIFTS",
-      "context": "Drop the library default / require an explicit per-sample override / warn loudly when used. Gates QC-gate behaviour. Open since 2026-07-31.",
+      "action": "Decide whether the campaign should get its own quota, or be cut down",
+      "context": "The ceiling only redistributes a shortage, it does not fix it: the compute host runs on the user's personal quota, so every case it solves is one the user cannot use. 147 of 258 datasets remain; at ~20/week that is roughly seven weeks, and the user's own consumption is still growing. The two real levers are a separate quota for the benchmark, or a justified subsample (~120 datasets would say nearly the same thing statistically).",
       "blocking": false
     },
     {
-      "action": "Review spec 49057ef (budget-forced ranking, benefit verified negative)",
+      "action": "PROV-01 behaviour decision on DEFAULT_QUATERNARY_SHIFTS",
+      "context": "Open since 2026-07-31.",
+      "blocking": false
+    },
+    {
+      "action": "Review spec 49057ef",
       "context": "Waiting since 2026-08-10.",
       "blocking": false
     },
     {
       "action": "Decide what to do with the modified uv.lock",
-      "context": "+558 lines of matplotlib dependencies, changed before this session began, provenance unknown. Deliberately left uncommitted on 2026-08-27 rather than blessing those versions by accident.",
+      "context": "+558 lines of matplotlib dependencies, changed before 2026-08-27, provenance unknown. Still uncommitted on purpose.",
       "blocking": false
     }
   ],
@@ -114,9 +136,19 @@
       "decision": "Refresh the frozen agent-file hashes rather than revert d62d833",
       "rationale": "The edit (heteroatom protons need their own HSQC declaration or LSD aborts) is deliberate and verified against the solver's own check. case.md and the other three agent files still matched byte for byte, so the drift was fully explained. Guard re-verified by mutation: one extra byte makes it fail. User approved 2026-08-27.",
       "phase": null
+    },
+    {
+      "decision": "Weekly quota ceiling now 30 %, in three steps over six days",
+      "rationale": "The user's interactive Claude use keeps growing and the week has to last for them. Trigger for the last step: 21 % of the weekly window gone twelve hours after the reset. Accepted consequence: the benchmark is blocked for much of each week.",
+      "phase": null
+    },
+    {
+      "decision": "Keep the compute host's checkout in sync from now on",
+      "rationale": "It sat at 2026-08-13 for three weeks, so the webview opt-out shipped on 08-27 never took effect there and servers kept leaking. Verified before pulling that .claude/ was unchanged across those commits, so the running campaign did NOT gain a third skill state.",
+      "phase": null
     }
   ],
   "uncommitted_files": [],
-  "next_action": "Nothing is pending in the repo. The next substantive step is the PROV-01 behaviour decision, or /gsd-new-milestone once the benchmark campaign finishes.",
-  "context_notes": "Everything is committed and pushed (origin/master == master, 0 outstanding). Full suite 1487 passed, 0 failed -- green for the first time since 2026-08-09, when the agent-file guard went red. The session's theme: several confident conclusions rested on measurement setups that were themselves broken and returned a plausible number instead of an error. See the anti-pattern table in .continue-here.md before trusting any number you did not both generate and verify."
+  "next_action": "Nothing to do. The watchdog holds and resumes by itself. When the campaign next stops for good, regrade it \u2014 scorecard.tsv is 46 runs behind.",
+  "context_notes": "Repo clean and pushed (origin/master == master == 8a1d84e), compute host on the same commit. 111 of 258 datasets finished. The benchmark is deliberately throttled, not broken. Read the anti-pattern table in .continue-here.md before trusting any measurement you did not verify \u2014 the pgrep self-match trap bit again on 2026-09-02, this time reporting five watchdog instances where one was running."
 }
