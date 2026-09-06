@@ -86,10 +86,10 @@ REMOTE_ENV = {
 # this number -- it is moving the runs off the user's personal quota.
 #
 # Consequence to keep in mind: with ABORT_MARGIN_PCT below, a chunk already
-# running is stopped at 35 % rather than 65 %, so the benchmark gives up its
+# running is stopped at 85 % rather than 65 %, so the benchmark gives up its
 # slot earlier and more often, and partly-finished cases are resumed on a later
 # poll more frequently. That is the intent, not a side effect.
-DEFAULT_SEVEN_DAY_MAX = 30.0
+DEFAULT_SEVEN_DAY_MAX = 80.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
 DEFAULT_CHUNK = 4
 
