@@ -115,8 +115,23 @@ ABORT_MARGIN_PCT = 5.0
 #
 # Past STALE_HARD_LIMIT_S the estimate has drifted too far to mean anything,
 # and the watchdog stops for real.
+#
+# ⚠ RAISED 12 h -> 30 h ON 2026-09-06, TEMPORARILY, together with the 80 %
+# ceiling above. The user is travelling all Monday and cannot refresh the
+# snapshot by typing, so at 12 h the run would have stopped around midday and
+# wasted the last full day before the Tuesday reset. The arithmetic is what
+# makes 30 h safe rather than reckless: from the 15 % reading at the time, the
+# deliberately pessimistic 2 pt/h estimate reaches 75 % after 30 h -- just
+# under the 80 % ceiling, so the extrapolation throttles ITSELF before the
+# limit matters, and a wrong estimate can at worst spend the remainder of a
+# window that expires on 2026-09-08 anyway.
+#
+# ⚠ PUT BOTH BACK ON WEDNESDAY 2026-09-09: this to 12 h, the ceiling to 30 %.
+# Outside an end-of-window sprint the 12 h exists for a reason -- an estimate
+# that old stops tracking reality, and the watchdog should rather stall than
+# burn a fresh week's quota against an invented number.
 STALE_DRIFT_PCT_PER_HOUR = 2.0
-STALE_HARD_LIMIT_S = 12 * 3600
+STALE_HARD_LIMIT_S = 30 * 3600
 DEFAULT_CONCURRENCY = 1
 DEFAULT_POLL_SECONDS = 300
 DEFAULT_MAX_SNAPSHOT_AGE = 900  # 15 min
