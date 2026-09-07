@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-02T18:45:00.000Z",
+  "timestamp": "2026-09-07T08:20:00.000Z",
   "phase": null,
   "phase_name": "none \u2014 v10.1 closed PARTIAL and archived 2026-07-28; awaiting next milestone",
   "phase_dir": null,
@@ -63,31 +63,69 @@
       "name": "Bring the compute host's checkout up to date \u2014 it was 10 commits behind (2026-08-13), so the webview opt-out had never taken effect there",
       "status": "done",
       "commit": "n/a \u2014 remote pull to 8a1d84e"
+    },
+    {
+      "id": 12,
+      "name": "Diagnose why the campaign had been idle since 09-02: the compute host's Claude Code was LOGGED OUT, not a quota problem. User re-authenticated 2026-09-06 11:31; the watchdog resumed by itself ten minutes later",
+      "status": "done",
+      "commit": null
+    },
+    {
+      "id": 13,
+      "name": "End-of-window sprint: weekly ceiling 30 -> 80 -> 95 %, stale-snapshot limit 12 h -> 30 h",
+      "status": "done",
+      "commit": "8d67688, 008822d, 908365f"
+    },
+    {
+      "id": 14,
+      "name": "C20H32O2 constitution independently reconfirmed from integrated 13C areas + edited-HSQC signs",
+      "status": "done",
+      "commit": "n/a \u2014 analysis only, not yet written up in .planning/analysis/"
     }
   ],
   "remaining_tasks": [
     {
-      "id": 10,
-      "name": "Wait for the weekly window to fall back under 30 % (or for the 2026-09-08T03:00Z reset) \u2014 the watchdog resumes on its own",
+      "id": 15,
+      "name": "\u26a0 WEDNESDAY 2026-09-09: revert BOTH sprint settings \u2014 DEFAULT_SEVEN_DAY_MAX 95 -> 30, STALE_HARD_LIMIT_S 30 h -> 12 h, then restart the watchdog so the running process actually picks them up",
       "status": "not_started"
     },
     {
-      "id": 11,
-      "name": "Regrade the campaign: scorecard.tsv covers 65 runs and dates from 2026-08-24, but 111 have finished",
+      "id": 16,
+      "name": "After the 2026-09-08T03:00Z reset the watchdog will NOT resume on its own \u2014 it waits for a real snapshot reading rather than trusting the extrapolation, so it needs one keystroke in an interactive Claude Code session",
+      "status": "not_started"
+    },
+    {
+      "id": 17,
+      "name": "Regrade the campaign \u2014 scorecard.tsv covers 65 runs and dates from 2026-08-24, while 118 have finished",
+      "status": "not_started"
+    },
+    {
+      "id": 18,
+      "name": "Write up the C20H32O2 re-analysis in .planning/analysis/ \u2014 it currently exists only in conversation",
       "status": "not_started"
     }
   ],
   "blockers": [
     {
-      "description": "Weekly window at 38 %, ceiling 30 % \u2014 nothing launches until it falls back under 30 % or the window resets on 2026-09-08T03:00Z",
+      "description": "None. The campaign is running: 118 of 258 finished, 21 still open in the 154-case campaign, weekly window at 59 % against the temporary 95 % ceiling.",
       "type": "external",
-      "workaround": "None needed and none wanted: this is the ceiling working as intended. The running chunk was aborted at 14:51 on 2026-09-02 when usage hit 36 %, cleanly (batches_left=0, agents_left=0, no webview leftovers)."
+      "workaround": "n/a"
     }
   ],
   "human_actions_pending": [
     {
-      "action": "Decide whether the campaign should get its own quota, or be cut down",
-      "context": "The ceiling only redistributes a shortage, it does not fix it: the compute host runs on the user's personal quota, so every case it solves is one the user cannot use. 147 of 258 datasets remain; at ~20/week that is roughly seven weeks, and the user's own consumption is still growing. The two real levers are a separate quota for the benchmark, or a justified subsample (~120 datasets would say nearly the same thing statistically).",
+      "action": "Revert the two sprint settings on Wednesday 2026-09-09",
+      "context": "95 % ceiling and 30 h stale limit are end-of-window exceptions. Left in place they would let the benchmark consume the user's entire weekly allowance.",
+      "blocking": true
+    },
+    {
+      "action": "One keystroke after the Tuesday reset to unblock the watchdog",
+      "context": "It deliberately waits for a real reading after a window reset.",
+      "blocking": true
+    },
+    {
+      "action": "Decide whether the campaign gets its own quota, or a smaller subsample",
+      "context": "Still the binding constraint on everything else.",
       "blocking": false
     },
     {
@@ -102,7 +140,7 @@
     },
     {
       "action": "Decide what to do with the modified uv.lock",
-      "context": "+558 lines of matplotlib dependencies, changed before 2026-08-27, provenance unknown. Still uncommitted on purpose.",
+      "context": "Still uncommitted on purpose.",
       "blocking": false
     }
   ],
@@ -146,9 +184,19 @@
       "decision": "Keep the compute host's checkout in sync from now on",
       "rationale": "It sat at 2026-08-13 for three weeks, so the webview opt-out shipped on 08-27 never took effect there and servers kept leaking. Verified before pulling that .claude/ was unchanged across those commits, so the running campaign did NOT gain a third skill state.",
       "phase": null
+    },
+    {
+      "decision": "Spend the expiring weekly window on the campaign (ceiling 95 %, stale limit 30 h)",
+      "rationale": "Unused weekly quota expires at the reset and the user was travelling Monday, so nothing was left to protect. Both are explicitly temporary and carry revert notes at their definition sites.",
+      "phase": null
+    },
+    {
+      "decision": "Keep reporting the campaign's constitution result as reconfirmed, not new",
+      "rationale": "11 CH2 + 4 CH + 2 CH3 + 3 Cq now follows from integrated 13C areas plus edited-HSQC signs plus the formula's own H balance \u2014 an independent route to the same answer the 2026-08-02 analysis reached from weaker evidence.",
+      "phase": null
     }
   ],
   "uncommitted_files": [],
-  "next_action": "Nothing to do. The watchdog holds and resumes by itself. When the campaign next stops for good, regrade it \u2014 scorecard.tsv is 46 runs behind.",
-  "context_notes": "Repo clean and pushed (origin/master == master == 8a1d84e), compute host on the same commit. 111 of 258 datasets finished. The benchmark is deliberately throttled, not broken. Read the anti-pattern table in .continue-here.md before trusting any measurement you did not verify \u2014 the pgrep self-match trap bit again on 2026-09-02, this time reporting five watchdog instances where one was running."
+  "next_action": "Nothing until Wednesday, when both sprint settings must go back. Until then the watchdog runs by itself, except for one keystroke needed after the Tuesday-morning reset.",
+  "context_notes": "Repo clean and pushed (origin/master == master == 908365f), compute host on the same commit. \u26a0 The reported quota percentage LAGS and catches up in jumps -- a freshly written snapshot said 17 % and 56 % thirteen minutes apart. Trust the watchdog's extrapolation over a single fresh reading; it measured 2.05 pt/h against the 2.0 it assumes."
 }
