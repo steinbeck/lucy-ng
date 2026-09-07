@@ -89,7 +89,7 @@ REMOTE_ENV = {
 # running is stopped at 85 % rather than 65 %, so the benchmark gives up its
 # slot earlier and more often, and partly-finished cases are resumed on a later
 # poll more frequently. That is the intent, not a side effect.
-DEFAULT_SEVEN_DAY_MAX = 80.0
+DEFAULT_SEVEN_DAY_MAX = 95.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
 DEFAULT_CHUNK = 4
 
