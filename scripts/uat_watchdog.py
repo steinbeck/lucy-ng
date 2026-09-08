@@ -85,11 +85,19 @@ REMOTE_ENV = {
 # intended trade. If it needs to make real progress again, the lever is NOT
 # this number -- it is moving the runs off the user's personal quota.
 #
+# One documented exception, kept as precedent: on 2026-09-06/07 this was raised
+# to 80 and then 95 for the last ~40 hours before a window reset, because
+# unspent weekly quota simply expires and the user was travelling. It moved the
+# campaign from 111 to 134 finished datasets (+23) and from 21 to 5 cases never
+# attempted. Reverted 2026-09-08, the morning the window reset. That reasoning
+# only holds at the END of a window -- in a fresh week there is real quota to
+# protect and 30 stands.
+#
 # Consequence to keep in mind: with ABORT_MARGIN_PCT below, a chunk already
-# running is stopped at 85 % rather than 65 %, so the benchmark gives up its
+# running is stopped at 35 % rather than 65 %, so the benchmark gives up its
 # slot earlier and more often, and partly-finished cases are resumed on a later
 # poll more frequently. That is the intent, not a side effect.
-DEFAULT_SEVEN_DAY_MAX = 95.0
+DEFAULT_SEVEN_DAY_MAX = 30.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
 DEFAULT_CHUNK = 4
 
@@ -116,22 +124,16 @@ ABORT_MARGIN_PCT = 5.0
 # Past STALE_HARD_LIMIT_S the estimate has drifted too far to mean anything,
 # and the watchdog stops for real.
 #
-# ⚠ RAISED 12 h -> 30 h ON 2026-09-06, TEMPORARILY, together with the 80 %
-# ceiling above. The user is travelling all Monday and cannot refresh the
-# snapshot by typing, so at 12 h the run would have stopped around midday and
-# wasted the last full day before the Tuesday reset. The arithmetic is what
-# makes 30 h safe rather than reckless: from the 15 % reading at the time, the
-# deliberately pessimistic 2 pt/h estimate reaches 75 % after 30 h -- just
-# under the 80 % ceiling, so the extrapolation throttles ITSELF before the
-# limit matters, and a wrong estimate can at worst spend the remainder of a
-# window that expires on 2026-09-08 anyway.
-#
-# ⚠ PUT BOTH BACK ON WEDNESDAY 2026-09-09: this to 12 h, the ceiling to 30 %.
-# Outside an end-of-window sprint the 12 h exists for a reason -- an estimate
-# that old stops tracking reality, and the watchdog should rather stall than
-# burn a fresh week's quota against an invented number.
+# Raised to 30 h for the 2026-09-06/07 sprint and REVERTED here on 2026-09-08.
+# It did its job -- the run continued through a travel day on which nobody
+# could refresh the snapshot -- and the extrapolation turned out accurate to
+# within 3 points over 13 hours (estimated 52 %, actual 56 %). But 30 h is only
+# defensible when a wrong estimate can at worst spend a window that is about to
+# expire. In a fresh week it is not: an estimate that old has stopped tracking
+# reality, and the watchdog should stall rather than burn real quota against an
+# invented number.
 STALE_DRIFT_PCT_PER_HOUR = 2.0
-STALE_HARD_LIMIT_S = 30 * 3600
+STALE_HARD_LIMIT_S = 12 * 3600
 DEFAULT_CONCURRENCY = 1
 DEFAULT_POLL_SECONDS = 300
 DEFAULT_MAX_SNAPSHOT_AGE = 900  # 15 min
