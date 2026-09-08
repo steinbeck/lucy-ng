@@ -103,6 +103,16 @@
       "id": 18,
       "name": "Write up the C20H32O2 re-analysis in .planning/analysis/ \u2014 it currently exists only in conversation",
       "status": "not_started"
+    },
+    {
+      "id": 19,
+      "name": "Ingest NMRXIV:P203 'Lacrymaric acid' as the next CASE (highest existing is CASE264, so CASE265). Fungal metabolite from Lacrymaria lacrymabunda, anti-MRSA, C24H38O4, 28 heavy atoms, full Bruker set incl. edited HSQC, CC BY 4.0, DOI 10.57992/nmrxiv.p203. Passes the acceptance criteria. Published 2026-09-04, i.e. newer than the scan behind candidates.json. User approved 2026-09-08. MUST wait until the campaign's last case finishes and the harness restores the truth table -- it is stashed in ~/.case-uat-stash/ while a run is active.",
+      "status": "not_started"
+    },
+    {
+      "id": 20,
+      "name": "Add retry logic to nmr-dataset-assembly/tools/scan_projects.py. A sister session found the nmrXiv API answers under load with HTTP 200 and an EMPTY BODY and no error field; a scan that reads that as 'project without studies' reports a clean result and is wrong. It cost them 64 of 175 projects. Our scan was not hit (171 projects / 2156 pairs vs their complete 175 / 2175, because ours runs serially with sleep 0.3), but the script has no retry and the assumption is vulnerable.",
+      "status": "not_started"
     }
   ],
   "blockers": [
