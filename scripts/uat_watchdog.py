@@ -49,7 +49,21 @@ REMOTE_HARNESS = "tests/case-benchmark/blind_case_batch.py"
 # The harness takes its paths from the environment, not from flags -- omitting
 # CASE_DATA_DIR makes it resolve datasets against '.' and silently report
 # skip(no-dataset) for every case, which looks like a completed chunk.
-REMOTE_TRUTH = "/mnt/raid_drive/chris/nmr-dataset-assembly/downloaded_datasets.tsv"
+# Every file that maps a CASE number to its answer. The lockout below physically
+# moves all of them for the duration of a batch. It listed only
+# downloaded_datasets.tsv until 2026-09-09, while three further files in the same
+# directory carried the same answers -- case-index-fuer-lehre.tsv and
+# case-smiles.txt (both written during the 2026-09 analysis) and STATUS.md. Runs
+# use --dangerously-skip-permissions, so the prompt fence is not a barrier; only
+# the physical move is. When a new answer-bearing file appears, add it HERE.
+_ASSEMBLY = "/mnt/raid_drive/chris/nmr-dataset-assembly"
+REMOTE_TRUTH_PATHS = [
+    f"{_ASSEMBLY}/downloaded_datasets.tsv",
+    f"{_ASSEMBLY}/case-index-fuer-lehre.tsv",
+    f"{_ASSEMBLY}/case-smiles.txt",
+    f"{_ASSEMBLY}/STATUS.md",
+]
+REMOTE_TRUTH = REMOTE_TRUTH_PATHS[0]  # ordering source; see heavy() in the launcher
 REMOTE_ENV = {
     "CASE_DATA_DIR": REMOTE_DATA,
     "CASE_RESULTS_DIR": REMOTE_RESULTS,
@@ -67,7 +81,10 @@ REMOTE_ENV = {
     # CASE_STASH_DIR for the batch and restores it in a finally. That is why
     # this watchdog never kills a chunk -- a SIGKILL skips the finally and
     # leaves the ground truth stashed.
-    "CASE_ANSWERKEY_PATHS": REMOTE_TRUTH,
+    "CASE_ANSWERKEY_PATHS": ":".join(REMOTE_TRUTH_PATHS),
+    # Named in the prompt fence so the run is told what it must not read, in
+    # addition to the physical stash above.
+    "CASE_ANSWERKEY_DIR": _ASSEMBLY,
 }
 
 # Defaults chosen to leave room in each window for interactive work.
