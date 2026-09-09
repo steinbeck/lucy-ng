@@ -1,8 +1,8 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-07T08:20:00.000Z",
+  "timestamp": "2026-09-09T12:00:00.000Z",
   "phase": null,
-  "phase_name": "none \u2014 v10.1 closed PARTIAL and archived 2026-07-28; awaiting next milestone",
+  "phase_name": "none — v10.1 closed PARTIAL and archived 2026-07-28; awaiting next milestone",
   "phase_dir": null,
   "plan": null,
   "task": null,
@@ -26,13 +26,13 @@
       "id": 3,
       "name": "Update auto-memory (MEMORY.md, benchmark ops, C20H32O2 reference)",
       "status": "done",
-      "commit": "n/a \u2014 outside repo"
+      "commit": "n/a — outside repo"
     },
     {
       "id": 4,
       "name": "Kill 39 orphaned lucy webview servers on the compute host (~8 GB reclaimed)",
       "status": "done",
-      "commit": "n/a \u2014 remote op"
+      "commit": "n/a — remote op"
     },
     {
       "id": 5,
@@ -60,9 +60,9 @@
     },
     {
       "id": 9,
-      "name": "Bring the compute host's checkout up to date \u2014 it was 10 commits behind (2026-08-13), so the webview opt-out had never taken effect there",
+      "name": "Bring the compute host's checkout up to date — it was 10 commits behind (2026-08-13), so the webview opt-out had never taken effect there",
       "status": "done",
-      "commit": "n/a \u2014 remote pull to 8a1d84e"
+      "commit": "n/a — remote pull to 8a1d84e"
     },
     {
       "id": 12,
@@ -80,72 +80,108 @@
       "id": 14,
       "name": "C20H32O2 constitution independently reconfirmed from integrated 13C areas + edited-HSQC signs",
       "status": "done",
-      "commit": "n/a \u2014 analysis only, not yet written up in .planning/analysis/"
+      "commit": "n/a — analysis only, not yet written up in .planning/analysis/"
+    },
+    {
+      "id": 21,
+      "name": "Blind campaign COMPLETE: 154/154 attempted, 139 results, regraded 2026-09-08 — 79.7 % rank-1 / 87.0 % correct on 138 gradeable",
+      "status": "done",
+      "commit": null
+    },
+    {
+      "id": 22,
+      "name": "Integrity audit: 28-agent workflow over all 138 protocol+report pairs; 93 findings, 92 refuted, 1 confirmed (CASE119 dereplication, caught and corrected by the coordinator itself)",
+      "status": "done",
+      "commit": null
+    },
+    {
+      "id": 23,
+      "name": "Name-leak scan over all 258 datasets: 6 leak (3 via directory names, 3 via title text). Headline moves 79.7 -> 79.4 %",
+      "status": "done",
+      "commit": null
+    },
+    {
+      "id": 24,
+      "name": "Complexity comparison of the two campaigns: the Opus-5 set is significantly LARGER (p=0.014) and MORE FLEXIBLE (p=0.0003) — the bias runs against the reported result",
+      "status": "done",
+      "commit": null
+    },
+    {
+      "id": 25,
+      "name": "Backup: backup-kern-2026-09-09.tgz, 97 MB / 11608 files, on the compute host and in ~/Dropbox/develop/data/lucy-ng-backups/, checksum-verified and restore-tested",
+      "status": "done",
+      "commit": null
+    },
+    {
+      "id": 26,
+      "name": "Deliverables in ~/Downloads: Benchmark-Auswertung PDF, case-smiles.txt (257 SMILES), faelle-ohne-ergebnis.tsv, case-index-fuer-lehre.tsv (in Dropbox/data)",
+      "status": "done",
+      "commit": null
     }
   ],
   "remaining_tasks": [
     {
-      "id": 15,
-      "name": "\u26a0 WEDNESDAY 2026-09-09: revert BOTH sprint settings \u2014 DEFAULT_SEVEN_DAY_MAX 95 -> 30, STALE_HARD_LIMIT_S 30 h -> 12 h, then restart the watchdog so the running process actually picks them up",
+      "id": 30,
+      "name": "⚠ FIRST: re-sanitise CASE86, CASE87, CASE93 — 'quercetin'/'apigenin'/'quercetin' sit in their pdata/*/title files, and these are exactly the datasets about to be re-run. Redact, then verify the name appears nowhere in the tree.",
       "status": "not_started"
     },
     {
-      "id": 16,
-      "name": "After the 2026-09-08T03:00Z reset the watchdog will NOT resume on its own \u2014 it waits for a real snapshot reading rather than trusting the extrapolation, so it needs one keystroke in an interactive Claude Code session",
+      "id": 31,
+      "name": "THEN: re-run the 103 baseline datasets with CLAUDE_MODEL=claude-opus-5 into a NEW results directory (never overwrite /mnt/raid_drive/chris/case-uat-results — it is the historical 4.8 arm). ~98 h of compute; at the 30 % ceiling that is several weeks.",
       "status": "not_started"
     },
     {
-      "id": 17,
-      "name": "Regrade the campaign \u2014 scorecard.tsv covers 65 runs and dates from 2026-08-24, while 118 have finished",
+      "id": 32,
+      "name": "Harden sanitise.py: normalise experiment directory names, discover tokens from title prose not just $NAME fields, add a post-sanitisation check that greps the whole tree for the known compound name",
       "status": "not_started"
     },
     {
-      "id": 18,
-      "name": "Write up the C20H32O2 re-analysis in .planning/analysis/ \u2014 it currently exists only in conversation",
+      "id": 33,
+      "name": "Build the constraint-traceability check: 866 compound.lsd files against the peak data inline in the protocols. Turns the memorisation defence from argument into evidence.",
       "status": "not_started"
     },
     {
-      "id": 19,
-      "name": "Ingest NMRXIV:P203 'Lacrymaric acid' as the next CASE (highest existing is CASE264, so CASE265). Fungal metabolite from Lacrymaria lacrymabunda, anti-MRSA, C24H38O4, 28 heavy atoms, full Bruker set incl. edited HSQC, CC BY 4.0, DOI 10.57992/nmrxiv.p203. Passes the acceptance criteria. Published 2026-09-04, i.e. newer than the scan behind candidates.json. User approved 2026-09-08. MUST wait until the campaign's last case finishes and the harness restores the truth table -- it is stashed in ~/.case-uat-stash/ while a run is active.",
+      "id": 34,
+      "name": "Resolve the 24 protocols without a Devils-Advocate section: step actually skipped, or run but logged under a different heading? Not yet separated.",
       "status": "not_started"
     },
     {
-      "id": 20,
-      "name": "Add retry logic to nmr-dataset-assembly/tools/scan_projects.py. A sister session found the nmrXiv API answers under load with HTTP 200 and an EMPTY BODY and no error field; a scan that reads that as 'project without studies' reports a clean result and is wrong. It cost them 64 of 175 projects. Our scan was not hit (171 projects / 2156 pairs vs their complete 175 / 2175, because ours runs serially with sleep 0.3), but the script has no retry and the assumption is vulnerable.",
+      "id": 35,
+      "name": "Ingest NMRXIV:P203 'Lacrymaric acid' as CASE265 (user approved 2026-09-08)",
+      "status": "not_started"
+    },
+    {
+      "id": 36,
+      "name": "Add retry logic to scan_projects.py (nmrXiv answers under load with HTTP 200 and an empty body)",
+      "status": "not_started"
+    },
+    {
+      "id": 37,
+      "name": "Older open items: PROV-01 behaviour decision, re-scope JVAL-F2, review spec 49057ef, refresh the infographic deck, decide on the modified uv.lock",
       "status": "not_started"
     }
   ],
   "blockers": [
     {
-      "description": "None. The campaign is running: 118 of 258 finished, 21 still open in the 154-case campaign, weekly window at 59 % against the temporary 95 % ceiling.",
+      "description": "None technical. Weekly quota at 25 % of a 30 % ceiling, resets 2026-09-15 — the re-run cannot make much progress before then unless the ceiling is raised.",
       "type": "external",
-      "workaround": "n/a"
+      "workaround": "User decision."
     }
   ],
   "human_actions_pending": [
     {
-      "action": "Revert the two sprint settings on Wednesday 2026-09-09",
-      "context": "95 % ceiling and 30 h stale limit are end-of-window exceptions. Left in place they would let the benchmark consume the user's entire weekly allowance.",
+      "action": "Decide the pace of the baseline re-run",
+      "context": "103 datasets, ~98 h compute. At the standing 30 % ceiling this takes several weeks. Raising it trades the user's own quota for speed — the same decision made three times in early September.",
       "blocking": true
     },
     {
-      "action": "One keystroke after the Tuesday reset to unblock the watchdog",
-      "context": "It deliberately waits for a real reading after a window reset.",
-      "blocking": true
-    },
-    {
-      "action": "Decide whether the campaign gets its own quota, or a smaller subsample",
-      "context": "Still the binding constraint on everything else.",
+      "action": "Decide what the paper claims",
+      "context": "Defensible: 'the current model+pipeline combination solves 79.7 % vs 21.8 % for the predecessor, on a harder set'. NOT defensible: 'Opus 5 is better' or 'lucy-ng is better' — model and skill changed together and the paired experiment is null (3:3).",
       "blocking": false
     },
     {
       "action": "PROV-01 behaviour decision on DEFAULT_QUATERNARY_SHIFTS",
       "context": "Open since 2026-07-31.",
-      "blocking": false
-    },
-    {
-      "action": "Review spec 49057ef",
-      "context": "Waiting since 2026-08-10.",
       "blocking": false
     },
     {
@@ -202,11 +238,21 @@
     },
     {
       "decision": "Keep reporting the campaign's constitution result as reconfirmed, not new",
-      "rationale": "11 CH2 + 4 CH + 2 CH3 + 3 Cq now follows from integrated 13C areas plus edited-HSQC signs plus the formula's own H balance \u2014 an independent route to the same answer the 2026-08-02 analysis reached from weaker evidence.",
+      "rationale": "11 CH2 + 4 CH + 2 CH3 + 3 Cq now follows from integrated 13C areas plus edited-HSQC signs plus the formula's own H balance — an independent route to the same answer the 2026-08-02 analysis reached from weaker evidence.",
+      "phase": null
+    },
+    {
+      "decision": "Re-run the 103 baseline datasets on Opus 5 rather than keep the model-mixed comparison",
+      "rationale": "The project claim is lucy-ng as an agentic swarm doing CASE with LSD — not an Opus 4.8 vs 5 benchmark. One uniform system across all 258 removes the model change as a confound. The 4.8 numbers stay in the record; the aim is a cleaner claim, not a quieter one.",
+      "phase": null
+    },
+    {
+      "decision": "Treat the reasoning traces as evidence against memorisation, but prove it mechanically",
+      "rationale": "Knowing a compound is called artemisinin yields no strategy for building an LSD input file from spectra, so the derivation trace IS evidence — an earlier claim that this is 'unfalsifiable from artefacts' was too strong. It does not cover which correlations get discarded or when to stop, so the defence becomes the empirical claim that every constraint traces to an observation.",
       "phase": null
     }
   ],
   "uncommitted_files": [],
-  "next_action": "Nothing until Wednesday, when both sprint settings must go back. Until then the watchdog runs by itself, except for one keystroke needed after the Tuesday-morning reset.",
-  "context_notes": "Repo clean and pushed (origin/master == master == 908365f), compute host on the same commit. \u26a0 The reported quota percentage LAGS and catches up in jumps -- a freshly written snapshot said 17 % and 56 % thirteen minutes apart. Trust the watchdog's extrapolation over a single fresh reading; it measured 2.05 pt/h against the 2.0 it assumes."
+  "next_action": "Re-sanitise CASE86/87/93, then start the baseline re-run on Opus 5 into a new results directory. Ask about the ceiling first — at 30 % the run takes weeks.",
+  "context_notes": "Campaign done, audited, backed up. The headline (79.7 % rank-1, n=138) survives both audits: one dereplication violation in 138 runs, self-caught; six leaky datasets out of 258 moving the number by 0.3 points. ⚠ Four times this session a broken measurement produced a plausible number instead of an error — see the anti-pattern table in .continue-here.md. Do not trust a count you did not cross-check."
 }

@@ -4,8 +4,8 @@ milestone: v10.1
 milestone_name: JCAMP-DX 2D Ingestion
 status: Awaiting next milestone
 stopped_at: Phase 103 closed PARTIAL (JVAL-01/JVAL-02 honest partial close, D-10)
-last_updated: "2026-08-25T12:00:00.000Z"
-last_activity: 2026-08-25 — Post-milestone validation work (blind CASE benchmark, PROV-01 analysis); no phase in progress
+last_updated: "2026-09-09T12:00:00.000Z"
+last_activity: 2026-09-09 — blind campaign COMPLETE and regraded (79.7 % rank-1, n=138); integrity audit done; next: re-run the 103 baseline datasets on Opus 5
 progress:
   total_phases: 3
   completed_phases: 3
@@ -200,9 +200,122 @@ downgraded the expected benefit of budget-forced ranking after verifying it nega
 - `267e6cf` — README points at AI-assisted installation first.
 - `58af676` — 20–40 ppm ¹³C panel added to the JCAMP render script.
 
+### 6. Campaign complete, regraded — the headline result (2026-09-08)
+
+The 154-dataset blind campaign finished. `scorecard.tsv` regenerated 2026-09-08 17:34
+(the 2026-08-24 version is kept beside it as `scorecard-2026-08-24.tsv.bak`).
+
+| | Runs | gradeable | rank 1 | correct |
+|---|---|---|---|---|
+| **Opus 5** | 154 | **138** | **110 = 79.7 %** | **120 = 87.0 %** |
+| Opus 4.8 baseline | 102 | 101 | 22 = 21.8 % | 43 = 42.6 % |
+
+16 runs produced no usable result and are excluded from the percentages; counting them as
+failures gives 71.4 % rank-1. The result is **stable**: the 65-run interim on 2026-08-24 gave
+80.0 % / 89.2 %, so more than doubling the sample moved it by 0.3 and 2.2 points.
+
+**Where it breaks down** — by heavy-atom count, Opus 5 only:
+
+| ≤14 | 15–19 | 20–24 | 25–29 | ≥30 |
+|---|---|---|---|---|
+| 100 % (n=21) | 86 % (n=7) | 71 % (n=41) | 84 % (n=56) | 63 % (n=29), 10 without result |
+
+Below 20 heavy atoms it essentially never fails. Above 30, ten of 29 produce nothing and
+"correct" collapses onto "rank 1" — no case survives where the truth was found but ranked
+lower. The 20–24 band (71 %) scoring below the larger 25–29 band (84 %) is **unexplained**;
+compound-class composition is the obvious suspect and has not been checked.
+
+**The two campaigns are disjoint** (zero shared datasets) — so the comparison is unpaired.
+Checked whether the Opus-5 set was simply easier: it was not, it was harder.
+
+| | median 4.8 | median Opus 5 | Mann-Whitney p |
+|---|---|---|---|
+| heavy atoms | 22 | **26** | 0.014 |
+| rotatable bonds | 1 | **3** | 0.0003 |
+| Bertz complexity | 712 | 756 | 0.32 (n.s.) |
+| heteroatoms | 4 | 5 | 0.71 (n.s.) |
+| rings / aromatic rings / fraction sp³ | 3 / 1 / 0.52 | 3 / 1 / 0.53 | identical |
+
+The bias runs **against** the reported result. Size-stratified, the gap holds in both bands and
+is largest in the hard one (≥25 heavy atoms: 78.3 % vs 7.7 %).
+
+⚠ **But the one controlled comparison is null.** The paired sample (15 molecules, both models)
+ends 3:3 on "correct" and 5:2 on rank-1 over seven discordant pairs — neither significant.
+The large gap comes from unpaired sets, and model *and* skill changed together. **The gap is
+established; its cause is not.** Full write-up: `~/Downloads/lucy-ng-Benchmark-Auswertung-2026-09-09.pdf`.
+
+### 7. Integrity audit — did the agents take shortcuts? (2026-09-09)
+
+Three independent checks, because the headline is worthless if the runs cheated.
+
+**Reasoning-trace audit.** A 28-agent workflow read all 138 `CASE-PROGRESS.md` +
+`final_results.md` pairs against a rubric derived from `case.md`'s own rules (absolute
+dereplication ban, constraints must come from observed correlations, identity derived after
+the structure, gates before results). Every finding required a verbatim quote, and a second
+adversarial agent per batch tried to **refute** each one.
+
+Result: **93 findings raised, 92 refuted, exactly one stands.**
+
+- **CASE119** — the solution analyst swept all 81 candidates against the 928k-compound database
+  to source a replacement structure, in a run that forbids dereplication. He admits it verbatim.
+  **The system caught itself**: the coordinator flagged it, demoted the structure/name/accession
+  to "UNVERIFIED EXTERNAL POINTER, NOT evidence", withheld it from the lsd-engineer and re-ran.
+  Final verdict `SOLVED_TOP1` via the corrected path.
+- Notable refuted cases, kept because they show where the method is soft: CASE108 (reported
+  structure hand-derived, NOT from LSD, its database membership one of three arguments for it),
+  CASE110 (whole run executed inline by the orchestrator, devil's advocate checked itself,
+  identity gate skipped), CASE136 (report claims the name came from the tool; the name was
+  passed *in* as `--reported-name`), CASE107 (36 constraint-removal pairs scored by which
+  structures they produce).
+
+**Structural completeness**, checked mechanically against `progress-format.md`'s prescribed
+sections: **24 of 138 protocols carry no Devils-Advocate section**, 23 no ranking section,
+12 no LSD-Engineer section. Not yet separated into "step skipped" vs "step run but logged
+under a different heading" — that distinction matters and is unresolved.
+
+**Name leaks in the datasets** — the bigger threat to the number, and it is real but small.
+**6 of 258 datasets leak the compound identity:**
+
+| | leak | campaign |
+|---|---|---|
+| CASE119 / CASE120 / CASE121 | Lupeol / Stigmasterol / Gossypol in the **experiment directory names** | Opus 5 |
+| CASE86 / CASE87 / CASE93 | quercetin / apigenin / quercetin in **title file text** | baseline |
+
+Effect on the headline: **79.7 % → 79.4 %** (87.0 → 86.8). Three affected runs, one of which
+produced no result at all. Both solved ones state in their protocol that the name was noticed
+and the agents were instructed to ignore it.
+
+⚠ **The sanitiser has a documented gap.** `nmr-dataset-assembly/tools/sanitise.py` redacts
+*file contents* by discovering tokens from `$NAME`/`$NAME2` fields — it **never renames
+directories**, and a name appearing only in title prose is never discovered as a token. Both
+failure modes are exactly what the six cases show. A post-sanitisation check that greps the
+whole dataset tree (directory names included) for the known compound name does not exist.
+
+### 8. What this material can and cannot claim (2026-09-09)
+
+Assessed against publication. **Defensible:** "the current model+pipeline combination solves
+79.7 % at rank 1 against 21.8 % for the predecessor combination, on a set that is significantly
+larger and more flexible." **Not defensible:** "Opus 5 is better" or "lucy-ng is better" —
+model and skill changed together and cannot be separated; the paired experiment is null.
+
+Missing for a strong claim: an ablation arm (same molecules, model without the LSD pipeline),
+a comparison against existing CASE software, repeat runs for variance, and an answer to
+memorisation. On that last point the user's argument is strong and I had overstated the
+difficulty: knowing a compound is called artemisinin yields no strategy for building an LSD
+input file from spectra, so the reasoning trace **is** evidence. It does not cover two steps
+where recall can still steer the outcome — which correlations get discarded, and when to stop.
+The defence therefore becomes an empirical claim worth proving: *every constraint handed to
+the solver traces to a measured observation.* That mechanical check (866 `compound.lsd` files
+against the peak data, which lives inline in the protocols) is **designed but not yet built**.
+
 ### Housekeeping actually outstanding
 
-- **2 commits unpushed** (`ea5969c`, `eb87f0e`).
+- All work committed and pushed; `uv.lock` and `scratchpad/` deliberately left out.
+- **Backups exist** (2026-09-09): `backup-kern-2026-09-09.tgz`, 97 MB, 11 608 files — the
+  assembly directory plus every protocol, result report, LSD input, solution list and
+  scorecard from all three campaigns. Copies on the compute host and in
+  `~/Dropbox/develop/data/lucy-ng-backups/`, checksums verified, restore tested. The 15 GB of
+  sanitised datasets and the 63 GB of raw-spectra duplicates are NOT in it.
 - **Infographic deck is stale** — `docs/infographics/` last touched 2026-07-09, so it missed
   the v10.1 close entirely (CLAUDE.md names this recurring milestone-close maintenance).
 - Tags `v4.0` / `v5.0` exist locally but were never pushed (`v10.1` *is* on origin).
@@ -373,12 +486,27 @@ the running state is on Sheldon (`/mnt/raid_drive/chris/case-uat-results-opus5-r
 
 ## Operator Next Steps
 
-Ordered by what actually blocks something:
+The agreed next piece of work, decided 2026-09-09: **bring the 103 baseline datasets onto
+Opus 5**, so the headline rests on one uniform system across all 258 rather than on a
+model-mixed comparison. The 4.8 numbers stay in the record as the historical arm — the
+intent is a cleaner claim, not a quieter one.
 
-1. **Decide PROV-01's behaviour question** — may `DEFAULT_QUATERNARY_SHIFTS` stay a library
-   default? Everything downstream of the QC gate waits on this, and it is a user call.
-2. **Re-scope JVAL-F2** under the corrected framing (formula balance, not noise model).
-3. **Review spec `49057ef`** (budget-forced ranking, benefit verified negative).
-4. **Push the 2 outstanding commits**; refresh the stale infographic deck.
-5. **`/gsd-new-milestone`** — sensibly once the benchmark campaign finishes, so its findings
-   can shape the milestone instead of arriving mid-flight.
+In order, because the first blocks the second:
+
+1. **Re-sanitise CASE86, CASE87, CASE93.** They carry `quercetin` / `apigenin` / `quercetin`
+   in their title files and are exactly the datasets about to be re-run. Redact, then verify
+   the name appears nowhere in the tree. (CASE119/120/121 leak via directory names but have
+   already run; fixing those matters only if they are re-run.)
+2. **Re-run the 103 baseline datasets with `CLAUDE_MODEL=claude-opus-5`** into a NEW results
+   directory — never overwrite `case-uat-results`, it is the historical arm. Cost: these are
+   the smaller molecules, median runtime 0.88 h against 1.61 h for the campaign just finished,
+   so roughly 98 h of compute against 267 h. At the standing 30 % ceiling that is several
+   weeks; raising it is a user decision.
+3. **Harden the sanitiser** — normalise experiment directory names, discover tokens from title
+   prose as well as `$NAME` fields, and add a post-sanitisation check that fails when the known
+   compound name still appears anywhere in the tree, directory names included.
+4. **Build the constraint-traceability check** — 866 `compound.lsd` files against the peak data
+   that sits inline in the protocols. This is what turns the memorisation defence from a
+   plausible argument into a demonstrated one.
+5. Then the older items: PROV-01's behaviour decision, re-scoping JVAL-F2, spec `49057ef`,
+   the stale infographic deck, the P203 ingestion, the scan-retry fix.
