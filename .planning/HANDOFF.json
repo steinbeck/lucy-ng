@@ -147,7 +147,7 @@
     },
     {
       "id": 35,
-      "name": "Ingest NMRXIV:P203 'Lacrymaric acid' as CASE265 (user approved 2026-09-08)",
+      "name": "Ingest the newly released nmrXiv dataset as CASE265 (user approved 2026-09-08); accession and identity are in the local answer key, never here",
       "status": "not_started"
     },
     {

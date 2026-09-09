@@ -80,10 +80,12 @@ REMOTE_ENV = {
 # running only since 09:13 that morning. The 5-hour ceiling stays at 70 % --
 # it is the short-term throttle and has never been the binding constraint.
 #
-# Read this before lowering it further: at 30 % the benchmark is a guest with a
-# small allowance. It will spend much of the week blocked, and that is the
-# intended trade. If it needs to make real progress again, the lever is NOT
-# this number -- it is moving the runs off the user's personal quota.
+# Read this before changing it: the number is not about the benchmark's appetite
+# but about how much of the weekly window the user needs for their own work. At
+# 30 % the benchmark is a guest with a small allowance and spends much of the
+# week blocked; that is the intended trade whenever the user is working
+# normally. If it needs to make real progress at 30 %, the lever is NOT this
+# number -- it is moving the runs off the user's personal quota.
 #
 # One documented exception, kept as precedent: on 2026-09-06/07 this was raised
 # to 80 and then 95 for the last ~40 hours before a window reset, because
@@ -93,11 +95,20 @@ REMOTE_ENV = {
 # only holds at the END of a window -- in a fresh week there is real quota to
 # protect and 30 stands.
 #
-# Consequence to keep in mind: with ABORT_MARGIN_PCT below, a chunk already
-# running is stopped at 35 % rather than 65 %, so the benchmark gives up its
-# slot earlier and more often, and partly-finished cases are resumed on a later
-# poll more frequently. That is the intent, not a side effect.
-DEFAULT_SEVEN_DAY_MAX = 30.0
+# CURRENTLY RAISED TO 60 (2026-09-09). Reason: the user is on holiday for three
+# weeks and expects little interactive use of their own, so the window that 30
+# was protecting is largely free. This is a different justification from the
+# 2026-09-06/07 end-of-window sprint above -- it is about the user's absence,
+# not about quota that is about to expire, and it therefore holds for a whole
+# window rather than its last hours. REVERT TO 30 when the user is back at the
+# keyboard, around 2026-09-30; the standing value is 30, this is a loan.
+#
+# Consequence to keep in mind: ABORT_MARGIN_PCT below lets a chunk already
+# running continue to that many points past the ceiling before it is killed, so
+# the effective stop is ceiling + 5. The lower the ceiling, the earlier and more
+# often the benchmark gives up its slot, and the more often partly-finished
+# cases are resumed on a later poll. That is the intent, not a side effect.
+DEFAULT_SEVEN_DAY_MAX = 60.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
 DEFAULT_CHUNK = 4
 

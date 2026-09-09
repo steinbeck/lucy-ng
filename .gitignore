@@ -79,3 +79,8 @@ background/*.pdf
 # These map CASE datasets to their ground-truth identities / UAT outcomes.
 .planning/CASE-DATASET-IDENTITIES.md
 .planning/CASE-UAT-LOG.md
+
+# Scratch notes — working files, and they routinely quote compound identities
+# (InChIKey/SMILES) for datasets that are still to be run blind. Never tracked.
+scratchpad/
+
