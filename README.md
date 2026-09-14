@@ -29,6 +29,7 @@ drives all of it unattended.
 - [The CASE Agent Team](#the-case-agent-team)
 - [Running a CASE Elucidation](#running-a-case-elucidation)
 - [The `lucy` CLI](#the-lucy-cli)
+- [Evaluation](#evaluation)
 - [Installation](#installation)
 - [Scientific Background](#scientific-background)
 - [Architecture](#architecture)
@@ -175,6 +176,9 @@ command groups:
 | `lucy fragment` | Fragment-library build / search |
 | `lucy visualize` | NMR correlation diagrams |
 | `lucy fetch` | Fetch datasets from external repositories |
+| `lucy jcamp` | Read 2D spectra from JCAMP-DX files (binary-free ingestion path) |
+| `lucy nus` | Reconstruct non-uniformly-sampled 2D spectra (NMRPipe + SMILE) |
+| `lucy webview` | Local dashboard for watching a CASE run |
 | `lucy database` | Download and inspect the reference database |
 
 A few representative invocations:
@@ -203,6 +207,37 @@ lucy predict c13 "CC(C)Cc1ccc(cc1)C(C)C(=O)O"
 
 A Python API mirrors the CLI for custom workflows — see
 [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
+
+---
+
+## Evaluation
+
+lucy-ng is measured **blind**: the agent team gets a directory of Bruker spectra and a
+molecular formula, never the compound's name or structure, and dereplication is
+forbidden. Grading is done afterwards by an independent script that re-derives every
+candidate's InChIKey with RDKit — a run's own claim about its result is never used.
+
+On the main campaign — **154 datasets from [nmrXiv](https://nmrxiv.org), 138 of them
+gradeable**:
+
+| | |
+|---|---|
+| Correct structure ranked **first** | **110 / 138 — 79.7 %** |
+| Correct structure **within the top 10** | **119 / 138 — 86.2 %** |
+
+The top-10 figure is the one that matters in practice: ten candidates is the shortlist
+size a DP4/GIAO shift calculation is run on, so a result in that band is one a
+spectroscopist can finish. Matching is on constitution only — **stereochemistry is not
+tested**.
+
+A further 102 datasets are being re-run on the current model as this is written, and 34
+datasets have now been run on two model generations; on those, each dataset acting as its
+own control, the current system wins 11 and loses 1 (exact McNemar, p = 0.0063).
+
+**[docs/BENCHMARK.md](docs/BENCHMARK.md)** has the full picture: how blindness is
+enforced, what the audits found, what the numbers do *not* say, a measurement error that
+had flattered this comparison and how correcting it shrank the claimed gap, and the
+complete table of all 258 datasets with their metadata and current result.
 
 ---
 
@@ -325,6 +360,12 @@ lucy-ng/
 │   ├── prediction/      # HOSE-code 13C shift prediction
 │   ├── ranking/         # candidate solution ranking
 │   ├── lsd/             # LSD solver integration + bundled fragment filters
+│   ├── solvers/         # solver back-ends behind one interface
+│   ├── nus/             # non-uniform-sampling reconstruction + QC gate
+│   ├── nmrxiv/          # nmrXiv dataset fetching
+│   ├── database/        # reference-database access
+│   ├── webview/         # local run dashboard
+│   ├── visualization/   # NMR correlation diagrams
 │   ├── identity.py      # deterministic identity derivation (lucy identify)
 │   └── cli/             # the `lucy` Click CLI
 ├── .claude/             # CASE orchestrator command + team agents (skills)
@@ -349,8 +390,10 @@ For the AI-agent workflow, pitfalls, and best practices, see [CLAUDE.md](CLAUDE.
 
 ## Supported Data
 
-**Input:** Bruker TopSpin 1D and 2D spectra (processed data from `pdata/1/`); SD files
-for reference databases.
+**Input:** Bruker TopSpin 1D and 2D spectra (processed data from `pdata/1/`); 2D spectra
+from **JCAMP-DX** files via `lucy jcamp`, which needs no vendor binaries; **non-uniformly
+sampled** 2D data, reconstructed by `lucy nus` through NMRPipe + SMILE; SD files for
+reference databases.
 
 | Experiment | Detection | Notes |
 |------------|-----------|-------|
