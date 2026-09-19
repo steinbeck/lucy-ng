@@ -32,7 +32,9 @@ cd "$(dirname "$0")/.."
 REMOTE="chris@35.198.180.5"
 SSH=(ssh -o BatchMode=yes -o ConnectTimeout=15 -p 2222 "$REMOTE")
 RESULTS=/mnt/raid_drive/chris/case-uat-results-opus5-baseline
-LOG=/tmp/uat_watchdog_baseline.log
+# NOT /tmp: macOS clears it on reboot, and on 2026-09-18 that took the log with
+# it — so why the run had stopped two days earlier could no longer be shown.
+LOG="$HOME/Library/Logs/lucyng-uat-baseline.log"
 
 CASES=$("${SSH[@]}" 'python3 - <<PY
 import csv, glob, json, os, sys
