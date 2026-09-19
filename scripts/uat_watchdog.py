@@ -112,20 +112,29 @@ REMOTE_ENV = {
 # only holds at the END of a window -- in a fresh week there is real quota to
 # protect and 30 stands.
 #
-# CURRENTLY RAISED TO 60 (2026-09-09). Reason: the user is on holiday for three
-# weeks and expects little interactive use of their own, so the window that 30
-# was protecting is largely free. This is a different justification from the
-# 2026-09-06/07 end-of-window sprint above -- it is about the user's absence,
-# not about quota that is about to expire, and it therefore holds for a whole
-# window rather than its last hours. REVERT TO 30 when the user is back at the
-# keyboard, around 2026-09-30; the standing value is 30, this is a loan.
+# CURRENTLY RAISED TO 80 (2026-09-19), and there are two loans stacked here, with
+# two different expiry dates. Unstack them in order:
+#
+#   1. HOLIDAY LOAN, 30 -> 60, taken 2026-09-09. The user is away for three weeks
+#      and expects little interactive use of their own, so the window that 30 was
+#      protecting is largely free. This is about the user's absence, not about
+#      expiring quota, so it holds for whole windows. REVERT TO 30 when the user
+#      is back at the keyboard, around 2026-09-30.
+#
+#   2. END-OF-WINDOW LOAN, 60 -> 80, taken 2026-09-19 with 2 d 19 h left before
+#      the window resets. Same reasoning as the 2026-09-06/07 precedent above:
+#      quota left unspent at 03:00 on 2026-09-22 is simply gone. Usage stood at
+#      46 %, so this buys roughly 34 points, about 29 datasets. REVERT TO 60 --
+#      not to 30 -- AT THE 2026-09-22 RESET, because loan 1 is still running.
+#
+# The standing value remains 30. Both loans are temporary and neither changes it.
 #
 # Consequence to keep in mind: ABORT_MARGIN_PCT below lets a chunk already
 # running continue to that many points past the ceiling before it is killed, so
 # the effective stop is ceiling + 5. The lower the ceiling, the earlier and more
 # often the benchmark gives up its slot, and the more often partly-finished
 # cases are resumed on a later poll. That is the intent, not a side effect.
-DEFAULT_SEVEN_DAY_MAX = 60.0
+DEFAULT_SEVEN_DAY_MAX = 80.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
 DEFAULT_CHUNK = 4
 
