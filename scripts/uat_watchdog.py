@@ -278,19 +278,53 @@ def stale_gate(snapshot: dict, args, age: float) -> tuple[bool, str]:
     real reading is judged against, or a fresh low value after a reset would
     look like a drop from an invented number.
     """
-    if age > STALE_HARD_LIMIT_S:
-        return False, (f"snapshot is {age/3600:.1f} h old (hard limit "
-                       f"{STALE_HARD_LIMIT_S/3600:.0f} h) -- estimate would be "
-                       f"meaningless; open Claude Code to refresh")
-
     seven, seven_reset = window(snapshot, "seven_day")
     if seven is None:
         return False, f"snapshot is {age/60:.0f} min old and carries no 7-day figure"
 
     # A reset during the blind window wipes the debt; anything else accrues it.
-    if seven_reset is not None and datetime.now(timezone.utc) >= seven_reset:
-        return False, (f"snapshot is {age/60:.0f} min old and its window reset "
-                       f"meanwhile -- waiting for a real reading")
+    now = datetime.now(timezone.utc)
+    if seven_reset is not None and now >= seven_reset:
+        # The window that stale percentage belonged to no longer exists, and the
+        # new one provably began at zero -- `resets_at` in the past is evidence,
+        # not inference. So extrapolate from the reset rather than refuse.
+        #
+        # This used to refuse and wait for a real reading, which sounds careful
+        # and is not: the snapshot only refreshes while the user types, so
+        # "waiting" means standing still for as long as they are away. On
+        # 2026-09-15 that cost eleven hours of a fresh window; the run restarted
+        # the minute the user typed one sentence, which is not a design.
+        #
+        # Counting from zero is sound precisely BECAUSE the snapshot is stale:
+        # the estimate is only consulted when the user is not at the keyboard,
+        # and a user who is not at the keyboard is not spending quota. The moment
+        # they do spend any, they have produced a fresh reading and this branch
+        # is not reached at all. The drift rate is the benchmark's own measured
+        # burn (~2 pt/h), which is the only consumer left in that situation.
+        since_reset = (now - seven_reset).total_seconds()
+        if since_reset > STALE_HARD_LIMIT_S:
+            return False, (f"window reset {since_reset/3600:.1f} h ago (hard limit "
+                           f"{STALE_HARD_LIMIT_S/3600:.0f} h) -- too long to assume "
+                           f"nobody spent anything; waiting for a real reading")
+        est = STALE_DRIFT_PCT_PER_HOUR * (since_reset / 3600.0)
+        shown = (f"estimated 7d {est:.0f} % (window reset {since_reset/3600:.1f} h "
+                 f"ago, counted from zero at +{STALE_DRIFT_PCT_PER_HOUR:.0f} pt/h)")
+        if est >= args.seven_day_max:
+            return False, f"{shown} -- at or past the {args.seven_day_max:.0f} % ceiling"
+        return True, shown
+
+    # Only now does the reading's own age matter: from here on the estimate is
+    # built forward FROM that reading, and past STALE_HARD_LIMIT_S the
+    # accumulated guess means nothing. Deliberately after the reset branch --
+    # these are two different clocks, and checking this one first killed the
+    # reset branch outright: by the morning after a 05:00 reset the last
+    # keystroke is already more than 12 h back, which is the normal case, not a
+    # corner. Found by running the real snapshot through gate() rather than by
+    # the unit tests, which all happened to use younger readings.
+    if age > STALE_HARD_LIMIT_S:
+        return False, (f"snapshot is {age/3600:.1f} h old (hard limit "
+                       f"{STALE_HARD_LIMIT_S/3600:.0f} h) -- estimate would be "
+                       f"meaningless; open Claude Code to refresh")
 
     est = seven + STALE_DRIFT_PCT_PER_HOUR * (age / 3600.0)
     shown = (f"estimated 7d {est:.0f} % (last measured {seven:.0f} % "
