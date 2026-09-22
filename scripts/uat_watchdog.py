@@ -112,12 +112,20 @@ REMOTE_ENV = {
 # only holds at the END of a window -- in a fresh week there is real quota to
 # protect and 30 stands.
 #
-# CURRENTLY AT 60 on the HOLIDAY LOAN, 30 -> 60, taken 2026-09-09: the user is
-# away for three weeks and expects little interactive use of their own, so the
-# window that 30 was protecting is largely free. This is about the user's absence,
-# not about expiring quota, so it holds for whole windows rather than their last
-# hours. REVERT TO 30 when the user is back at the keyboard, around 2026-09-30.
-# The standing value is 30; this is a loan.
+# CURRENTLY AT 70 on the HOLIDAY LOAN, 30 -> 60 -> 70. Taken 2026-09-09 because
+# the user is away for three weeks and expects little interactive use of their
+# own, so the window that 30 was protecting is largely free. This is about the
+# user's absence, not about expiring quota, so it holds for whole windows rather
+# than their last hours. REVERT TO 30 when the user is back at the keyboard,
+# around 2026-09-30. The standing value is 30; this is a loan.
+#
+# Raised 60 -> 70 on 2026-09-22 on the evidence of the window that just closed:
+# even after a late sprint to 80 it ended around 84 %, so more than ten points
+# went unspent and expired. 60 was set by estimate before any holiday week had
+# been observed; 70 is the same estimate corrected once by a measurement. If the
+# next window also ends with points to spare, raise it again rather than leaving
+# quota to expire — but only while the user is away, and never past the point
+# where a returning user would find their own window eaten.
 #
 # A second loan sat on top of this one from 2026-09-19 to 2026-09-21, 60 -> 80,
 # for the tail of that window — the 2026-09-06/07 reasoning again, that quota left
@@ -133,7 +141,7 @@ REMOTE_ENV = {
 # the effective stop is ceiling + 5. The lower the ceiling, the earlier and more
 # often the benchmark gives up its slot, and the more often partly-finished
 # cases are resumed on a later poll. That is the intent, not a side effect.
-DEFAULT_SEVEN_DAY_MAX = 60.0
+DEFAULT_SEVEN_DAY_MAX = 70.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
 DEFAULT_CHUNK = 4
 
