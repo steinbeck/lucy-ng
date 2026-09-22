@@ -9,8 +9,9 @@
 # /mnt/raid_drive/chris/case-uat-results is the historical comparison and is
 # NEVER written to -- read only, to derive the case list.
 #
-#   ./scripts/uat_run_baseline_opus5.sh            # start
-#   ./scripts/uat_run_baseline_opus5.sh --dry-run  # show what it would launch
+#   ./scripts/uat_run_baseline_opus5.sh              # start, detached
+#   ./scripts/uat_run_baseline_opus5.sh --dry-run    # show what it would launch
+#   ./scripts/uat_run_baseline_opus5.sh --foreground # BECOME the watchdog (launchd)
 #
 # Safe to re-run: pending_cases() intersects the request with what is genuinely
 # unfinished *in the new directory*, so nothing runs twice.
@@ -97,11 +98,23 @@ fi
 
 # caffeinate -i keeps this Mac out of idle sleep; without it the watchdog pauses
 # with the machine and the usage snapshot goes stale.
-nohup caffeinate -i -m python3 -u scripts/uat_watchdog.py \
-  --cases ${=CASES} \
-  --results-dir "$RESULTS" \
-  --chunk 4 -k 2 \
-  --max-snapshot-age 7200 --poll 600 \
-  >> "$LOG" 2>&1 &
+WATCHDOG=(caffeinate -i -m python3 -u scripts/uat_watchdog.py
+          --cases ${=CASES}
+          --results-dir "$RESULTS"
+          --chunk 4 -k 2
+          --max-snapshot-age 7200 --poll 600)
 
+if [[ "$1" == "--foreground" ]]; then
+  # Under launchd the watchdog must BE the job, not a child of it. Backgrounding
+  # it and exiting looks like it works -- the script prints a PID and returns 0 --
+  # but launchd treats the job as finished and reaps the process group, so the
+  # watchdog is dead seconds later. Demonstrated 2026-09-22 with a throwaway agent
+  # using the same shape: the child was gone before the next poll. It cost the
+  # night of 2026-09-21: the machine rebooted, the agent started correctly, logged
+  # "watchdog started (PID 1540)", and that watchdog never wrote a single line.
+  echo "$(date '+%H:%M:%S') becoming the watchdog in the foreground (launchd)" >> "$LOG"
+  exec "${WATCHDOG[@]}" >> "$LOG" 2>&1
+fi
+
+nohup "${WATCHDOG[@]}" >> "$LOG" 2>&1 &
 echo "watchdog started (PID $!), logging to $LOG"
