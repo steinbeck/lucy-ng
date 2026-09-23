@@ -4,8 +4,8 @@ milestone: v10.1
 milestone_name: JCAMP-DX 2D Ingestion
 status: Awaiting next milestone
 stopped_at: Phase 103 closed PARTIAL (JVAL-01/JVAL-02 honest partial close, D-10)
-last_updated: "2026-09-09T12:00:00.000Z"
-last_activity: 2026-09-09 — blind campaign COMPLETE and regraded (79.7 % rank-1, n=138); integrity audit done; next: re-run the 103 baseline datasets on Opus 5
+last_updated: "2026-09-23T05:00:00.000Z"
+last_activity: 2026-09-23 — Opus-5 baseline re-run at 85/102 (73.4 % rank-1); 4.8 baseline regraded 21.8 → 39.2 % (grader artefact); paired comparison now n=79, 58 vs 33, p=4e-7; watchdog made reset- and reboot-proof; benchmark page published
 progress:
   total_phases: 3
   completed_phases: 3
@@ -29,7 +29,9 @@ Phase: Milestone v10.1 complete and archived (2026-07-28)
 Plan: —
 Status: Awaiting next milestone — but **not idle**: unplanned, milestone-less validation
 work has been running since 2026-07-31 (see § Post-Milestone Validation Work below).
-Last activity: 2026-08-25 — blind CASE benchmark running on Sheldon; PROV-01 analysis concluded 2026-08-02
+Last activity: 2026-09-23 — Opus-5 re-run of the 103 baseline datasets at 85/102 on Sheldon
+(§ 9); the 4.8 baseline figure corrected from 21.8 % to 39.2 % (§ 6); PROV-01 analysis
+concluded 2026-08-02
 
 ## Milestone v10.1 Phases
 
@@ -101,9 +103,10 @@ Items acknowledged and deferred at **v10.0 milestone close (PARTIAL) on 2026-07-
 ⚠ **Read this before trusting the sections above.** Everything from here down was written at
 the v10.1 close. The work below happened *after* it, deliberately outside the GSD phase
 structure (validation and analysis, not a milestone), so it appears in no ROADMAP, no
-REQUIREMENTS and no phase directory. 26 commits, `4554e2d..eb87f0e`.
+REQUIREMENTS and no phase directory. 26 commits to 2026-08-25 (`4554e2d..eb87f0e`), and
+thirteen more from 2026-09-09 to 2026-09-22 (`6eeb682..064169a`, §§ 9–10).
 
-### 1. Blind CASE benchmark on Sheldon — RUNNING
+### 1. Blind CASE benchmark on Sheldon — interim snapshot of 2026-08-25 (campaign since COMPLETE, see § 6)
 
 Large-scale blind evaluation of the CASE skill against a 258-dataset set, headless and
 RDKit-graded (`tests/case-benchmark/grade_blind.py`, ground truth supplied externally via
@@ -124,7 +127,8 @@ RDKit-graded (`tests/case-benchmark/grade_blind.py`, ground truth supplied exter
 **Three caveats that must travel with those numbers:**
 
 1. **Compare only against the size-matched baseline row.** The 4.8-generation baseline
-   (31 % top-1 / 55 % correct) was measured on a different size distribution.
+   (31 % top-1 / 55 % correct) was measured on a different size distribution. ⚠ Its top-1
+   figure also came from the pre-correction grader and is understated — see § 6.
 2. **The 65 runs are not one homogeneous measurement series — and that was accepted
    deliberately.** Both the skill *and* the team's model changed mid-campaign:
    `f9aa7b3` (08-07) stopped the agents from being pinned, so an Opus-5 orchestrator no
@@ -139,9 +143,11 @@ RDKit-graded (`tests/case-benchmark/grade_blind.py`, ground truth supplied exter
 3. **The grades are 4 runs behind the finished runs** (65 graded vs 69 finished) and one day
    old. Regrading needs rdkit, which is not in Sheldon's system python.
 
-**Operational state:** the run restarts with `./scripts/uat_run_remaining.sh`; a LaunchAgent
-keeps the watchdog alive across reboots (`499d6d0`). The quota watchdog aborts chunks 5 points
-above a 60 % ceiling. The real operational bottleneck turned out **not** to be the quota but
+**Operational state (as recorded then — two claims in it turned out false, see § 10):** the
+run restarted with `./scripts/uat_run_remaining.sh`; a LaunchAgent was believed to keep the
+watchdog alive across reboots (`499d6d0`) — **it never did**: it pointed at a launcher that
+backgrounds the watchdog and exits, and launchd reaps the orphan (demonstrated 2026-09-22).
+The quota watchdog aborts chunks 5 points above its ceiling. The real operational bottleneck turned out **not** to be the quota but
 **snapshot freshness** — the status line only renders on keyboard activity. Every alternative
 was checked and ruled out (OAuth endpoint 403/429, hooks receive no `rate_limits`, admin APIs
 on the wrong domain); solved by ageing the snapshot at 2 pt/h with a hard 12 h ceiling
@@ -205,10 +211,24 @@ downgraded the expected benefit of budget-forced ranking after verifying it nega
 The 154-dataset blind campaign finished. `scorecard.tsv` regenerated 2026-09-08 17:34
 (the 2026-08-24 version is kept beside it as `scorecard-2026-08-24.tsv.bak`).
 
-| | Runs | gradeable | rank 1 | correct |
-|---|---|---|---|---|
-| **Opus 5** | 154 | **138** | **110 = 79.7 %** | **120 = 87.0 %** |
-| Opus 4.8 baseline | 102 | 101 | 22 = 21.8 % | 43 = 42.6 % |
+| | Runs | gradeable | rank 1 | top 10 | correct |
+|---|---|---|---|---|---|
+| **Opus 5** | 154 | **138** | **110 = 79.7 %** | 119 = 86.2 % | **120 = 87.0 %** |
+| Opus 4.8 baseline | 103 | 102 | **40 = 39.2 %** | 44 = 43.1 % | 44 = 43.1 % |
+
+⚠ **CORRECTED 2026-09-14.** The 4.8 row read **22 = 21.8 %** rank 1 until then. That was a
+grader artefact, not a result: the grader of the time prepended `meta.json`'s `top_smiles` as
+candidate #1, and that field is written by a regexp in `blind_case_run.sh` whose character
+class excludes `)` — every SMILES with a closing parenthesis was truncated, candidate #1 was
+unparseable, and the true top candidate scored as rank 2. Exactly 18 datasets were displaced
+from rank 1 to rank 2; wrong and no-result counts are identical under both graders, and
+"correct at any rank" was never affected. Found by comparing the 2026-07-04 `scorecard.tsv`
+case by case against a regrade of the identical artefacts (CASE15 is the tell: its recorded
+`top_ik` equals the true InChIKey, yet its verdict was rank 2). The Opus-5 numbers were graded
+with the corrected code throughout and reproduce exactly. **The published gap is therefore
+79.7 % vs 39.2 %, not vs 21.8 %.** Top-10 is reported because it is the practical success
+criterion: ten candidates is the shortlist a DP4/GIAO shift calculation runs on (the user's
+threshold, 2026-09-14).
 
 16 runs produced no usable result and are excluded from the percentages; counting them as
 failures gives 71.4 % rank-1. The result is **stable**: the 65-run interim on 2026-08-24 gave
@@ -236,13 +256,23 @@ Checked whether the Opus-5 set was simply easier: it was not, it was harder.
 | heteroatoms | 4 | 5 | 0.71 (n.s.) |
 | rings / aromatic rings / fraction sp³ | 3 / 1 / 0.52 | 3 / 1 / 0.53 | identical |
 
-The bias runs **against** the reported result. Size-stratified, the gap holds in both bands and
-is largest in the hard one (≥25 heavy atoms: 78.3 % vs 7.7 %).
+The bias runs **against** the reported result. Size-stratified with the corrected grader, the
+gap holds in both bands and is largest in the hard one:
 
-⚠ **But the one controlled comparison is null.** The paired sample (15 molecules, both models)
-ends 3:3 on "correct" and 5:2 on rank-1 over seven discordant pairs — neither significant.
-The large gap comes from unpaired sets, and model *and* skill changed together. **The gap is
-established; its cause is not.** Full write-up: `~/Downloads/lucy-ng-Benchmark-Auswertung-2026-09-09.pdf`.
+| | < 25 heavy atoms | ≥ 25 heavy atoms |
+|---|---|---|
+| Opus 5 campaign | 56/69 = 81.2 % | 54/69 = 78.3 % |
+| Opus 4.8 baseline | 32/62 = 51.6 % | 8/40 = **20.0 %** |
+
+(Previously recorded as "≥25: 78.3 % vs **7.7 %**" — same grader artefact as above.)
+
+~~The one controlled comparison is null~~ — **superseded by § 9.** The 2026-09-09 paired sample
+(15 molecules) ended 3:3 on "correct" and 5:2 on rank-1, not significant; it rested on the
+same understated 4.8 grading and on too few pairs. With the Opus-5 re-run of the baseline
+(§ 9) there are now 79 datasets gradeable on both models, and the paired result is
+unambiguous. Model *and* skill still changed together, so the claim stays "lucy-ng then vs
+lucy-ng now". Full write-up of the 09-09 state: `~/Downloads/lucy-ng-Benchmark-Auswertung-2026-09-09.pdf`
+(⚠ carries the uncorrected 21.8 %).
 
 ### 7. Integrity audit — did the agents take shortcuts? (2026-09-09)
 
@@ -278,8 +308,13 @@ under a different heading" — that distinction matters and is unresolved.
 
 | | leak | campaign |
 |---|---|---|
-| CASE119 / CASE120 / CASE121 | Lupeol / Stigmasterol / Gossypol in the **experiment directory names** | Opus 5 |
-| CASE86 / CASE87 / CASE93 | quercetin / apigenin / quercetin in **title file text** | baseline |
+| CASE119 / CASE120 / CASE121 | compound name in the **experiment directory names** | Opus 5 |
+| CASE86 / CASE87 / CASE93 | compound name in **title file text** | baseline |
+
+(Names removed from this file 2026-09-23 — see § 10. This file is tracked in a **public**
+repository and until then carried all six identities, including those of three baseline
+datasets that had not yet been re-run. The mapping lives only in the untracked
+`.planning/CASE-DATASET-IDENTITIES.md`.)
 
 Effect on the headline: **79.7 % → 79.4 %** (87.0 → 86.8). Three affected runs, one of which
 produced no result at all. Both solved ones state in their protocol that the name was noticed
@@ -294,9 +329,11 @@ whole dataset tree (directory names included) for the known compound name does n
 ### 8. What this material can and cannot claim (2026-09-09)
 
 Assessed against publication. **Defensible:** "the current model+pipeline combination solves
-79.7 % at rank 1 against 21.8 % for the predecessor combination, on a set that is significantly
-larger and more flexible." **Not defensible:** "Opus 5 is better" or "lucy-ng is better" —
-model and skill changed together and cannot be separated; the paired experiment is null.
+79.7 % at rank 1 against **39.2 %** for the predecessor combination, on a set that is
+significantly larger and more flexible" (corrected from 21.8 %, § 6) — and, since § 9, "on
+the same 79 datasets it wins 26 and loses 1 (exact McNemar p ≈ 4·10⁻⁷)". **Not defensible:**
+"Opus 5 is better" or "lucy-ng is better" — model and skill changed together and cannot be
+separated.
 
 Missing for a strong claim: an ablation arm (same molecules, model without the LSD pipeline),
 a comparison against existing CASE software, repeat runs for variance, and an answer to
@@ -308,18 +345,137 @@ The defence therefore becomes an empirical claim worth proving: *every constrain
 the solver traces to a measured observation.* That mechanical check (866 `compound.lsd` files
 against the peak data, which lives inline in the protocols) is **designed but not yet built**.
 
+### 9. Opus-5 re-run of the baseline datasets — RUNNING (as of 2026-09-23)
+
+Decided 2026-09-09 so the headline rests on one model across all 258 datasets rather than a
+model-mixed comparison; the 4.8 arm stays in the record as the historical comparison.
+Started 2026-09-09 21:49 with `scripts/uat_run_baseline_opus5.sh`, results in the NEW
+directory `/mnt/raid_drive/chris/case-uat-results-opus5-baseline` (the 4.8 arm in
+`case-uat-results` is never written). 102 datasets = the 103 of the 4.8 arm minus CASE217
+(ethane, retired); queue ordered smallest-molecule-first.
+
+**2026-09-23: 85 of 102 finished, 79 gradeable.**
+
+| heavy atoms | runs | rank 1 | top 10 | no report | median runtime |
+|---|---|---|---|---|---|
+| ≤ 20 | 40 | 37/40 = 92.5 % | 37 | 0 | 1.0 h |
+| 21–25 | 28 | 19/23 = 82.6 % | 20 | 5 | 1.7 h |
+| ≥ 26 | 17 | **2/16 = 12.5 %** | 3 | 1 | 2.4 h |
+| **all** | **85** | **58/79 = 73.4 %** | 60 = 75.9 % | 6 | 1.3 h |
+
+Two different failure modes: at 21–25 heavy atoms the misses are **timeouts** at the
+150-minute deadline (no report at all); at ≥26 the runs mostly **finish with a wrong
+structure**.
+
+⚠ **The ≥26 collapse is dataset-specific, not a size effect.** The main campaign solved
+78.3 % of its ≥25-heavy-atom datasets (§ 6). On the fifteen large re-run datasets graded so
+far, Opus 4.8 solved 1 and Opus 5 solved 2 — both models fail on essentially the same ones.
+That points at a hard compound class in this subset, consistent with § 4 (the truth is often
+never *generated*). Which classes these are has not been examined yet; do it from the local
+answer key, never in a tracked file.
+
+**The paired comparison is now decisive.** 86 datasets have run on both models, 79 are
+gradeable on both:
+
+| | Opus 4.8 | Opus 5 |
+|---|---|---|
+| rank 1 | 33/79 | **58/79** |
+| won only by this model (rank 1) | 1 | **26** |
+| won only by this model (top 10) | 0 | **25** |
+
+Exact two-sided McNemar over the 27 discordant pairs: **p ≈ 4·10⁻⁷**. Caveat that travels
+with it: the paired set is enriched in small molecules (median 20 heavy atoms), because the
+re-run is smallest-first — the direction is robust, the magnitude is not representative of
+the full set.
+
+**Prepared before the start** (`0885962`): the blindness lockout widened from one
+answer-bearing file to four; leftover work products of an earlier run removed from CASE9 and
+CASE64; compound names redacted from `pdata/*/title` (CASE86/87/93), a stale name from the
+`$TI` field, and collector codes from `pulseprogram.precomp` (CASE51–55); then re-checked
+per dataset against the answer key. Originals are in the 2026-09-09 backup archive.
+
+**Datasets that do not count as blind, and why:**
+
+- **CASE265** (not yet ingested): its identity was written into `HANDOFF.json` and pushed on
+  2026-09-09. The user decided not to rewrite published history (2026-09-09).
+- **CASE86, CASE87, CASE93** (re-run pending): their compound names stood in this file,
+  `.continue-here.md` and `HANDOFF.json` from `6eeb682` (2026-09-09) until 2026-09-23 — in the
+  public repository and in the compute host's own checkout, which the agents can read. Names
+  removed and the host's checkout updated on 2026-09-23, before these three ran; they still
+  have to be reported as "identity public before the run".
+
+**Forecast (2026-09-23):** ~2 quota points per dataset at the current mix; with the ceiling at
+70 % that covers roughly 15 more, i.e. ~97–100 of 102 before this window's limit, the rest
+after the 2026-09-29 reset. The remaining 17 are all 25–39 heavy atoms, so the final re-run
+rank-1 figure is expected to fall towards ~65 %.
+
+**Known defect, harmless to grading:** `top_smiles` in every `meta.json` is truncated at the
+first `)` by the regexp in `tests/case-benchmark/blind_case_run.sh:133`. Nothing grades from it
+any more (see § 6 for what it cost when something did). Fix at a break between chunks, not
+mid-run, so the harness stays constant across the arm.
+
+### 10. Operations since 2026-09-09 — three silent failures fixed
+
+Each of these cost at least one night and none produced an error message:
+
+1. **Log lost on reboot.** The re-run log lived in `/tmp`, which macOS clears on restart; after
+   the 2026-09-18 reboot the reason for a two-day stop could no longer be shown. Now
+   `~/Library/Logs/lucyng-uat-baseline.log` (`42e8e0d`).
+2. **Standing still after a window reset.** With a stale usage snapshot whose window had
+   already reset, the watchdog waited for a real reading — which only appears when the user
+   types. Eleven hours of a fresh window lost on 2026-09-15. Now it counts from zero after a
+   *proven* reset and stops assuming after 12 h (`8fabe46`). The first version was dead on
+   arrival — the reading's age limit sat in front of the new branch — and eight green unit
+   tests missed it; the real snapshot pushed through `gate()` found it. The watchdog now has
+   its first tests (10, mutation-checked).
+3. **The LaunchAgent never kept anything alive.** It pointed at the launcher for the finished
+   campaign (reports "nothing outstanding", exits), and once repointed, the launcher
+   backgrounded the watchdog and exited — launchd then reaps the orphan (demonstrated with a
+   throwaway agent). Sixteen silent hours after the 2026-09-21 reboot. Now `--foreground`
+   execs into the watchdog so it *is* the job (`1b6f7c9`); note `zsh -lc script --foreground`
+   binds the flag to `$0`, so it has to sit inside the `-lc` string. Verified through
+   `launchctl kickstart -k` on 2026-09-22.
+
+**Weekly ceiling** — standing value **30 %**. Currently **70 %** on the holiday loan (30 → 60 on
+2026-09-09, → 70 on 2026-09-22 after more than ten points expired unspent in the first holiday
+window). A separate end-of-window loan 60 → 80 (2026-09-19) was repaid on 2026-09-21.
+**Revert to 30 when the user is back at the keyboard, around 2026-09-30.**
+
+**Published** (`7b6e0f2`): a README Evaluation section and `docs/BENCHMARK.md` — protocol,
+per-arm results, caveats, and all 258 datasets with formula, size, experiments and current
+result, **without identity columns**; regenerate with `scripts/build_benchmark_table.py`.
+⚠ The page carries the 2026-09-14 state (26 re-run datasets) and needs regenerating.
+
+**Leaks plugged in the public repository:** `scratchpad/` is now ignored (its notes quote
+answers); CASE265's name removed from `HANDOFF.json` at HEAD (history kept, see § 9); on
+2026-09-23 the six compound names removed from this file, `.continue-here.md` and
+`HANDOFF.json`.
+
+**Backups** — complete now, not just the 97 MB core: `backup-kern` (97 MB), `backup-datensaetze`
+(11 GB, all 258 datasets) and `backup-ergebnisse` (5.3 GB, all four result trees) of
+2026-09-09, on Sheldon, **Ponder** and **vitus**, SHA-256 compared on all three. **URZ workgroup
+storage granted** (100 GB, `\\storage.uni-jena.de\FSU\CHG-IAC-P08\`, ticket URZ010SD-117786) but
+**not yet mounted**: the user's personal university password must not sit in a credentials
+file on a host where several people have root; a technical account is being considered.
+
 ### Housekeeping actually outstanding
 
 - All work committed and pushed; `uv.lock` and `scratchpad/` deliberately left out.
-- **Backups exist** (2026-09-09): `backup-kern-2026-09-09.tgz`, 97 MB, 11 608 files — the
-  assembly directory plus every protocol, result report, LSD input, solution list and
-  scorecard from all three campaigns. Copies on the compute host and in
-  `~/Dropbox/develop/data/lucy-ng-backups/`, checksums verified, restore tested. The 15 GB of
-  sanitised datasets and the 63 GB of raw-spectra duplicates are NOT in it.
+- **Backups are complete** since 2026-09-09 — core, all 258 datasets and all four result trees,
+  on three hosts, checksums compared (§ 10). The earlier note here said the datasets were not
+  backed up; that is no longer true. URZ storage granted but not yet mounted.
+- **Test suite, 2026-09-23 under `uv run --extra dev`: 1345 passed, 74 failed, 86 skipped.**
+  All 74 are environment, none a product bug (first cause checked per file; the counts sum to
+  74): **42** need the HOSE generator (`test_ranking` 21, `test_prediction` 20,
+  `test_lsd_runner` 1 — the 2026-06-30 todo, which is broader than its name says); **27** are
+  `CliRunner(mix_stderr=…)`, removed in newer Click (`test_cli_jcamp` 24, `test_pylsd_cli` 2,
+  `test_cli_dereplicate` 1); **5** need the webview extra (`test_cli_webview`). A green suite
+  needs hosegen and the webview extra installed and the `mix_stderr` arguments dropped.
 - **Infographic deck is stale** — `docs/infographics/` last touched 2026-07-09, so it missed
   the v10.1 close entirely (CLAUDE.md names this recurring milestone-close maintenance).
 - Tags `v4.0` / `v5.0` exist locally but were never pushed (`v10.1` *is* on origin).
-- Test suite now collects **1482** tests (1468 at the Phase-103 close).
+- Test suite collects **1506** tests (1482 on 2026-08-25, 1468 at the Phase-103 close); the
+  ten watchdog tests of 2026-09-21 are among the new ones.
 
 ## Completed Milestones
 
@@ -441,8 +597,25 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - **RECON-F1** — hmsIST/mddnmr fallback backend for in-lucy-ng NUS self-reconstruction (tracked from v10.0 close). Not in v10.1 scope (JCAMP ingestion is complementary, not the fallback itself), but noted as the natural next reconstruction-side step given `C20H32O2-jcamp` was itself produced by `mddnmr`.
 - **JVAL-F2** (tracked from Phase 103 PARTIAL close) — ⚠ **MIS-SCOPED, needs re-writing before it is worked on.** As filed it reads "real-data recalibration of the 2D noise/threshold model and/or the QC gate's quaternary-override mechanism". The PROV-01 re-analysis (2026-08-02) invalidated that premise: 37.86 ppm is a **CH**, so `quaternary_exclusion` was correctly reporting a wrong *input assumption*, not a mis-tuned noise model. The substantive replacement is a **formula-balance check** (carbon count + H balance against the molecular formula — a hard fact) instead of grading a derived quantity against a supplied shift list. Note `.planning/REQUIREMENTS.md` no longer exists (git-rm'd at the v10.1 close); the surviving record is the v10.1 archive plus the PROV-01 todo.
 - **JVAL-F3** (tracked from Phase 103 PARTIAL close) — re-export `exp7`/wide as JCAMP-DX into `C20H32O2-jcamp` to complete the §10 1D-13C coverage gap; explicitly would NOT by itself fix `quaternary_exclusion` (JVAL-F2's job). See `.planning/REQUIREMENTS.md` § Future Requirements.
+- **[2026-06-30] Ranking tests hard-fail without the HOSE generator** — broader than the name: on 2026-09-23 it accounts for **42** failures (`test_ranking` 21, `test_prediction` 20, `test_lsd_runner` 1), all `ImportError: hosegen package not installed`. Identical with and without the 2026-09-21 changes. See `.planning/todos/pending/2026-06-30-ranking-tests-hardfail-without-hosegen.md`.
+- **[2026-09-21, no todo file yet] `CliRunner(mix_stderr=…)` breaks under the installed Click** — **27 tests** (`test_cli_jcamp` 24, `test_pylsd_cli` 2, `test_cli_dereplicate` 1) fail with `TypeError: CliRunner.__init__() got an unexpected keyword argument 'mix_stderr'`. Newer Click removed the parameter; a test-side fix, not a product bug.
+- **[2026-09-09] `top_smiles` regexp** in `tests/case-benchmark/blind_case_run.sh:133` truncates at the first `)` — see § 9. Fix between chunks.
+- **[2026-09-09] Harden the sanitiser and build the constraint-traceability check** — the two proofs the publication needs; see Operator Next Steps.
 
 ### Blockers/Concerns
+
+**Concerns added 2026-09-23:**
+
+- **Blindness of four datasets is compromised** — CASE265 and the three baseline datasets
+  CASE86/87/93 had their identities in the public repository before being run (§ 9). Report
+  them separately; do not count them as blind.
+- **The compute host's package manager is stuck** — `linux-image-7.0.0-30-generic` and three
+  related packages have been half-configured since 2026-08-21 (an automatic kernel upgrade
+  whose post-install step cannot build the NVIDIA 550.163.01 DKMS module). Every `apt`
+  invocation reports the error, and security updates have not been going through since.
+  Not caused by this project; not fixed; wants a quiet slot without a benchmark running.
+- **URZ storage is not usable yet** without putting the user's personal password on a
+  multi-root host (§ 10).
 
 None blocking further work. v10.1 milestone closed PARTIAL: JC-01..04/JCLI-01..02
 (Phases 101-102) fully shipped; JVAL-01/JVAL-02 (Phase 103) partial, with **JVAL-F2**
@@ -470,43 +643,58 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-08-25 (documentation reconciliation — no code changed)
-Stopped at: v10.1 archived; milestone-less validation work in progress (blind CASE benchmark
-running on Sheldon, PROV-01 analysis concluded)
-Resume with: nothing is half-finished in the GSD sense. The open calls are (a) the PROV-01
-behaviour decision on `DEFAULT_QUATERNARY_SHIFTS`, (b) re-scoping JVAL-F2 under the corrected
-framing, (c) reviewing spec `49057ef`, and (d) `/gsd-new-milestone` when the benchmark
-campaign is done.
+Last session: 2026-09-23 (STATE reconciliation plus regrading of all four result trees)
+Stopped at: v10.1 archived; milestone-less validation work in progress — the Opus-5 re-run
+of the baseline datasets is at 85/102 and running unattended (§ 9).
+Resume with: nothing is half-finished in the GSD sense. Let the re-run finish, then the
+Operator Next Steps below; `/gsd-new-milestone` once the benchmark is closed out.
 
-⚠ **This file is not the live source for the benchmark.** Its numbers are a dated snapshot;
-the running state is on Sheldon (`/mnt/raid_drive/chris/case-uat-results-opus5-rest/`).
+⚠ **This file is not the live source for the benchmark.** Its numbers are a dated snapshot
+(2026-09-23); the running state is on Sheldon
+(`/mnt/raid_drive/chris/case-uat-results-opus5-baseline/`), and every figure here was
+regraded that day from the run artefacts with the current `grade_blind.py`.
 
 ---
-*Last updated: 2026-08-25 — documentation reconciliation, no code changed. STATE.md had drifted ~4 weeks: its header claimed 2026-07-28 while the file had been edited on 07-31, the v10.1 close was recorded as "not yet run" although it had run, CR-02/CR-03 were listed as unfixed although `7dfe2ce` fixed them on 08-03, and 26 commits of post-milestone validation work (blind CASE benchmark, PROV-01 analysis, faulon-ng spike) appeared nowhere. All four corrected; the previous Phase-103 close note is preserved in the v10.1 milestone archive.*
+*Last updated: 2026-09-23 — reconciliation after two weeks of drift (13 commits, 09-09 → 09-22,
+appeared nowhere). Beyond adding §§ 9–10 it CORRECTS three statements that had become false:
+the 4.8 baseline (21.8 % → 39.2 %, a grader artefact), the size-stratified hard band (7.7 % →
+20.0 %, same artefact), and "the paired comparison is null" (now 26 : 1, p ≈ 4·10⁻⁷). It also
+retracts § 1's claim that the LaunchAgent kept the watchdog alive — it never did — and removes
+six compound identities that had stood in this public file since 2026-09-09.*
+
+*Previous: 2026-08-25 — documentation reconciliation after ~4 weeks of drift (v10.1 close
+recorded as not run, CR-02/CR-03 listed unfixed, 26 commits missing).*
 
 ## Operator Next Steps
 
-The agreed next piece of work, decided 2026-09-09: **bring the 103 baseline datasets onto
-Opus 5**, so the headline rests on one uniform system across all 258 rather than on a
-model-mixed comparison. The 4.8 numbers stay in the record as the historical arm — the
-intent is a cleaner claim, not a quieter one.
+*Rewritten 2026-09-23.* The 2026-09-09 plan's first two steps are done: the three leaking
+baseline datasets were re-sanitised (and five more leaks found and closed along the way), and
+the Opus-5 re-run of the baseline is at 85/102 (§ 9). What follows, in order:
 
-In order, because the first blocks the second:
+1. **Let the re-run finish.** Unattended: the watchdog survives reboots and window resets now
+   (§ 10). Expect ~97–100 of 102 before this window's 70 % ceiling, the rest after the
+   2026-09-29 reset. Nothing to do unless it stops — check with
+   `tail ~/Library/Logs/lucyng-uat-baseline.log`, restart with
+   `launchctl kickstart -k gui/$UID/de.doktor-steinbeck.lucyng-uat-watchdog`.
+2. **Revert the weekly ceiling to 30 %** when the user is back at the keyboard (~2026-09-30),
+   in `scripts/uat_watchdog.py`, then restart the watchdog so the process picks it up.
+3. **Close out the benchmark numbers.** Regrade all arms, regenerate the table in
+   `docs/BENCHMARK.md` with `scripts/build_benchmark_table.py`, update the README figures. Report
+   CASE86/87/93 and CASE265 separately (§ 9). State the final re-run figure together with its
+   size distribution.
+4. **Harden the sanitiser** — normalise experiment directory names, discover tokens from title
+   prose and the `$TI` field as well as `$NAME`, and add a post-sanitisation check that fails
+   when the known compound name still appears anywhere in the tree, directory names included.
+   Every leak found so far came through one of those three gaps.
+5. **Build the constraint-traceability check** — 866+ `compound.lsd` files against the peak
+   data that sits inline in the protocols. This turns the memorisation defence from a plausible
+   argument into a demonstrated one; together with step 4 it is what a publication needs.
+6. **Examine the ≥26-heavy-atom collapse of the re-run** (§ 9): which compound classes, and
+   whether the truth is ever generated. It is dataset-specific, it defeats both model
+   generations, and it is the natural subject of the **next milestone** — the generation
+   limit of LSD on large molecules, with the faulon-ng bridge (§ 3) as the first lead.
+7. Smaller items: the `top_smiles` regexp (between chunks); the `mix_stderr` test failure;
+   PROV-01's behaviour decision; re-scoping JVAL-F2; spec `49057ef`; the stale infographic
+   deck; the P203 ingestion (CASE265 not blind); the scan-retry fix; tags `v4.0`/`v5.0`.
 
-1. **Re-sanitise CASE86, CASE87, CASE93.** They carry `quercetin` / `apigenin` / `quercetin`
-   in their title files and are exactly the datasets about to be re-run. Redact, then verify
-   the name appears nowhere in the tree. (CASE119/120/121 leak via directory names but have
-   already run; fixing those matters only if they are re-run.)
-2. **Re-run the 103 baseline datasets with `CLAUDE_MODEL=claude-opus-5`** into a NEW results
-   directory — never overwrite `case-uat-results`, it is the historical arm. Cost: these are
-   the smaller molecules, median runtime 0.88 h against 1.61 h for the campaign just finished,
-   so roughly 98 h of compute against 267 h. At the standing 30 % ceiling that is several
-   weeks; raising it is a user decision.
-3. **Harden the sanitiser** — normalise experiment directory names, discover tokens from title
-   prose as well as `$NAME` fields, and add a post-sanitisation check that fails when the known
-   compound name still appears anywhere in the tree, directory names included.
-4. **Build the constraint-traceability check** — 866 `compound.lsd` files against the peak data
-   that sits inline in the protocols. This is what turns the memorisation defence from a
-   plausible argument into a demonstrated one.
-5. Then the older items: PROV-01's behaviour decision, re-scoping JVAL-F2, spec `49057ef`,
-   the stale infographic deck, the P203 ingestion, the scan-retry fix.
+Then `/gsd-new-milestone`.

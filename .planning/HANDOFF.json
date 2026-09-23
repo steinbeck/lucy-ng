@@ -122,7 +122,7 @@
   "remaining_tasks": [
     {
       "id": 30,
-      "name": "⚠ FIRST: re-sanitise CASE86, CASE87, CASE93 — 'quercetin'/'apigenin'/'quercetin' sit in their pdata/*/title files, and these are exactly the datasets about to be re-run. Redact, then verify the name appears nowhere in the tree.",
+      "name": "⚠ FIRST: re-sanitise CASE86, CASE87, CASE93 — their compound names sit in their pdata/*/title files (names removed 2026-09-23, see STATE.md § 9), and these are exactly the datasets about to be re-run. Redact, then verify the name appears nowhere in the tree.",
       "status": "not_started"
     },
     {
