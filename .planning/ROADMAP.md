@@ -19,6 +19,7 @@
 - ✅ [v9.3 CASE Web-View Stage 2](milestones/v9.3-ROADMAP.md) - Phases 93-96 (shipped 2026-07-12)
 - 🟡 **v10.0 Automatic NUS 2D Reconstruction** - Phases 97-100 (PARTIAL, paused 2026-07-20 — PORT shipped, VAL blocked by SMILE memory abort, RECON-F1 tracked)
 - 🟡 [v10.1 JCAMP-DX 2D Ingestion](milestones/v10.1-ROADMAP.md) - Phases 101-103 (PARTIAL, closed 2026-07-28 — reader + `lucy jcamp` shipped, JVAL real-data validation not achieved; JVAL-F2/JVAL-F3 tracked)
+- 🚧 **v11.0 AILSA Rename** - Phases 104-107 (in progress, started 2026-09-26 — Phases 106-107 gated on the Opus-5 baseline re-run finishing, expected after the 2026-09-29 quota reset)
 
 ---
 
@@ -171,3 +172,83 @@ the ppm-axis defect class — the narrow 13C window is a genuine export property
 shipped, `exp7`/wide did not), proven against raw Bruker `acqus`/`procs`. Tracked: **JVAL-F2**,
 **JVAL-F3**, plus **CR-02/CR-03** (Phase-102 `lucy jcamp` data-loss paths, filed not fixed). Full
 archive: [`milestones/v10.1-ROADMAP.md`](milestones/v10.1-ROADMAP.md).
+
+---
+
+## v11.0 AILSA Rename
+
+**Goal:** The project is renamed from the working title *lucy-ng* to **AILSA** (*AI + LSD +
+Agents*) everywhere it is visible — package, CLI, documentation, skill system, repository and
+hosts — without breaking the running Opus-5 baseline re-run or rewriting the historical record.
+Package and documentation can move first; the skill system and the repository/hosts phases are
+**gated** on the Opus-5 baseline re-run finishing on the compute host (the blind runner there
+still calls `/lucy-ng:case`, and the watchdog on the Mac runs from the absolute path
+`…/lucy-ng/scripts/`), expected after the 2026-09-29 quota reset.
+
+### Phases
+
+- [ ] **Phase 104: Package and CLI** — PyPI package `ailsa`, module `ailsa` replacing `lucy_ng`, CLI `ailsa` with `lucy` kept as a deprecated alias for one release; full suite/mypy/ruff green on the renamed tree
+- [ ] **Phase 105: Documentation and outside face** — README, `docs/`, CLAUDE.md, the figshare record and the infographic deck under the new name; LSD and Nuzillard credited up front
+- [ ] **Phase 106: Skill system** (GATED — not before the Opus-5 baseline re-run finishes) — `/ailsa:*` commands and `ailsa-*` agents replacing `/lucy-ng:*`/`lucy-*`, `~/.claude` symlinks updated, proven by a blind CASE run on the compute host
+- [ ] **Phase 107: Repository and hosts** (GATED — not before the Opus-5 baseline re-run finishes) — GitHub repo renamed with a redirect, local folder/LaunchAgent/remotes/compute-host checkout/auto-memory moved, planning documents speak the new name, a `v11.0` release tag
+
+### Phase Details
+
+#### Phase 104: Package and CLI
+
+**Goal**: A user installs and runs the project under its real name — `pip install ailsa` gives the actual package, the `ailsa` module and CLI replace `lucy_ng`/`lucy`, and the renamed tree is exactly as green as before the rename.
+**Depends on**: Nothing (first phase of v11.0; not gated — package/docs can move before the Opus-5 re-run finishes)
+**Requirements**: PKG-01, PKG-02, PKG-03, PKG-04, PKG-05
+**Success Criteria** (what must be TRUE):
+  1. `pip install ailsa` installs the real package (not the 0.0.1 name-reservation placeholder), and `pyproject.toml` names the project `ailsa`.
+  2. Every import in `src/`, `tests/` and `scripts/` comes from the `ailsa` module; no `lucy_ng` module or import remains anywhere in the tree.
+  3. A user runs every subcommand as `ailsa …`; `lucy …` still works for one release and prints a one-line deprecation hint pointing at `ailsa`.
+  4. The full test suite passes on the renamed tree with the same pass count as before the rename (1345 passed / 74 environment failures, per STATE.md 2026-09-23), and `mypy --strict` and `ruff` report no new findings.
+  5. A user with the existing database file `data/reference/lucy-ng-derep.db` keeps working — `ailsa database download` and `ailsa database info` accept the old file name as well as the new default.
+**Plans**: TBD
+
+#### Phase 105: Documentation and outside face
+
+**Goal**: Everything a reader sees from outside the code — README, docs, the skill's own project memory, the figshare record and the infographic deck — presents the project as AILSA, with the old name acknowledged once and LSD credited up front.
+**Depends on**: Phase 104 (docs describe the actually-renamed package and CLI, not a still-pending rename)
+**Requirements**: DOC-01, DOC-02, DOC-03, DOC-04
+**Success Criteria** (what must be TRUE):
+  1. A reader of the README sees the project as AILSA, with the expansion *AI + LSD + Agents*, LSD and Jean-Marc Nuzillard credited up front, and a short note that the project was formerly called lucy-ng.
+  2. `docs/` (ARCHITECTURE, USER_GUIDE, BENCHMARK, NUS-PORTABILITY and the rest) and `CLAUDE.md` refer to the project, package, CLI and commands by the new names; no living document still instructs the reader to type `lucy`.
+  3. The figshare record of the reference database carries the new project name in title and description; the DOI and the uploaded file are unchanged.
+  4. The infographic deck (`docs/infographics/build.py`) is rebuilt under the new name with the current headline numbers, clearing the outstanding "stale deck" backlog item.
+**Plans**: TBD
+
+#### Phase 106: Skill system
+
+**Goal**: The autonomous CASE skill and its five-agent team run under the AILSA name end to end — commands, agent files, symlinks and a live blind run all prove the renamed chain works exactly like the old one.
+**Depends on**: Phase 105. **GATED: must not start before the Opus-5 baseline re-run on the compute host has finished** (expected after the 2026-09-29 quota reset) — the blind runner there calls `/lucy-ng:case` and must not be disturbed mid-campaign.
+**Requirements**: SKILL-01, SKILL-02, SKILL-03, SKILL-04
+**Success Criteria** (what must be TRUE):
+  1. A user runs `/ailsa:case`, `/ailsa:dereplicate`, `/ailsa:predict`, `/ailsa:sanitise` and `/ailsa:status`; the `/lucy-ng:*` commands are gone and the `~/.claude/commands` symlinks point at the new directory.
+  2. The five agents are named `ailsa-nmr-chemist`, `ailsa-lsd-engineer`, `ailsa-solution-analyst`, `ailsa-devils-advocate` and `ailsa-diagnostic`; `case.md`, the supervisor and the SHA-256 byte-unchanged guard reference the new files, and the `~/.claude/agents` symlinks are updated.
+  3. One blind CASE run on the compute host, started through the renamed command with the renamed agents, completes and grades correctly — proof that the chain works under the new name.
+  4. The blind runner script and the watchdog scripts call the new command and paths, and the LaunchAgent (label, program path, log name) is re-registered under the new name.
+**Plans**: TBD
+
+#### Phase 107: Repository and hosts
+
+**Goal**: Every place the project physically lives — GitHub, the local Mac folder, the compute host's checkout, the LaunchAgent and the planning documents — carries the new name, with the historical record left untouched.
+**Depends on**: Phase 106 (skill renamed and proven on a live run before the paths its assets live under are moved). **GATED: must not start before the Opus-5 baseline re-run on the compute host has finished** (same gate as Phase 106) — the compute host's checkout and remotes must not move while the re-run is reading from them.
+**Requirements**: REPO-01, REPO-02, REPO-03, REPO-04
+**Success Criteria** (what must be TRUE):
+  1. The GitHub repository is `steinbeck/ailsa`; the old `steinbeck/lucy-ng` URL redirects; the remotes of the local clone and of the compute host's checkout point at the new name.
+  2. The local working copy lives at `~/Dropbox/develop/ailsa`; the auto-memory directory is moved with it so the next session starts with its memory; every absolute path on the Mac (LaunchAgent, symlinks, scripts) is updated.
+  3. `.planning/PROJECT.md`, `STATE.md`, `ROADMAP.md`, `MEMORY.md` and the CASE identity/UAT files speak the new name; `.planning/phases/` history, `milestones/`, git history and the compute host's result directories are untouched.
+  4. A release tag `v11.0` marks the first release under the new name, with a changelog entry explaining the rename.
+**Plans**: TBD
+
+### Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|-----------------|--------|-----------|
+| 104. Package and CLI | 0/? | Not started | - |
+| 105. Documentation and outside face | 0/? | Not started | - |
+| 106. Skill system (GATED) | 0/? | Not started | - |
+| 107. Repository and hosts (GATED) | 0/? | Not started | - |
+</content>

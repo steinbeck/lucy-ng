@@ -51,4 +51,20 @@
 
 | Requirement | Phase |
 |-------------|-------|
-| (filled by the roadmap) | |
+| PKG-01 | 104 |
+| PKG-02 | 104 |
+| PKG-03 | 104 |
+| PKG-04 | 104 |
+| PKG-05 | 104 |
+| DOC-01 | 105 |
+| DOC-02 | 105 |
+| DOC-03 | 105 |
+| DOC-04 | 105 |
+| SKILL-01 | 106 |
+| SKILL-02 | 106 |
+| SKILL-03 | 106 |
+| SKILL-04 | 106 |
+| REPO-01 | 107 |
+| REPO-02 | 107 |
+| REPO-03 | 107 |
+| REPO-04 | 107 |

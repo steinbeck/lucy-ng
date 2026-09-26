@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-09-26T07:01:48.426Z"
 last_activity: 2026-09-26
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -24,10 +24,29 @@ See: .planning/PROJECT.md (updated 2026-07-21)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-09-26 — Milestone v11.0 started
+Phase: 104 of 107 (Package and CLI) — roadmap created, not yet planned
+Plan: — (no plans yet, run /gsd-plan-phase 104)
+Status: Roadmap created
+Last activity: 2026-09-26 — Milestone v11.0 roadmap created (Phases 104-107; 106-107 gated on the Opus-5 baseline re-run finishing)
+
+## Milestone v11.0 Phases
+
+| Phase | Goal | Requirements | Depends on |
+|-------|------|--------------|------------|
+| 104. Package and CLI | PyPI package `ailsa`, module `ailsa` replacing `lucy_ng`, CLI `ailsa` with deprecated `lucy` alias for one release, full suite/mypy/ruff green | PKG-01..05 | — |
+| 105. Documentation and outside face | README/docs/CLAUDE.md/figshare record/infographic deck under the new name, LSD + Nuzillard credited up front | DOC-01..04 | 104 |
+| 106. Skill system (GATED) | `/ailsa:*` commands + `ailsa-*` agents replacing `/lucy-ng:*`/`lucy-*`, `~/.claude` symlinks updated, proven by a blind CASE run on the compute host | SKILL-01..04 | 105 + Opus-5 baseline re-run finished |
+| 107. Repository and hosts (GATED) | GitHub repo renamed with redirect, local folder/LaunchAgent/remotes/compute-host checkout/auto-memory moved, planning docs speak the new name, `v11.0` tag | REPO-01..04 | 106 + Opus-5 baseline re-run finished |
+
+**Sequencing:** Phase 104 (package/CLI) ships first since nothing else can honestly describe a
+renamed thing that isn't renamed yet. Phase 105 (docs) follows immediately — neither phase
+touches the skill system or any host path, so both can proceed while the Opus-5 baseline
+re-run is still running on the compute host. Phases 106 (skill) and 107 (repository/hosts) are
+explicitly **gated**: the blind runner on the compute host still calls `/lucy-ng:case` and the
+Mac watchdog runs from the absolute path `…/lucy-ng/scripts/`, so renaming either before the
+re-run finishes would break a live, multi-day unattended run. Expected unblock: after the
+2026-09-29 quota reset (see § 9 below). Phase 107 follows 106 rather than running in parallel
+because the repository move relocates the very paths the renamed skill's symlinks point at.
 
 ## Milestone v10.1 Phases
 
