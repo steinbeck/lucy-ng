@@ -10,7 +10,23 @@ Lucy-ng is an AI-agent skill for Computer-Assisted Structure Elucidation (CASE) 
 
 An AI agent can autonomously determine the structure of an unknown organic compound from its NMR spectra, with a multi-agent architecture that prevents unproductive loops and keeps the elucidation on track.
 
-## Current Milestone: v10.1 JCAMP-DX 2D Ingestion
+## Current Milestone: v11.0 AILSA Rename
+
+**Goal:** The project is renamed from the working title *lucy-ng* to **AILSA** (*AI + LSD + Agents*) everywhere it is visible — package, CLI, documentation, skill system, repository and hosts — without breaking the running benchmark or the historical record.
+
+**Target features:**
+- **Package and CLI** — PyPI package `ailsa` (name reserved 2026-09-26), Python module `ailsa` replacing `lucy_ng`, CLI `ailsa` with `lucy` kept as a deprecated alias for one release; full test suite, mypy strict and ruff green on the renamed tree.
+- **Documentation and outside face** — README, `docs/`, CLAUDE.md, the infographic deck and the figshare database record under the new name, LSD and Nuzillard credited up front; the database file and DOI stay as they are.
+- **Skill system** — `/ailsa:*` commands and `ailsa-*` agents replacing `/lucy-ng:*` and `lucy-*`, symlinks under `~/.claude` updated, proven by a blind CASE run on the compute host. **Gated:** only after the Opus-5 baseline re-run has finished (the blind runner on the host calls `/lucy-ng:case`; the watchdog on the Mac runs from an absolute `…/lucy-ng/scripts/` path).
+- **Repository and hosts** — GitHub `steinbeck/lucy-ng` → `steinbeck/ailsa` (redirect kept), local folder, LaunchAgent, remotes and checkout on the compute host, the auto-memory directory; planning documents speak the new name, phase history and result directories untouched.
+
+**Key context:**
+- Why: "Lucy" refers to the author's PhD-era structure generator, once a competitor of LSD, which irritated LSD's author — a friend and collaborator. The project builds entirely on LSD, so the name has to go before publication (decided 2026-09-23/24).
+- Name: AILSA, Scottish /ˈeɪlsə/, Ailsa Craig; spoken it is just a name, the acronym shows only in writing. A UK trademark AILSA (cl. 9/36/42, grant-funding AI platform, reg. 2024-11) exists; the user accepted the risk for a scientific open-source tool.
+- The private manuscript repository `steinbeck/ailsa-paper` already exists (2026-09-26).
+- The old name stays in the git history, in `.planning/phases/` history, in the compute host's result directories and in archived logs. Only living documents change.
+
+## v10.1 JCAMP-DX 2D Ingestion — CLOSED PARTIAL 🟡 (2026-07-28)
 
 **Goal:** lucy-ng reads already-reconstructed 1D/2D NMR spectra from JCAMP-DX files and produces the consumable CASE peak lists — with no external binaries — so CASE can run on NUS (or any) data reconstructed elsewhere (TopSpin/mddnmr, nmrXiv, any vendor JCAMP export).
 
@@ -377,7 +393,24 @@ Minimum viable spectral data for v1:
 | Constraint-hardness guard (FIX-10) | An uncertain inference must never become a hard, solution-excluding LSD constraint | Good |
 | `CLAUDE_CODE_SUBAGENT_MODEL=inherit` | A stale `=sonnet` override silently forced all subagents to Sonnet 4.6 and drove earlier CASE failures | Good — Opus 4.8 then solved both cases |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-07-28 — **Phase 103 (End-to-End Validation, JVAL-01/02) CLOSED PARTIAL.** Verification `passed` (9/9) on the phase's own deliverables; both requirements close NOT achieved via the plan's D-10 honest-partial-close, on a user-approved checkpoint decision. Six real `.dx` files read in one governed `lucy jcamp` run, zero read failures (HMBC unblocked by the D-09 230→250 ppm ceiling widening; the real HMBC reaches 234.81 ppm), full 31-cell D-03 matrix logged including losing cells, §10 cross-check 17/20 within ±0.5 ppm. JVAL-01 fails the QC gate critically on `quaternary_exclusion` (reproduced in all 8 HSQC matrix cells — knob-independent) and `hsqc_coverage` (69 %); JVAL-02 not attempted because the FAIL correctly wrote no consumable peaks. The JC-02/WR-04 ppm-axis risk class is **cleared** by a read-only diagnostic against raw Bruker `acqus`/`procs`: the narrow 13C window is a real dataset property (exp6/narrow exported, exp7/wide not), not a reader defect. Tracked: JVAL-F2, JVAL-F3. Code review: CR-01 (this phase's own silent-ignore defect in the new per-experiment knobs) fixed fail-loud and pinned by a mutation-confirmed test, three vacuous tests repaired; CR-02/CR-03 (Phase-102 `rmtree`/purge data-loss paths) filed, not fixed. Full suite 1469 passed; byte-frozen paths and known-bad fixtures unchanged. Next: `/gsd-complete-milestone` for v10.1 — note the milestone closes PARTIAL, like v10.0.*
+*Last updated: 2026-09-26 — **Milestone v11.0 AILSA Rename started** (package, docs, skill system, repository; skill/repo phases gated on the end of the Opus-5 re-run). Previously: 2026-07-28 — **Phase 103 (End-to-End Validation, JVAL-01/02) CLOSED PARTIAL.** Verification `passed` (9/9) on the phase's own deliverables; both requirements close NOT achieved via the plan's D-10 honest-partial-close, on a user-approved checkpoint decision. Six real `.dx` files read in one governed `lucy jcamp` run, zero read failures (HMBC unblocked by the D-09 230→250 ppm ceiling widening; the real HMBC reaches 234.81 ppm), full 31-cell D-03 matrix logged including losing cells, §10 cross-check 17/20 within ±0.5 ppm. JVAL-01 fails the QC gate critically on `quaternary_exclusion` (reproduced in all 8 HSQC matrix cells — knob-independent) and `hsqc_coverage` (69 %); JVAL-02 not attempted because the FAIL correctly wrote no consumable peaks. The JC-02/WR-04 ppm-axis risk class is **cleared** by a read-only diagnostic against raw Bruker `acqus`/`procs`: the narrow 13C window is a real dataset property (exp6/narrow exported, exp7/wide not), not a reader defect. Tracked: JVAL-F2, JVAL-F3. Code review: CR-01 (this phase's own silent-ignore defect in the new per-experiment knobs) fixed fail-loud and pinned by a mutation-confirmed test, three vacuous tests repaired; CR-02/CR-03 (Phase-102 `rmtree`/purge data-loss paths) filed, not fixed. Full suite 1469 passed; byte-frozen paths and known-bad fixtures unchanged. Next: `/gsd-complete-milestone` for v10.1 — note the milestone closes PARTIAL, like v10.0.*
 
 Previously: *2026-07-25 — **Phase 102 (CLI + Peak-Pick Bridge + QC Reuse, JCLI-01/02) COMPLETE & verified** (4/4 must-haves). Shipped `lucy jcamp` (read → pick → QC → write in one command, dir or explicit file list, `--format json`, `--out` override) reusing the byte-unchanged Phase-99 `bridge_peak_pick` + QC gate, plus a new thin 1D bridge (`processing/jcamp_1d_bridge.py`) whose payload matches `cli/pick.py::pick_1d` exactly so the unchanged gate finds it as trusted 1D reference (proven with a real, un-mocked `QcReferenceData.resolve()` run). Fixed a real Phase-101 reader defect — `_resolve_dim` raised `ValueError` for every homonuclear 2D experiment, blocking COSY (a required experiment), not just NOESY — via a narrowed positional fallback proven on the heteronuclear HSQC fixture, fail-loud default preserved. Committed trimmed COSY/HMBC/NOESY fixtures so directory mode is fixture-covered, not mock-covered. First committed SHA-256 byte-unchanged guard for `case.md` + the 5 `lucy-*.md` agent files. Code review found 1 Critical (stale staging/consumable state survived re-runs, silently defeating the D-07 write boundary — a PASS run's output kept advertising `qc_verdict: PASS` after a later FAIL); fixed with regression tests for both proven scenarios. Observed fixture verdict is FAIL for an honest, stated reason (16 trimmed F1 rows cannot reach the 0.8 `hsqc_coverage` floor) — recorded as observed, not spun as success. Edited-HSQC sign proven on real fixture data (115 cross-peaks, 70 CH_or_CH3 / 45 CH2, zero ambiguous). Full suite 1457 passed, mypy/ruff at pre-existing baseline, byte-frozen paths unchanged by diff. Next: Phase 103 (End-to-End Validation, JVAL-01/02) — the real 2048×2048 dataset, green §8 verdict and CASE convergence live there (D-05), deliberately not claimed here.*

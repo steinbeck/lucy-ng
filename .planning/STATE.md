@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v10.1
-milestone_name: JCAMP-DX 2D Ingestion
-status: Awaiting next milestone
-stopped_at: Phase 103 closed PARTIAL (JVAL-01/JVAL-02 honest partial close, D-10)
-last_updated: "2026-09-23T05:00:00.000Z"
-last_activity: 2026-09-23 — Opus-5 baseline re-run at 85/102 (73.4 % rank-1); 4.8 baseline regraded 21.8 → 39.2 % (grader artefact); paired comparison now n=79, 58 vs 33, p=4e-7; watchdog made reset- and reboot-proof; benchmark page published
+milestone: v11.0
+milestone_name: AILSA Rename
+status: planning
+last_updated: "2026-09-26T07:01:48.426Z"
+last_activity: 2026-09-26
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # lucy-ng State
@@ -25,13 +24,10 @@ See: .planning/PROJECT.md (updated 2026-07-21)
 
 ## Current Position
 
-Phase: Milestone v10.1 complete and archived (2026-07-28)
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone — but **not idle**: unplanned, milestone-less validation
-work has been running since 2026-07-31 (see § Post-Milestone Validation Work below).
-Last activity: 2026-09-23 — Opus-5 re-run of the 103 baseline datasets at 85/102 on Sheldon
-(§ 9); the 4.8 baseline figure corrected from 21.8 % to 39.2 % (§ 6); PROV-01 analysis
-concluded 2026-08-02
+Status: Defining requirements
+Last activity: 2026-09-26 — Milestone v11.0 started
 
 ## Milestone v10.1 Phases
 
@@ -129,6 +125,7 @@ RDKit-graded (`tests/case-benchmark/grade_blind.py`, ground truth supplied exter
 1. **Compare only against the size-matched baseline row.** The 4.8-generation baseline
    (31 % top-1 / 55 % correct) was measured on a different size distribution. ⚠ Its top-1
    figure also came from the pre-correction grader and is understated — see § 6.
+
 2. **The 65 runs are not one homogeneous measurement series — and that was accepted
    deliberately.** Both the skill *and* the team's model changed mid-campaign:
    `f9aa7b3` (08-07) stopped the agents from being pinned, so an Opus-5 orchestrator no
@@ -140,6 +137,7 @@ RDKit-graded (`tests/case-benchmark/grade_blind.py`, ground truth supplied exter
    result that is already directionally unambiguous. The obligation this creates is not a
    re-run — it is to **state the mixed provenance next to the number**, every time, rather
    than presenting a single clean percentage.
+
 3. **The grades are 4 runs behind the finished runs** (65 graded vs 69 finished) and one day
    old. Regrading needs rdkit, which is not in Sheldon's system python.
 
@@ -166,15 +164,19 @@ todo `2026-07-31-prov-01-*.md`.
   `quaternary_exclusion` critical FAIL was the gate correctly reporting that *its own input
   assumption is wrong* — not a reconstruction or threshold problem. Phase 103's PARTIAL
   stands; its stated cause does not.
+
 - Of the five assumed quaternaries only the two olefinics survive. The corrected C20H32O2
   assignment is 11 CH₂ + 4 CH + 2 CH₃ + 3 Cq (20 C, 32 C-bound H, both oxygens ethers), and
   the sample carries ~40 % of a minor component.
+
 - **JVAL-F2 is mis-scoped** as "recalibrate the noise model". The real finding: grading a
   derived quantity against a supplied list can only measure agreement with an assumption. A
   **formula-balance check** (carbon count, H balance) is the non-circular replacement.
+
 - **The JCAMP reader came out validated by real use** — both ppm axes, edited signs and
   quantitative intensities survived a full manual assignment (methyls 2.98/3.02 H, a 2×
   carbon coincidence detectable). Far stronger evidence than Phase 103's circular "17/20".
+
 - **The peak picker is the weak link, not the reader**, and peak lists discard the area and
   relative-intensity information that made the coincidence visible at all.
 
@@ -203,6 +205,7 @@ downgraded the expected benefit of budget-forced ranking after verifying it nega
 - `f9aa7b3` — CASE agent team inherits the session model; `CLAUDE_MODEL` now required.
 - `9074a32` / `49057ef` — spec for budget-forced ranking, then its honest downgrade after
   verifying the benefit negative. **The spec still awaits review.**
+
 - `267e6cf` — README points at AI-assisted installation first.
 - `58af676` — 20–40 ppm ¹³C panel added to the JCAMP render script.
 
@@ -291,6 +294,7 @@ Result: **93 findings raised, 92 refuted, exactly one stands.**
   **The system caught itself**: the coordinator flagged it, demoted the structure/name/accession
   to "UNVERIFIED EXTERNAL POINTER, NOT evidence", withheld it from the lsd-engineer and re-ran.
   Final verdict `SOLVED_TOP1` via the corrected path.
+
 - Notable refuted cases, kept because they show where the method is soft: CASE108 (reported
   structure hand-derived, NOT from LSD, its database membership one of three arguments for it),
   CASE110 (whole run executed inline by the orchestrator, devil's advocate checked itself,
@@ -398,6 +402,7 @@ per dataset against the answer key. Originals are in the 2026-09-09 backup archi
 
 - **CASE265** (not yet ingested): its identity was written into `HANDOFF.json` and pushed on
   2026-09-09. The user decided not to rewrite published history (2026-09-09).
+
 - **CASE86, CASE87, CASE93** (re-run pending): their compound names stood in this file,
   `.continue-here.md` and `HANDOFF.json` from `6eeb682` (2026-09-09) until 2026-09-23 — in the
   public repository and in the compute host's own checkout, which the agents can read. Names
@@ -421,6 +426,7 @@ Each of these cost at least one night and none produced an error message:
 1. **Log lost on reboot.** The re-run log lived in `/tmp`, which macOS clears on restart; after
    the 2026-09-18 reboot the reason for a two-day stop could no longer be shown. Now
    `~/Library/Logs/lucyng-uat-baseline.log` (`42e8e0d`).
+
 2. **Standing still after a window reset.** With a stale usage snapshot whose window had
    already reset, the watchdog waited for a real reading — which only appears when the user
    types. Eleven hours of a fresh window lost on 2026-09-15. Now it counts from zero after a
@@ -428,6 +434,7 @@ Each of these cost at least one night and none produced an error message:
    arrival — the reading's age limit sat in front of the new branch — and eight green unit
    tests missed it; the real snapshot pushed through `gate()` found it. The watchdog now has
    its first tests (10, mutation-checked).
+
 3. **The LaunchAgent never kept anything alive.** It pointed at the launcher for the finished
    campaign (reports "nothing outstanding", exits), and once repointed, the launcher
    backgrounded the watchdog and exited — launchd then reaps the orphan (demonstrated with a
@@ -464,6 +471,7 @@ file on a host where several people have root; a technical account is being cons
 - **Backups are complete** since 2026-09-09 — core, all 258 datasets and all four result trees,
   on three hosts, checksums compared (§ 10). The earlier note here said the datasets were not
   backed up; that is no longer true. URZ storage granted but not yet mounted.
+
 - **Test suite, 2026-09-23 under `uv run --extra dev`: 1345 passed, 74 failed, 86 skipped.**
   All 74 are environment, none a product bug (first cause checked per file; the counts sum to
   74): **42** need the HOSE generator (`test_ranking` 21, `test_prediction` 20,
@@ -471,8 +479,10 @@ file on a host where several people have root; a technical account is being cons
   `CliRunner(mix_stderr=…)`, removed in newer Click (`test_cli_jcamp` 24, `test_pylsd_cli` 2,
   `test_cli_dereplicate` 1); **5** need the webview extra (`test_cli_webview`). A green suite
   needs hosegen and the webview extra installed and the `mix_stderr` arguments dropped.
+
 - **Infographic deck is stale** — `docs/infographics/` last touched 2026-07-09, so it missed
   the v10.1 close entirely (CLAUDE.md names this recurring milestone-close maintenance).
+
 - Tags `v4.0` / `v5.0` exist locally but were never pushed (`v10.1` *is* on origin).
 - Test suite collects **1506** tests (1482 on 2026-08-25, 1468 at the Phase-103 close); the
   ten watchdog tests of 2026-09-21 are among the new ones.
@@ -529,6 +539,7 @@ file on a host where several people have root; a technical account is being cons
   precision. **What follows from it:** the mixed provenance is a permanent property of this
   dataset and must be stated wherever the numbers are, not treated as an open defect to fix.
   A single unqualified percentage is the failure mode to avoid.
+
 - [2026-08, benchmark]: **Order the remaining set ascending by heavy-atom count.** Buys the
   most finished cases per unit of quota. Consequence carried alongside every number: a subset
   stopped early is size-biased, so it may only be compared against the size-matched baseline
@@ -609,11 +620,13 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - **Blindness of four datasets is compromised** — CASE265 and the three baseline datasets
   CASE86/87/93 had their identities in the public repository before being run (§ 9). Report
   them separately; do not count them as blind.
+
 - **The compute host's package manager is stuck** — `linux-image-7.0.0-30-generic` and three
   related packages have been half-configured since 2026-08-21 (an automatic kernel upgrade
   whose post-install step cannot build the NVIDIA 550.163.01 DKMS module). Every `apt`
   invocation reports the error, and security updates have not been going through since.
   Not caused by this project; not fixed; wants a quiet slot without a benchmark running.
+
 - **URZ storage is not usable yet** without putting the user's personal password on a
   multi-root host (§ 10).
 
@@ -628,6 +641,7 @@ That was half true and had gone stale. Verified:
 - `/gsd-complete-milestone` **did run** on 2026-07-28 — tag `v10.1` exists locally *and* on
   origin, `.planning/milestones/v10.1-{ROADMAP,REQUIREMENTS}.md` are archived, RETROSPECTIVE
   and PROJECT.md were updated, `REQUIREMENTS.md` git-rm'd.
+
 - The **infographic-deck refresh did not run** — `docs/infographics/` was last touched
   2026-07-09. That half is still outstanding.
 
@@ -676,23 +690,29 @@ the Opus-5 re-run of the baseline is at 85/102 (§ 9). What follows, in order:
    2026-09-29 reset. Nothing to do unless it stops — check with
    `tail ~/Library/Logs/lucyng-uat-baseline.log`, restart with
    `launchctl kickstart -k gui/$UID/de.doktor-steinbeck.lucyng-uat-watchdog`.
+
 2. **Revert the weekly ceiling to 30 %** when the user is back at the keyboard (~2026-09-30),
    in `scripts/uat_watchdog.py`, then restart the watchdog so the process picks it up.
+
 3. **Close out the benchmark numbers.** Regrade all arms, regenerate the table in
    `docs/BENCHMARK.md` with `scripts/build_benchmark_table.py`, update the README figures. Report
    CASE86/87/93 and CASE265 separately (§ 9). State the final re-run figure together with its
    size distribution.
+
 4. **Harden the sanitiser** — normalise experiment directory names, discover tokens from title
    prose and the `$TI` field as well as `$NAME`, and add a post-sanitisation check that fails
    when the known compound name still appears anywhere in the tree, directory names included.
    Every leak found so far came through one of those three gaps.
+
 5. **Build the constraint-traceability check** — 866+ `compound.lsd` files against the peak
    data that sits inline in the protocols. This turns the memorisation defence from a plausible
    argument into a demonstrated one; together with step 4 it is what a publication needs.
+
 6. **Examine the ≥26-heavy-atom collapse of the re-run** (§ 9): which compound classes, and
    whether the truth is ever generated. It is dataset-specific, it defeats both model
    generations, and it is the natural subject of the **next milestone** — the generation
    limit of LSD on large molecules, with the faulon-ng bridge (§ 3) as the first lead.
+
 7. Smaller items: the `top_smiles` regexp (between chunks); the `mix_stderr` test failure;
    PROV-01's behaviour decision; re-scoping JVAL-F2; spec `49057ef`; the stale infographic
    deck; the P203 ingestion (CASE265 not blind); the scan-retry fix; tags `v4.0`/`v5.0`.
