@@ -141,7 +141,11 @@ REMOTE_ENV = {
 # the effective stop is ceiling + 5. The lower the ceiling, the earlier and more
 # often the benchmark gives up its slot, and the more often partly-finished
 # cases are resumed on a later poll. That is the intent, not a side effect.
-DEFAULT_SEVEN_DAY_MAX = 70.0
+#
+# Holiday loan repaid 2026-09-29, the first reset after the user's return:
+# 70 -> 30, the standing value. One dataset of the re-run was left at that
+# point, so the loan had done its work (66 -> 101 of 102).
+DEFAULT_SEVEN_DAY_MAX = 30.0
 DEFAULT_FIVE_HOUR_MAX = 70.0
 DEFAULT_CHUNK = 4
 
