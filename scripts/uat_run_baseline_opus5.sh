@@ -93,6 +93,13 @@ fi
 
 if pgrep -f "uat_watch""dog\.py" >/dev/null; then
   echo "A watchdog is already running (PID $(pgrep -f 'uat_watch''dog\.py' | head -1)). Not starting a second."
+  # Under launchd this is usually the OLD job still dying after a
+  # `launchctl kickstart -k`: exiting 0 here tells launchd "done, all good" and
+  # KeepAlive (SuccessfulExit=false) never starts another one -- seen
+  # 2026-09-29, two restarts in a row left no watchdog at all. A non-zero exit
+  # makes launchd retry after its throttle interval, by which time the old
+  # process is gone.
+  [[ "$1" == "--foreground" ]] && exit 75
   exit 0
 fi
 
