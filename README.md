@@ -217,27 +217,32 @@ molecular formula, never the compound's name or structure, and dereplication is
 forbidden. Grading is done afterwards by an independent script that re-derives every
 candidate's InChIKey with RDKit — a run's own claim about its result is never used.
 
-On the main campaign — **154 datasets from [nmrXiv](https://nmrxiv.org), 138 of them
-gradeable**:
+On all **256 runnable datasets from [nmrXiv](https://nmrxiv.org)** (2–39 heavy atoms,
+median 24), every one run on the current model:
 
 | | |
 |---|---|
-| Correct structure ranked **first** | **110 / 138 — 79.7 %** |
-| Correct structure **within the top 10** | **119 / 138 — 86.2 %** |
+| Correct structure ranked **first** | **177 / 256 — 69.1 %** |
+| Correct structure **within the top 10** | **189 / 256 — 73.8 %** |
+
+Runs that hit the three-hour limit without a report (25) count as failures here; of the
+231 runs that did report, 76.6 % have the correct structure first and 81.8 % in the top
+10. Molecules up to 15 heavy atoms were all solved; above 25 heavy atoms it is about half.
 
 The top-10 figure is the one that matters in practice: ten candidates is the shortlist
 size a DP4/GIAO shift calculation is run on, so a result in that band is one a
 spectroscopist can finish. Matching is on constitution only — **stereochemistry is not
 tested**.
 
-A further 102 datasets are being re-run on the current model as this is written, and 34
-datasets have now been run on two model generations; on those, each dataset acting as its
-own control, the current system wins 11 and loses 1 (exact McNemar, p = 0.0063).
+102 datasets have been run on two model generations. With each dataset as its own
+control, the current system solves 67 at rank 1 against 40, winning 30 and losing 3
+(exact McNemar, p = 1.4 · 10⁻⁶).
 
 **[docs/BENCHMARK.md](docs/BENCHMARK.md)** has the full picture: how blindness is
-enforced, what the audits found, what the numbers do *not* say, a measurement error that
-had flattered this comparison and how correcting it shrank the claimed gap, and the
-complete table of all 258 datasets with their metadata and current result.
+enforced, what the audits found, results by size and by arm, what the numbers do *not*
+say, a measurement error that had flattered this comparison and how correcting it
+shrank the claimed gap, and the complete table of all 258 datasets with their metadata
+and per-model result.
 
 ---
 

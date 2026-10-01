@@ -5,18 +5,21 @@ The table is public, so it deliberately carries NO identity columns — no compo
 name, SMILES, InChIKey or nmrXiv accession. Most of the benchmark is still to run,
 and publishing the CASE -> compound mapping would end the blind evaluation for
 every remaining dataset. Formula and heavy-atom count are safe: the solver is
-handed the formula anyway. Add identity columns only once the campaign is closed.
+handed the formula anyway. The runs are finished (2026-09-29), but the identities
+stay out until the paper is published.
 
 Inputs (all outside this repo, none bundled):
   --truth     TSV with columns case/case_folder + inchikey  (the answer key)
   --index     TSV with case, mf, heavy_atoms, experiments   (metadata)
-  --results   one or more <label>=<dir> result trees, later ones win per case
+  --results   one or more <label>=<dir> result trees; one table column per label,
+              several dirs may share a label (a later dir wins per case)
 
 Usage:
   python scripts/build_benchmark_table.py \
       --truth ~/…/downloaded_datasets.tsv --index ~/…/case-index.tsv \
-      --results "Opus 4.8=/…/case-uat-results" \
       --results "Opus 5=/…/case-uat-results-opus5-rest" \
+      --results "Opus 5=/…/case-uat-results-opus5-baseline" \
+      --results "Opus 4.8=/…/case-uat-results" \
       --out docs/BENCHMARK.md --fragment
 """
 from __future__ import annotations
@@ -132,71 +135,67 @@ def main() -> int:
         label, _, d = spec.partition("=")
         arms.append((label, Path(d)))
 
-    best, per_arm = {}, {}
+    # One column per model label. Several directories may share a label (the
+    # Opus-5 campaign and the Opus-5 re-run are disjoint halves of one model's
+    # pass over the benchmark); within a label a later directory wins. Rows are
+    # no longer "best run across arms": once every dataset had been run on the
+    # current model, mixing arms per row only blurred which model did what.
+    labels, by_label = [], {}
     for label, root in arms:
         if not root.is_dir():
             print(f"warning: {root} is not a directory", file=sys.stderr)
             continue
+        if label not in by_label:
+            labels.append(label)
+            by_label[label] = {}
         for cd in sorted(root.glob("CASE*")):
-            r = rank_for(grader, cd, truth.get(cd.name, ""))
-            per_arm.setdefault(cd.name, {})[label] = r
-            prev = best.get(cd.name)
-            # Keep the BEST outcome reached so far, not the newest: rank 1 beats
-            # rank 5 beats "missed" beats "no report". Ties go to the later arm,
-            # which is the more recent evidence.
-            if prev is None or quality(r) >= quality(prev[1]):
-                best[cd.name] = (label, r)
+            if (cd / "meta.json").exists() or (cd / "analysis").is_dir():
+                by_label[label][cd.name] = rank_for(grader, cd, truth.get(cd.name, ""))
 
     def num(c):
         return int(c[4:]) if c[4:].isdigit() else 0
 
     lines = []
-    lines.append("| Dataset | Formula | Heavy atoms | Experiments | Best run | Result |")
-    lines.append("|---|---|---:|---|---|---|")
-    tally = {"rank1": 0, "top10": 0, "found": 0, "missed": 0, "noresult": 0, "pending": 0}
+    lines.append("| Dataset | Formula | Heavy atoms | Experiments | "
+                 + " | ".join(labels) + " |")
+    lines.append("|---|---|---:|---|" + "---|" * len(labels))
+    tallies = {lb: {"runs": 0, "rank1": 0, "top10": 0, "found": 0, "missed": 0,
+                    "noresult": 0} for lb in labels}
     for c in sorted(index, key=num):
         r = index[c]
         mf = col(r, "mf") or "—"
         ha = col(r, "heavy_atoms") or "—"
         ex = condense_experiments(col(r, "experiments"))
-        if c in best:
-            label, rank = best[c]
-            v = verdict(rank)
+        cells = []
+        for lb in labels:
+            if c not in by_label[lb]:
+                cells.append("—")
+                continue
+            rank = by_label[lb][c]
+            t = tallies[lb]
+            t["runs"] += 1
             if rank is None:
-                tally["noresult"] += 1
+                t["noresult"] += 1
             elif rank == 0:
-                tally["missed"] += 1
-            elif rank == 1:
-                tally["rank1"] += 1
-                tally["top10"] += 1
-                tally["found"] += 1
-            elif rank <= 10:
-                tally["top10"] += 1
-                tally["found"] += 1
+                t["missed"] += 1
             else:
-                tally["found"] += 1
-        else:
-            label, v = "—", "_pending_"
-            tally["pending"] += 1
-        lines.append(f"| {c} | {mf} | {ha} | {ex} | {label} | {v} |")
+                t["found"] += 1
+                if rank <= 10:
+                    t["top10"] += 1
+                if rank == 1:
+                    t["rank1"] += 1
+            cells.append(verdict(rank))
+        lines.append(f"| {c} | {mf} | {ha} | {ex} | " + " | ".join(cells) + " |")
 
-    graded = tally["found"] + tally["missed"]
     out = []
     if not a.fragment:
         out.append("# Benchmark dataset table\n")
-    out.append(f"_{len(index)} datasets · {len(best)} with at least one run · "
-               f"{tally['pending']} not yet attempted._\n")
-    if graded:
-        # Deliberately a count, not a rate. Rows come from different arms, so a
-        # single percentage over this column would silently blend Opus 4.8 misses
-        # with Opus 5 hits. Per-arm rates belong in the page prose, where the
-        # sample each one is measured on can be stated.
-        out.append(f"_Row counts: {tally['rank1']} at rank 1 · "
-                   f"{tally['top10'] - tally['rank1']} elsewhere in the top 10 · "
-                   f"{tally['found'] - tally['top10']} found below rank 10 · "
-                   f"{tally['missed']} missed · {tally['noresult']} no report. "
-                   f"Each row shows the best run so far and which arm produced it; "
-                   f"do not read a rate off this column._\n")
+    for lb in labels:
+        t = tallies[lb]
+        out.append(f"_{lb}: {t['runs']} datasets run · {t['rank1']} at rank 1 · "
+                   f"{t['top10'] - t['rank1']} elsewhere in the top 10 · "
+                   f"{t['found'] - t['top10']} found below rank 10 · "
+                   f"{t['missed']} missed · {t['noresult']} no report._\n")
     out += lines
     text = "\n".join(out) + "\n"
     if a.out == "-":

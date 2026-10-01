@@ -4,7 +4,7 @@ milestone: v11.0
 milestone_name: AILSA Rename
 status: planning
 last_updated: "2026-09-26T07:01:48.426Z"
-last_activity: 2026-09-26
+last_activity: 2026-10-01 — Opus-5 re-run complete (102/102); all arms regraded; BENCHMARK.md and README carry the final figures
 progress:
   total_phases: 4
   completed_phases: 0
@@ -368,7 +368,7 @@ The defence therefore becomes an empirical claim worth proving: *every constrain
 the solver traces to a measured observation.* That mechanical check (866 `compound.lsd` files
 against the peak data, which lives inline in the protocols) is **designed but not yet built**.
 
-### 9. Opus-5 re-run of the baseline datasets — RUNNING (as of 2026-09-23)
+### 9. Opus-5 re-run of the baseline datasets — COMPLETE (2026-09-29), final figures below
 
 Decided 2026-09-09 so the headline rests on one model across all 258 datasets rather than a
 model-mixed comparison; the 4.8 arm stays in the record as the historical comparison.
@@ -376,6 +376,37 @@ Started 2026-09-09 21:49 with `scripts/uat_run_baseline_opus5.sh`, results in th
 directory `/mnt/raid_drive/chris/case-uat-results-opus5-baseline` (the 4.8 arm in
 `case-uat-results` is never written). 102 datasets = the 103 of the 4.8 arm minus CASE217
 (ethane, retired); queue ordered smallest-molecule-first.
+
+**FINAL, 2026-10-01 — all 102 finished (last one 2026-09-29 14:19), regraded locally.**
+All four arms were fetched (`meta.json` + `final_results.md` only) into
+`~/Dropbox/develop/data/nmrdata/benchmark-grading-2026-10-01/` — private, outside the repo,
+together with the truth table and `stats.py` — and graded with the current `grade_blind.py`.
+Published in `docs/BENCHMARK.md` and the README (2026-10-01).
+
+| | runs | with report | rank 1 | top 10 |
+|---|---|---|---|---|
+| **Opus 5, whole benchmark** (campaign + re-run, disjoint) | 256 | 231 | **177 = 69.1 % of all / 76.6 % of reported** | 189 = 73.8 % / 81.8 % |
+| Opus 5 re-run of the 4.8 datasets | 102 | 93 | 67 = 65.7 % / 72.0 % | 70 |
+| Opus 5 main campaign | 154 | 138 | 110 = 71.4 % / 79.7 % | 119 |
+| Opus 4.8 historical arm | 102 | 102 | 40 = 39.2 % | 44 |
+| blind only (without CASE86/87/93/265) | 253 | 229 | 175 = 69.2 % / 76.4 % | 187 |
+
+- **Paired, 102 datasets on both models:** rank 1 40 vs **67**, won only by Opus 5 **30**,
+  only by 4.8 **3** (CASE93, CASE95: timeouts in the re-run; CASE101: wrong). Exact McNemar
+  **p = 1.4·10⁻⁶** (no report = failure); on the 93 with a report on both, 30 : 1, p = 3·10⁻⁸.
+- **By size, Opus 5 whole, timeouts as failures:** ≤15 40/40 · 16–20 28/32 · 21–25 49/70 ·
+  ≥26 60/114 (53 %). The ≥26 band splits by set: campaign 49/64 = 77 %, re-run 11/30 = 37 % of
+  runs with a report. Of the 34 large datasets run on both models, 21 are solved by neither.
+- **All 25 Opus-5 no-report runs are three-hour deadline hits** (runtime 10 801–10 803 s),
+  none infrastructural. One outlier: CASE67 shows 48 812 s, so the deadline did not hold once
+  — worth a look at `blind_case_run.sh` before the next campaign.
+- **Repeatability:** the 15-dataset repeat sample (run 2026-08-08/09, earlier skill revision)
+  vs the re-run on the same 15: same rank-1 outcome in 11; the four differences all favour
+  the later run (CASE46, CASE80, CASE98, CASE250).
+- `scripts/build_benchmark_table.py` now emits one column per model (several directories
+  may share a label) instead of a "best run across arms" column.
+
+**Historical snapshot below (2026-09-23, 85 of 102) — superseded by the table above.**
 
 **2026-09-23: 85 of 102 finished, 79 gradeable.**
 
@@ -676,64 +707,42 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-09-23 (STATE reconciliation plus regrading of all four result trees)
-Stopped at: v10.1 archived; milestone-less validation work in progress — the Opus-5 re-run
-of the baseline datasets is at 85/102 and running unattended (§ 9).
-Resume with: nothing is half-finished in the GSD sense. Let the re-run finish, then the
-Operator Next Steps below; `/gsd-new-milestone` once the benchmark is closed out.
-
-⚠ **This file is not the live source for the benchmark.** Its numbers are a dated snapshot
-(2026-09-23); the running state is on Sheldon
-(`/mnt/raid_drive/chris/case-uat-results-opus5-baseline/`), and every figure here was
-regraded that day from the run artefacts with the current `grade_blind.py`.
+Last session: 2026-10-01 — the Opus-5 re-run finished (102/102, 2026-09-29), all four arms
+regraded, final figures published in `docs/BENCHMARK.md` and the README (§ 9).
+Milestone v11.0 AILSA Rename is open (Phases 104–107, none started); the gate on Phases 106
+and 107 — "not before the re-run has finished" — is lifted.
+Resume with: the NUTMEG assignment table (see Operator Next Steps 1), then
+`/gsd-plan-phase 104`.
 
 ---
-*Last updated: 2026-09-23 — reconciliation after two weeks of drift (13 commits, 09-09 → 09-22,
-appeared nowhere). Beyond adding §§ 9–10 it CORRECTS three statements that had become false:
-the 4.8 baseline (21.8 % → 39.2 %, a grader artefact), the size-stratified hard band (7.7 % →
-20.0 %, same artefact), and "the paired comparison is null" (now 26 : 1, p ≈ 4·10⁻⁷). It also
-retracts § 1's claim that the LaunchAgent kept the watchdog alive — it never did — and removes
-six compound identities that had stood in this public file since 2026-09-09.*
+*Last updated: 2026-10-01 — benchmark closed out: whole benchmark on Opus 5 177/256 = 69.1 %
+rank 1 (76.6 % of reported runs), paired vs 4.8 67 : 40 on 102 datasets, 30 : 3,
+p = 1.4·10⁻⁶. Holiday ceiling repaid (70 → 30, 2026-09-29); watchdog start script fixed
+to make launchd retry after `kickstart -k`.*
 
-*Previous: 2026-08-25 — documentation reconciliation after ~4 weeks of drift (v10.1 close
-recorded as not run, CR-02/CR-03 listed unfixed, 26 commits missing).*
+*Previous: 2026-09-23 — reconciliation after two weeks of drift; corrected the 4.8 baseline
+(21.8 % → 39.2 %, grader artefact) and removed six compound identities from this public file.*
 
 ## Operator Next Steps
 
-*Rewritten 2026-09-23.* The 2026-09-09 plan's first two steps are done: the three leaking
-baseline datasets were re-sanitised (and five more leaks found and closed along the way), and
-the Opus-5 re-run of the baseline is at 85/102 (§ 9). What follows, in order:
+*Rewritten 2026-10-01.* The re-run is complete and the benchmark figures are final (§ 9).
 
-1. **Let the re-run finish.** Unattended: the watchdog survives reboots and window resets now
-   (§ 10). Expect ~97–100 of 102 before this window's 70 % ceiling, the rest after the
-   2026-09-29 reset. Nothing to do unless it stops — check with
-   `tail ~/Library/Logs/lucyng-uat-baseline.log`, restart with
-   `launchctl kickstart -k gui/$UID/de.doktor-steinbeck.lucyng-uat-watchdog`.
-
-2. **Revert the weekly ceiling to 30 %** when the user is back at the keyboard (~2026-09-30),
-   in `scripts/uat_watchdog.py`, then restart the watchdog so the process picks it up.
-
-3. **Close out the benchmark numbers.** Regrade all arms, regenerate the table in
-   `docs/BENCHMARK.md` with `scripts/build_benchmark_table.py`, update the README figures. Report
-   CASE86/87/93 and CASE265 separately (§ 9). State the final re-run figure together with its
-   size distribution.
-
-4. **Harden the sanitiser** — normalise experiment directory names, discover tokens from title
-   prose and the `$TI` field as well as `$NAME`, and add a post-sanitisation check that fails
-   when the known compound name still appears anywhere in the tree, directory names included.
-   Every leak found so far came through one of those three gaps.
-
-5. **Build the constraint-traceability check** — 866+ `compound.lsd` files against the peak
-   data that sits inline in the protocols. This turns the memorisation defence from a plausible
-   argument into a demonstrated one; together with step 4 it is what a publication needs.
-
-6. **Examine the ≥26-heavy-atom collapse of the re-run** (§ 9): which compound classes, and
-   whether the truth is ever generated. It is dataset-specific, it defeats both model
-   generations, and it is the natural subject of the **next milestone** — the generation
-   limit of LSD on large molecules, with the faulon-ng bridge (§ 3) as the first lead.
-
-7. Smaller items: the `top_smiles` regexp (between chunks); the `mix_stderr` test failure;
-   PROV-01's behaviour decision; re-scoping JVAL-F2; spec `49057ef`; the stale infographic
-   deck; the P203 ingestion (CASE265 not blind); the scan-retry fix; tags `v4.0`/`v5.0`.
-
-Then `/gsd-new-milestone`.
+1. **NUTMEG assignment table** — promised to the `qm-nmr-calc` session: all InChIKey-confirmed
+   rank-1 cases with per-atom 13C/1H assignments from the LSD files, solvent from `acqus`,
+   nmrXiv study ID; written to `~/Dropbox/develop/nutmeg-validation-private/assignments.tsv`
+   (Mac only — **never on Sheldon**, never in a repo). The user granted free access
+   2026-09-26.
+2. **Milestone v11.0 AILSA Rename** — Phases 104 (package/CLI) → 105 (docs) → 106 (skill
+   system) → 107 (repository and hosts). `/gsd-plan-phase 104`.
+3. **Harden the sanitiser** — normalise experiment directory names, discover tokens from
+   title prose and `$TI` as well as `$NAME`, and fail a post-sanitisation check when the
+   known compound name still appears anywhere in the tree, directory names included.
+4. **Build the constraint-traceability check** — every constraint in the `compound.lsd`
+   files traced to a measured observation. With step 3 it is what the publication needs.
+5. **Examine the large-molecule failures** — 21 of the 34 large datasets run on both models
+   are solved by neither; which compound classes, and is the truth ever generated. Candidate
+   subject of the next functional milestone, with the faulon-ng bridge as the first lead.
+6. Smaller items: the `top_smiles` regexp (`blind_case_run.sh:133`); why CASE67 ran 13.5 h
+   past a 3 h deadline; the `mix_stderr` test failure; PROV-01's behaviour decision;
+   re-scoping JVAL-F2; spec `49057ef`; the stale infographic deck (folded into Phase 105);
+   the P203 ingestion (CASE265 not blind); the scan-retry fix; tags `v4.0`/`v5.0`.
