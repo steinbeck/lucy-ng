@@ -711,8 +711,7 @@ Last session: 2026-10-01 — the Opus-5 re-run finished (102/102, 2026-09-29), a
 regraded, final figures published in `docs/BENCHMARK.md` and the README (§ 9).
 Milestone v11.0 AILSA Rename is open (Phases 104–107, none started); the gate on Phases 106
 and 107 — "not before the re-run has finished" — is lifted.
-Resume with: the NUTMEG assignment table (see Operator Next Steps 1), then
-`/gsd-plan-phase 104`.
+Resume with: `/gsd-plan-phase 104` (the NUTMEG table was delivered 2026-10-02).
 
 ---
 *Last updated: 2026-10-01 — benchmark closed out: whole benchmark on Opus 5 177/256 = 69.1 %
@@ -727,11 +726,9 @@ to make launchd retry after `kickstart -k`.*
 
 *Rewritten 2026-10-01.* The re-run is complete and the benchmark figures are final (§ 9).
 
-1. **NUTMEG assignment table** — promised to the `qm-nmr-calc` session: all InChIKey-confirmed
-   rank-1 cases with per-atom 13C/1H assignments from the LSD files, solvent from `acqus`,
-   nmrXiv study ID; written to `~/Dropbox/develop/nutmeg-validation-private/assignments.tsv`
-   (Mac only — **never on Sheldon**, never in a repo). The user granted free access
-   2026-09-26.
+1. ~~**NUTMEG assignment table**~~ — **delivered 2026-10-02** to the `qm-nmr-calc` session
+   (`~/Dropbox/develop/nutmeg-validation-private/`, Mac only, never on Sheldon or in a repo):
+   162 solved datasets, per-atom 13C/1H reconstructed from the runs' LSD constraints.
 2. **Milestone v11.0 AILSA Rename** — Phases 104 (package/CLI) → 105 (docs) → 106 (skill
    system) → 107 (repository and hosts). `/gsd-plan-phase 104`.
 3. **Harden the sanitiser** — normalise experiment directory names, discover tokens from
