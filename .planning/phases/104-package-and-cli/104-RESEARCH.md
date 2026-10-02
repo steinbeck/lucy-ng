@@ -530,7 +530,7 @@ drift noted above (pre-existing, not caused by this phase).
 | A3 | `LUCY_*` env var names stay unchanged in this phase (no `AILSA_*` introduced yet) | Pitfall 6 | Medium if wrong — if the planner instead renames these, `tests/case-benchmark/blind_case_run.sh` (out of this phase's edit scope, Phase 106/107 territory) would silently lose its `LUCY_NO_WEBVIEW` opt-out until that later phase catches up |
 | A4 | `data/reference/lucy-ng-fragments.db`'s default path should receive the same dual-name treatment as the derep DB, even though PKG-05 only names the derep DB literally | Pitfall 7 | Low if wrong (worst case: minor follow-up fix later) — but leaving it inconsistent is also a real, if small, usability regression for a file confirmed to exist on this machine today |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **What PyPI version number should ship first?**
    - What we know: current `pyproject.toml` says `0.1.0`; the PyPI placeholder is `0.0.1`;

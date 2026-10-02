@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: AILSA Rename
-status: planning
-last_updated: "2026-09-26T07:01:48.426Z"
-last_activity: 2026-10-01 — Opus-5 re-run complete (102/102); all arms regraded; BENCHMARK.md and README carry the final figures
+status: executing
+last_updated: "2026-10-02T14:52:19.546Z"
+last_activity: 2026-10-02 -- Phase 104 planning complete
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
+  total_plans: 6
   completed_plans: 0
   percent: 0
 ---
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-07-21)
 
 Phase: 104 of 107 (Package and CLI) — roadmap created, not yet planned
 Plan: — (no plans yet, run /gsd-plan-phase 104)
-Status: Roadmap created
-Last activity: 2026-09-26 — Milestone v11.0 roadmap created (Phases 104-107; 106-107 gated on the Opus-5 baseline re-run finishing)
+Status: Ready to execute
+Last activity: 2026-10-02 -- Phase 104 planning complete
 
 ## Milestone v11.0 Phases
 
@@ -394,15 +394,19 @@ Published in `docs/BENCHMARK.md` and the README (2026-10-01).
 - **Paired, 102 datasets on both models:** rank 1 40 vs **67**, won only by Opus 5 **30**,
   only by 4.8 **3** (CASE93, CASE95: timeouts in the re-run; CASE101: wrong). Exact McNemar
   **p = 1.4·10⁻⁶** (no report = failure); on the 93 with a report on both, 30 : 1, p = 3·10⁻⁸.
+
 - **By size, Opus 5 whole, timeouts as failures:** ≤15 40/40 · 16–20 28/32 · 21–25 49/70 ·
   ≥26 60/114 (53 %). The ≥26 band splits by set: campaign 49/64 = 77 %, re-run 11/30 = 37 % of
   runs with a report. Of the 34 large datasets run on both models, 21 are solved by neither.
+
 - **All 25 Opus-5 no-report runs are three-hour deadline hits** (runtime 10 801–10 803 s),
   none infrastructural. One outlier: CASE67 shows 48 812 s, so the deadline did not hold once
   — worth a look at `blind_case_run.sh` before the next campaign.
+
 - **Repeatability:** the 15-dataset repeat sample (run 2026-08-08/09, earlier skill revision)
   vs the re-run on the same 15: same rank-1 outcome in 11; the four differences all favour
   the later run (CASE46, CASE80, CASE98, CASE250).
+
 - `scripts/build_benchmark_table.py` now emits one column per model (several directories
   may share a label) instead of a "best run across arms" column.
 
@@ -729,16 +733,21 @@ to make launchd retry after `kickstart -k`.*
 1. ~~**NUTMEG assignment table**~~ — **delivered 2026-10-02** to the `qm-nmr-calc` session
    (`~/Dropbox/develop/nutmeg-validation-private/`, Mac only, never on Sheldon or in a repo):
    162 solved datasets, per-atom 13C/1H reconstructed from the runs' LSD constraints.
+
 2. **Milestone v11.0 AILSA Rename** — Phases 104 (package/CLI) → 105 (docs) → 106 (skill
    system) → 107 (repository and hosts). `/gsd-plan-phase 104`.
+
 3. **Harden the sanitiser** — normalise experiment directory names, discover tokens from
    title prose and `$TI` as well as `$NAME`, and fail a post-sanitisation check when the
    known compound name still appears anywhere in the tree, directory names included.
+
 4. **Build the constraint-traceability check** — every constraint in the `compound.lsd`
    files traced to a measured observation. With step 3 it is what the publication needs.
+
 5. **Examine the large-molecule failures** — 21 of the 34 large datasets run on both models
    are solved by neither; which compound classes, and is the truth ever generated. Candidate
    subject of the next functional milestone, with the faulon-ng bridge as the first lead.
+
 6. Smaller items: the `top_smiles` regexp (`blind_case_run.sh:133`); why CASE67 ran 13.5 h
    past a 3 h deadline; the `mix_stderr` test failure; PROV-01's behaviour decision;
    re-scoping JVAL-F2; spec `49057ef`; the stale infographic deck (folded into Phase 105);
