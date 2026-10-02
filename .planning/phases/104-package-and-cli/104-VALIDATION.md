@@ -2,7 +2,7 @@
 phase: 104
 slug: package-and-cli
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-10-02
 ---
@@ -50,11 +50,11 @@ created: 2026-10-02
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists | Status |
 |--------|----------|-----------|-------------------|-------------|--------|
-| PKG-01 | `pyproject.toml` names the project `ailsa`; package builds and imports | smoke | `grep -q 'name = "ailsa"' pyproject.toml && uv run python -c "import ailsa"` + `uv build` | N/A | ⬜ pending |
-| PKG-02 | No `lucy_ng` module or import in `src/`, `tests/`, `scripts/` | grep gate | `grep -rn "lucy_ng" src/ tests/ scripts/ --include="*.py"` → empty; `test ! -d src/lucy_ng` | N/A | ⬜ pending |
-| PKG-03 | `ailsa …` works; `lucy …` works and prints the deprecation hint on stderr only, stdout JSON untouched | unit + CLI | new test in `tests/test_cli_main.py` (or `tests/test_cli_deprecated_alias.py`) | ❌ W0 | ⬜ pending |
-| PKG-04 | Pass count and mypy/ruff counts equal the baseline | regression | full suite + `mypy src/ailsa` + `ruff check src tests` | N/A | ⬜ pending |
-| PKG-05 | `DatabaseFinder` and `database download`/`info` accept `lucy-ng-derep.db` as well as the new default | unit | new tests in `tests/test_database.py` / `tests/test_cli_database.py` | ❌ W0 | ⬜ pending |
+| PKG-01 | `pyproject.toml` names the project `ailsa`; package builds, passes twine check, has no direct-URL dependency; installs from PyPI | smoke | 104-02 T1 (`name = "ailsa"`, `import ailsa`); 104-05 T1 (`uv build` + METADATA/sdist/twine gate); 104-06 T3 (fresh-venv `pip install ailsa==0.1.0`, after human approval) | N/A | ⬜ pending |
+| PKG-02 | No `lucy_ng` module or import in `src/`, `tests/`, `scripts/` | grep gate | 104-02 T1 and 104-05 T2: `grep -rn --exclude-dir=__pycache__ "lucy_ng" src tests scripts pyproject.toml` → empty; `test ! -e src/lucy_ng` | N/A | ⬜ pending |
+| PKG-03 | `ailsa …` works; `lucy …` works and prints the deprecation hint on stderr only, stdout JSON untouched | unit + CLI | 104-03 T1 `tests/test_cli_deprecated_alias.py` (capsys + real-subprocess byte comparison, golden cmp); 104-03 T2 `tests/test_webview_launcher.py`; 104-05 T3 PATH-level `lucy`/`ailsa` shasum equality | created in 104-03 (RED first) | ⬜ pending |
+| PKG-04 | No failing node ID beyond the baseline; mypy/ruff no new normalised finding line | regression | 104-01 T2 records baseline files; every later plan runs the `comm -13` comparison; 104-05 T2 full gate incl. slow test | N/A | ⬜ pending |
+| PKG-05 | `DatabaseFinder` and `database download`/`info` accept `lucy-ng-derep.db` as well as the new default | unit | 104-04 T1 `tests/test_database_finder.py` (isolated HOME/cwd/mdfind); 104-04 T2 new classes in `tests/test_cli_database.py`; real-file checks on this machine | created in 104-04 (RED first) | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

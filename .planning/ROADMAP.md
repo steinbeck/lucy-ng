@@ -205,7 +205,15 @@ still calls `/lucy-ng:case`, and the watchdog on the Mac runs from the absolute 
   3. A user runs every subcommand as `ailsa …`; `lucy …` still works for one release and prints a one-line deprecation hint pointing at `ailsa`.
   4. The full test suite passes on the renamed tree with the same pass count as before the rename (1345 passed / 74 environment failures, per STATE.md 2026-09-23), and `mypy --strict` and `ruff` report no new findings.
   5. A user with the existing database file `data/reference/lucy-ng-derep.db` keeps working — `ailsa database download` and `ailsa database info` accept the old file name as well as the new default.
-**Plans**: TBD
+**Plans**: 6 plans in 5 waves
+
+Plans:
+- [ ] 104-01-PLAN.md — Wave 1: settle the dirty uv.lock; record the diffable pre-rename baseline (failing node IDs, mypy/ruff lines, golden JSON stdout)
+- [ ] 104-02-PLAN.md — Wave 2: git mv src/lucy_ng → src/ailsa, rewrite all imports, rename project + user-facing CLI text with protected tokens kept
+- [ ] 104-03-PLAN.md — Wave 3: deprecated `lucy` console script (stderr-only hint, byte-identical stdout) + webview launcher prefers `ailsa`
+- [ ] 104-04-PLAN.md — Wave 3: dual-filename resolution for lucy-ng-derep.db / ailsa-derep.db (and fragments DB) in finder + database/fragment CLI
+- [ ] 104-05-PLAN.md — Wave 4: PyPI-uploadable metadata (nmrglue>=0.12, sdist include list), full baseline gate, global editable reinstall
+- [ ] 104-06-PLAN.md — Wave 5 (human-gated): build + manifest, STOP for upload approval, then upload and verify from PyPI
 
 #### Phase 105: Documentation and outside face
 
@@ -247,7 +255,7 @@ still calls `/lucy-ng:case`, and the watchdog on the Mac runs from the absolute 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 104. Package and CLI | 0/? | Not started | - |
+| 104. Package and CLI | 0/6 | Planned | - |
 | 105. Documentation and outside face | 0/? | Not started | - |
 | 106. Skill system (GATED) | 0/? | Not started | - |
 | 107. Repository and hosts (GATED) | 0/? | Not started | - |
