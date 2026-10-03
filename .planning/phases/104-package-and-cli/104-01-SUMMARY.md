@@ -114,6 +114,11 @@ None - no external service configuration required.
 - `uv.lock` is clean (`uv lock --check` exits 0) and carries no unrelated diff, so Plan 02's `pyproject.toml` rename edits will produce a lockfile diff that is entirely attributable to the rename.
 - No blockers. `.claude/` was not touched (D-03 respected). Nothing was pushed (D-05).
 
+## Self-Check: PASSED
+
+All 7 created baseline files, `uv.lock`, and all 3 commit hashes (`9b1091d`, `4697e95`,
+`b557d7a`) verified present on disk / in `git log`.
+
 ---
 *Phase: 104-package-and-cli*
 *Completed: 2026-10-03*
