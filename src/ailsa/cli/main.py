@@ -1,5 +1,7 @@
 """Main CLI entry point for ailsa."""
 
+from collections.abc import Sequence
+
 import click
 
 from ailsa import __version__
@@ -68,3 +70,25 @@ cli.add_command(fragment)
 cli.add_command(webview)
 cli.add_command(nus)
 cli.add_command(jcamp)
+
+
+LUCY_DEPRECATION_MESSAGE = (
+    "Warning: `lucy` is deprecated and will be removed in the next release; "
+    "use `ailsa` instead."
+)
+
+
+def lucy_deprecated(args: Sequence[str] | None = None) -> None:
+    """Deprecated alias for the ``ailsa`` command.
+
+    Exists for one release to give existing ``lucy`` callers (notably the
+    CASE agent team and the benchmark harness, both of which parse
+    ``--format json`` stdout as a machine-readable contract) time to switch
+    to ``ailsa``. Prints exactly one warning line to STDERR -- never
+    stdout -- and then delegates to the identical ``cli`` group, so stdout
+    stays byte-identical to the ``ailsa`` entry point (D-04). Like the
+    ``ailsa`` entry point, this raises ``SystemExit`` via ``cli.main``'s
+    default standalone mode; it never returns before that call.
+    """
+    click.echo(LUCY_DEPRECATION_MESSAGE, err=True)
+    cli.main(args=list(args) if args is not None else None, prog_name="lucy")
