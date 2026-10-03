@@ -8,8 +8,10 @@ from pathlib import Path
 
 import click
 import requests
+from click.core import ParameterSource
 
 from ailsa.database import DatabaseImporter, DatabaseManager
+from ailsa.database.finder import DatabaseFinder
 
 # Pre-built database from Figshare.
 # Use the canonical ndownloader host: it 302-redirects to a presigned S3 URL
@@ -19,7 +21,10 @@ from ailsa.database import DatabaseImporter, DatabaseManager
 DATABASE_DOI = "10.6084/m9.figshare.31073554"
 DATABASE_URL = "https://ndownloader.figshare.com/files/61078393"
 DATABASE_SIZE_MB = 830  # Compressed size
-DEFAULT_DB_PATH = Path("data/reference/lucy-ng-derep.db")
+# PKG-05: the default output/lookup path uses the new filename, but an
+# existing data/reference/lucy-ng-derep.db keeps resolving — see
+# DatabaseFinder.resolve_default_derep_path() and its uses below.
+DEFAULT_DB_PATH = DatabaseFinder.DEFAULT_DB_PATH
 
 
 @click.group()
@@ -42,8 +47,8 @@ def database() -> None:
     "--output",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("lucy-ng-derep.db"),
-    help="Output database path (default: lucy-ng-derep.db)",
+    default=Path(DatabaseFinder.NEW_DB_NAME),
+    help=f"Output database path (default: {DatabaseFinder.NEW_DB_NAME})",
 )
 @click.option(
     "--batch-size",
@@ -140,17 +145,37 @@ def build(
 
 
 @database.command()
-@click.argument("db_path", type=click.Path(exists=True, path_type=Path))
-def info(db_path: Path) -> None:
+@click.argument(
+    "db_path",
+    required=False,
+    default=None,
+    type=click.Path(exists=True, path_type=Path),
+)
+def info(db_path: Path | None) -> None:
     """Show database statistics.
 
     Display information about a compound database including
     total compounds, unique formulas, and source breakdown.
 
-    Example:
+    With no argument, auto-detects the database (new or legacy filename,
+    PKG-05). An explicit path works with either filename too.
 
-        ailsa database info lucy-ng-derep.db
+    Examples:
+
+        ailsa database info
+
+        ailsa database info data/reference/lucy-ng-derep.db
     """
+    if db_path is None:
+        resolved = DatabaseFinder.find_derep_database()
+        if resolved is None:
+            raise click.ClickException(
+                "No reference database found (looked for "
+                f"{DatabaseFinder.NEW_DB_NAME} and {DatabaseFinder.LEGACY_DB_NAME}). "
+                "Run 'ailsa database download'."
+            )
+        db_path = resolved
+
     with DatabaseManager(db_path) as db:
         compound_count = db.get_compound_count()
         formula_count = db.get_formula_count()
@@ -197,6 +222,13 @@ def download(output: Path, force: bool) -> None:
 
     DOI: 10.6084/m9.figshare.31073554
 
+    With no --output, the default path is data/reference/ailsa-derep.db;
+    an existing data/reference/lucy-ng-derep.db (PKG-05, pre-rename
+    installs) is used in place instead, so nothing is re-downloaded or
+    duplicated. --force on a legacy-only install overwrites that legacy
+    file rather than creating a second ~4 GB copy under the new name. An
+    explicit --output is always honoured as given.
+
     Examples:
 
         ailsa database download
@@ -205,6 +237,9 @@ def download(output: Path, force: bool) -> None:
 
         ailsa database download --force
     """
+    if click.get_current_context().get_parameter_source("output") == ParameterSource.DEFAULT:
+        output = DatabaseFinder.resolve_default_derep_path()
+
     zip_path = output.with_suffix(".db.zip")
 
     # Check if already exists
@@ -387,6 +422,11 @@ def generate_hose_stats(
         click.echo("Error: hosegen library not available.", err=True)
         click.echo("Install with: pip install git+https://github.com/Ratsemaat/HOSE_code_generator.git --no-deps", err=True)
         raise click.Abort()
+
+    # PKG-05: an explicit --db is honoured as given; the default picks up an
+    # existing legacy-named database in place of the new default path.
+    if click.get_current_context().get_parameter_source("db") == ParameterSource.DEFAULT:
+        db = DatabaseFinder.resolve_default_derep_path()
 
     start_time = time.time()
 

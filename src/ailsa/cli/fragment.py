@@ -6,13 +6,34 @@ import json
 from pathlib import Path
 
 import click
+from click.core import ParameterSource
 
 from ailsa.database import DatabaseManager
 from ailsa.fragments import DEFFFormatter, FragmentDatabaseManager
 from ailsa.fragments.extractor import SSCExtractor
 from ailsa.fragments.searcher import FragmentSearcher
 
-DEFAULT_FRAGMENTS_DB = Path("data/reference/lucy-ng-fragments.db")
+# PKG-05: the fragments DB gets the same dual-filename treatment as the
+# derep DB (not literally required by PKG-05's wording, but the identical
+# defect against the real 605 MB lucy-ng-fragments.db on this machine).
+NEW_FRAGMENTS_DB_NAME = "ailsa-fragments.db"
+LEGACY_FRAGMENTS_DB_NAME = "lucy-ng-fragments.db"
+DEFAULT_FRAGMENTS_DB = Path("data/reference") / NEW_FRAGMENTS_DB_NAME
+
+
+def resolve_default_fragments_db() -> Path:
+    """Resolve the default fragments-DB path (PKG-05, mirrors DatabaseFinder).
+
+    Prefers an existing new-named file, then an existing legacy-named file,
+    then falls back to the new default path when neither exists.
+    """
+    new_path = Path("data/reference") / NEW_FRAGMENTS_DB_NAME
+    if new_path.exists():
+        return new_path
+    legacy_path = Path("data/reference") / LEGACY_FRAGMENTS_DB_NAME
+    if legacy_path.exists():
+        return legacy_path
+    return new_path
 
 
 @click.group()
@@ -28,10 +49,16 @@ def info(db_path: Path) -> None:
     Display information about a fragment database including schema version,
     SSC count, bin size, and file size.
 
+    With no argument, auto-detects the fragment database (new or legacy
+    filename, PKG-05).
+
     Example:
 
         ailsa fragment info data/reference/lucy-ng-fragments.db
     """
+    if click.get_current_context().get_parameter_source("db_path") == ParameterSource.DEFAULT:
+        db_path = resolve_default_fragments_db()
+
     if not db_path.exists():
         click.echo(
             f"Error: Fragment database not found: {db_path}\n"
@@ -144,6 +171,11 @@ def search(
 
         ailsa fragment search --shifts "128.0,130.5" --verbose --top 10
     """
+    # PKG-05: an explicit --db is honoured as given; the default picks up an
+    # existing legacy-named fragments database in place of the new default.
+    if click.get_current_context().get_parameter_source("db_path") == ParameterSource.DEFAULT:
+        db_path = resolve_default_fragments_db()
+
     # Parse shifts
     try:
         shift_list = [float(s.strip()) for s in shifts.split(",")]
@@ -279,6 +311,9 @@ def build(
         # Restart from scratch
         ailsa fragment build data/reference/lucy-ng-derep.db --fresh
     """
+    if click.get_current_context().get_parameter_source("fragment_db") == ParameterSource.DEFAULT:
+        fragment_db = resolve_default_fragments_db()
+
     with DatabaseManager(compound_db) as compound_db_mgr, \
          FragmentDatabaseManager(fragment_db) as fragment_db_mgr:
         fragment_db_mgr.create_tables()
