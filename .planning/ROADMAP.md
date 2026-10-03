@@ -237,7 +237,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 104-05-PLAN.md — Wave 4: PyPI-uploadable metadata (nmrglue>=0.12, sdist include list), full baseline gate, global editable reinstall
+- [x] 104-05-PLAN.md — Wave 4: PyPI-uploadable metadata (nmrglue>=0.12, sdist include list), full baseline gate, global editable reinstall
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -289,7 +289,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 104. Package and CLI | 4/6 | In Progress|  |
+| 104. Package and CLI | 5/6 | In Progress|  |
 | 105. Documentation and outside face | 0/? | Not started | - |
 | 106. Skill system (GATED) | 0/? | Not started | - |
 | 107. Repository and hosts (GATED) | 0/? | Not started | - |

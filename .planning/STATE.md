@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: AILSA Rename
 status: executing
-last_updated: "2026-10-03T07:51:48.004Z"
-last_activity: 2026-10-03 -- Phase 104 Plan 04 complete (dual-filename DatabaseFinder + database/fragment CLI defaults, PKG-05)
+last_updated: "2026-10-03T08:08:07.860Z"
+last_activity: 2026-10-03 -- Phase 104 Plan 05 complete (PyPI-uploadable packaging, full gate, global CLI reinstall; PKG-01/03/04)
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
-  percent: 67
+  completed_plans: 5
+  percent: 0
 ---
 
 # lucy-ng State
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-07-21)
 ## Current Position
 
 Phase: 104 (package-and-cli) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
-Last activity: 2026-10-03 -- Phase 104 Plan 04 complete (dual-filename DatabaseFinder + database/fragment CLI defaults, PKG-05)
+Last activity: 2026-10-03 -- Phase 104 Plan 05 complete (PyPI-uploadable packaging, full gate, global CLI reinstall; PKG-01/03/04)
 
 ## Milestone v11.0 Phases
 
@@ -711,7 +711,7 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-10-03T07:49:25.049Z
+Last session: 2026-10-03T08:08:07.851Z
 settled). Previously, 2026-10-01 — the Opus-5 re-run finished (102/102, 2026-09-29), all four
 arms regraded, final figures published in `docs/BENCHMARK.md` and the README (§ 9).
 Milestone v11.0 AILSA Rename is open (Phases 104–107, none started); the gate on Phases 106
