@@ -224,7 +224,7 @@ still calls `/lucy-ng:case`, and the watchdog on the Mac runs from the absolute 
 Plans:
 **Wave 1**
 
-- [ ] 104-01-PLAN.md — Wave 1: settle the dirty uv.lock; record the diffable pre-rename baseline (failing node IDs, mypy/ruff lines, golden JSON stdout)
+- [x] 104-01-PLAN.md — Wave 1: settle the dirty uv.lock; record the diffable pre-rename baseline (failing node IDs, mypy/ruff lines, golden JSON stdout)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -289,7 +289,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 104. Package and CLI | 0/6 | Planned | - |
+| 104. Package and CLI | 1/6 | In Progress | - |
 | 105. Documentation and outside face | 0/? | Not started | - |
 | 106. Skill system (GATED) | 0/? | Not started | - |
 | 107. Repository and hosts (GATED) | 0/? | Not started | - |

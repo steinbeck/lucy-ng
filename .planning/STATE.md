@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: AILSA Rename
 status: executing
-last_updated: "2026-10-02T14:52:19.546Z"
-last_activity: 2026-10-02 -- Phase 104 planning complete
+last_updated: "2026-10-03T07:02:29.582Z"
+last_activity: 2026-10-03 -- Phase 104 Plan 01 complete (pre-rename baseline + uv.lock settled)
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 6
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-21)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Milestone complete
+**Current focus:** Phase 104 — package-and-cli
 
 ## Current Position
 
-Phase: 104 of 107 (Package and CLI) — roadmap created, not yet planned
-Plan: — (no plans yet, run /gsd-plan-phase 104)
+Phase: 104 (package-and-cli) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-10-02 -- Phase 104 planning complete
+Last activity: 2026-10-03 -- Phase 104 Plan 01 complete (pre-rename baseline + uv.lock settled)
 
 ## Milestone v11.0 Phases
 
@@ -711,11 +711,12 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-10-01 — the Opus-5 re-run finished (102/102, 2026-09-29), all four arms
-regraded, final figures published in `docs/BENCHMARK.md` and the README (§ 9).
+Last session: 2026-10-03 -- Phase 104 Plan 01 complete (pre-rename baseline + uv.lock
+settled). Previously, 2026-10-01 — the Opus-5 re-run finished (102/102, 2026-09-29), all four
+arms regraded, final figures published in `docs/BENCHMARK.md` and the README (§ 9).
 Milestone v11.0 AILSA Rename is open (Phases 104–107, none started); the gate on Phases 106
 and 107 — "not before the re-run has finished" — is lifted.
-Resume with: `/gsd-plan-phase 104` (the NUTMEG table was delivered 2026-10-02).
+Resume with: `/gsd-execute-phase 104` for Plan 02 (the NUTMEG table was delivered 2026-10-02).
 
 ---
 *Last updated: 2026-10-01 — benchmark closed out: whole benchmark on Opus 5 177/256 = 69.1 %
