@@ -233,7 +233,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 104-03-PLAN.md — Wave 3: deprecated `lucy` console script (stderr-only hint, byte-identical stdout) + webview launcher prefers `ailsa`
-- [ ] 104-04-PLAN.md — Wave 3: dual-filename resolution for lucy-ng-derep.db / ailsa-derep.db (and fragments DB) in finder + database/fragment CLI
+- [x] 104-04-PLAN.md — Wave 3: dual-filename resolution for lucy-ng-derep.db / ailsa-derep.db (and fragments DB) in finder + database/fragment CLI
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -289,7 +289,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 104. Package and CLI | 3/6 | In Progress|  |
+| 104. Package and CLI | 4/6 | In Progress|  |
 | 105. Documentation and outside face | 0/? | Not started | - |
 | 106. Skill system (GATED) | 0/? | Not started | - |
 | 107. Repository and hosts (GATED) | 0/? | Not started | - |
