@@ -199,7 +199,7 @@ still calls `/lucy-ng:case`, and the watchdog on the Mac runs from the absolute 
 
 ### Phases
 
-- [ ] **Phase 104: Package and CLI** — PyPI package `ailsa`, module `ailsa` replacing `lucy_ng`, CLI `ailsa` with `lucy` kept as a deprecated alias for one release; full suite/mypy/ruff green on the renamed tree
+- [x] **Phase 104: Package and CLI** — PyPI package `ailsa`, module `ailsa` replacing `lucy_ng`, CLI `ailsa` with `lucy` kept as a deprecated alias for one release; full suite/mypy/ruff green on the renamed tree (completed 2026-10-03)
 - [ ] **Phase 105: Documentation and outside face** — README, `docs/`, CLAUDE.md, the figshare record and the infographic deck under the new name; LSD and Nuzillard credited up front
 - [ ] **Phase 106: Skill system** (GATED — not before the Opus-5 baseline re-run finishes) — `/ailsa:*` commands and `ailsa-*` agents replacing `/lucy-ng:*`/`lucy-*`, `~/.claude` symlinks updated, proven by a blind CASE run on the compute host
 - [ ] **Phase 107: Repository and hosts** (GATED — not before the Opus-5 baseline re-run finishes) — GitHub repo renamed with a redirect, local folder/LaunchAgent/remotes/compute-host checkout/auto-memory moved, planning documents speak the new name, a `v11.0` release tag
@@ -241,7 +241,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 104-06-PLAN.md — Wave 5 (human-gated): build + manifest, STOP for upload approval, then upload and verify from PyPI
+- [x] 104-06-PLAN.md — Wave 5 (human-gated): build + manifest, STOP for upload approval, then upload and verify from PyPI
 
 #### Phase 105: Documentation and outside face
 
@@ -289,7 +289,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 104. Package and CLI | 5/6 | In Progress|  |
+| 104. Package and CLI | 6/6 | Complete   | 2026-10-03 |
 | 105. Documentation and outside face | 0/? | Not started | - |
 | 106. Skill system (GATED) | 0/? | Not started | - |
 | 107. Repository and hosts (GATED) | 0/? | Not started | - |
