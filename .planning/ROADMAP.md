@@ -228,7 +228,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 104-02-PLAN.md — Wave 2: git mv src/lucy_ng → src/ailsa, rewrite all imports, rename project + user-facing CLI text with protected tokens kept
+- [x] 104-02-PLAN.md — Wave 2: git mv src/lucy_ng → src/ailsa, rewrite all imports, rename project + user-facing CLI text with protected tokens kept
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -289,7 +289,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 104. Package and CLI | 1/6 | In Progress | - |
+| 104. Package and CLI | 2/6 | In Progress|  |
 | 105. Documentation and outside face | 0/? | Not started | - |
 | 106. Skill system (GATED) | 0/? | Not started | - |
 | 107. Repository and hosts (GATED) | 0/? | Not started | - |
