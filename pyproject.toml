@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ailsa"
 version = "0.1.0"
-description = "AI-agent powered Computer-Assisted Structure Elucidation for organic natural products"
+description = "AILSA (AI + LSD + Agents): agentic Computer-Assisted Structure Elucidation of natural products from NMR data"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -26,11 +26,9 @@ classifiers = [
 dependencies = [
     "click>=8.0",
     "jsonschema>=4.18.0",
-    # nmrglue 0.11 (latest PyPI release) calls np.dtype('a8') at import time,
-    # which NumPy 2.0 removed -> `import nmrglue` raises TypeError under the
-    # NumPy 2.x that rdkit/scipy pull in. Track git master (numpy-2 compatible)
-    # until a fixed release is published on PyPI.
-    "nmrglue @ git+https://github.com/jjhelmus/nmrglue.git",
+    # nmrglue 0.12 (PyPI, 2026-08) is the first release that is NumPy-2 compatible;
+    # PyPI rejects direct-URL dependencies, so a plain version specifier is required.
+    "nmrglue>=0.12",
     "numpy>=1.24",
     "pydantic>=2.0",
     "requests>=2.28",
@@ -70,9 +68,6 @@ nus = [
     # (e.g. QC-plotting deps), following the [webview] extra's lazy-import pattern.
 ]
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
 [tool.hatch.build.targets.wheel]
 packages = ["src/ailsa"]
 artifacts = [
@@ -80,6 +75,9 @@ artifacts = [
     "src/ailsa/lsd/filters/*",
     "src/ailsa/webview/static/*",
 ]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src/ailsa", "/README.md", "/LICENSE", "/pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

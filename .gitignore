@@ -84,3 +84,6 @@ background/*.pdf
 # (InChIKey/SMILES) for datasets that are still to be run blind. Never tracked.
 scratchpad/
 
+# Build/verification scratch dir (e.g. probe `uv build` artifacts) — never tracked.
+/SCRATCH/
+
