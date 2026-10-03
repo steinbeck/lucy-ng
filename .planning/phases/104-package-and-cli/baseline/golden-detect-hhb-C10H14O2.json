@@ -1,0 +1,10 @@
+{
+  "formula": "C10H14O2",
+  "threshold": 0.01,
+  "allowed_pairs": [],
+  "forbidden_pairs": [],
+  "total_compounds": 325,
+  "has_data": true,
+  "has_heteroatoms": true,
+  "warning": null
+}

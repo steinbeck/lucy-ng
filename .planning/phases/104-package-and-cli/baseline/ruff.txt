@@ -1,0 +1,282 @@
+src/lucy_ng/__init__.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+src/lucy_ng/analysis/intensity_reporter.py:58:101: E501 Line too long (111 > 100)
+src/lucy_ng/analysis/intensity_reporter.py:69:101: E501 Line too long (101 > 100)
+src/lucy_ng/analysis/symmetry_analysis.py:103:101: E501 Line too long (105 > 100)
+src/lucy_ng/analysis/symmetry_analysis.py:113:101: E501 Line too long (126 > 100)
+src/lucy_ng/analysis/symmetry_analysis.py:61:101: E501 Line too long (102 > 100)
+src/lucy_ng/analysis/symmetry_analysis.py:72:101: E501 Line too long (115 > 100)
+src/lucy_ng/analysis/symmetry_analysis.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+src/lucy_ng/cli/database.py:388:101: E501 Line too long (124 > 100)
+src/lucy_ng/cli/database.py:431:101: E501 Line too long (122 > 100)
+src/lucy_ng/cli/database.py:457:101: E501 Line too long (108 > 100)
+src/lucy_ng/cli/database.py:495:101: E501 Line too long (122 > 100)
+src/lucy_ng/cli/dereplicate.py:7:8: F401 [*] `os` imported but unused
+src/lucy_ng/cli/lsd.py:102:24: F541 [*] f-string without any placeholders
+src/lucy_ng/cli/lsd.py:105:28: F541 [*] f-string without any placeholders
+src/lucy_ng/cli/lsd.py:261:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/lsd.py:264:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/lsd.py:278:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/lsd.py:373:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/lsd.py:404:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/lsd.py:413:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/lsd.py:469:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/lsd.py:531:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/lsd.py:540:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/lsd.py:679:13: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/lsd.py:691:13: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/lsd.py:731:101: E501 Line too long (105 > 100)
+src/lucy_ng/cli/lsd.py:80:5: F841 Local variable `atom_count` is assigned to but never used
+src/lucy_ng/cli/lsd.py:815:101: E501 Line too long (107 > 100)
+src/lucy_ng/cli/lsd.py:81:5: F841 Local variable `corr_count` is assigned to but never used
+src/lucy_ng/cli/pick.py:202:101: E501 Line too long (105 > 100)
+src/lucy_ng/cli/pick.py:264:101: E501 Line too long (105 > 100)
+src/lucy_ng/cli/predict.py:208:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/predict.py:218:16: F541 [*] f-string without any placeholders
+src/lucy_ng/cli/predict.py:266:44: F821 Undefined name `find_lookup_table`
+src/lucy_ng/cli/predict.py:275:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/predict.py:80:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/pylsd.py:227:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/pylsd.py:252:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/cli/pylsd.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+src/lucy_ng/cli/visualize.py:11:32: F401 [*] `lucy_ng.lsd.models.Hybridization` imported but unused
+src/lucy_ng/cli/visualize.py:11:47: F401 [*] `lucy_ng.lsd.models.LSDAtom` imported but unused
+src/lucy_ng/cli/visualize.py:11:56: F401 [*] `lucy_ng.lsd.models.LSDCorrelation` imported but unused
+src/lucy_ng/cli/visualize.py:11:72: F401 [*] `lucy_ng.lsd.models.LSDProblem` imported but unused
+src/lucy_ng/cli/visualize.py:236:101: E501 Line too long (110 > 100)
+src/lucy_ng/cli/visualize.py:6:8: F401 [*] `re` imported but unused
+src/lucy_ng/database/finder.py:79:101: E501 Line too long (102 > 100)
+src/lucy_ng/database/manager.py:783:101: E501 Line too long (103 > 100)
+src/lucy_ng/dereplication/coconut.py:114:38: UP015 [*] Unnecessary mode argument
+src/lucy_ng/dereplication/coconut.py:128:101: E501 Line too long (102 > 100)
+src/lucy_ng/dereplication/matcher.py:271:101: E501 Line too long (101 > 100)
+src/lucy_ng/dereplication/nmrshiftdb.py:92:101: E501 Line too long (101 > 100)
+src/lucy_ng/dereplication/service.py:232:61: B905 `zip()` without an explicit `strict=` parameter
+src/lucy_ng/dereplication/service.py:6:5: F401 [*] `lucy_ng.dereplication.matcher.MatchingConfig` imported but unused
+src/lucy_ng/dereplication/sherlock.py:14:5: F401 [*] `lucy_ng.dereplication.nmrshiftdb.NMRShiftDBEntry` imported but unused
+src/lucy_ng/dereplication/sherlock.py:89:40: UP015 [*] Unnecessary mode argument
+src/lucy_ng/lsd/__init__.py:38:1: I001 [*] Import block is un-sorted or un-formatted
+src/lucy_ng/lsd/analyzer.py:75:31: UP037 [*] Remove quotes from type annotation
+src/lucy_ng/lsd/analyzer.py:75:32: F821 Undefined name `Chem`
+src/lucy_ng/lsd/models.py:153:101: E501 Line too long (102 > 100)
+src/lucy_ng/lsd/models.py:338:101: E501 Line too long (102 > 100)
+src/lucy_ng/lsd/orchestrator.py:20:1: I001 [*] Import block is un-sorted or un-formatted
+src/lucy_ng/lsd/orchestrator.py:247:30: B905 `zip()` without an explicit `strict=` parameter
+src/lucy_ng/lsd/orchestrator.py:24:8: F401 [*] `subprocess` imported but unused
+src/lucy_ng/lsd/orchestrator.py:330:44: B905 `zip()` without an explicit `strict=` parameter
+src/lucy_ng/nmrxiv/client.py:163:17: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/nmrxiv/client.py:164:13: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/nmrxiv/client.py:166:13: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/nmrxiv/client.py:366:32: F541 [*] f-string without any placeholders
+src/lucy_ng/nmrxiv/client.py:368:13: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/nmrxiv/client.py:373:13: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/nmrxiv/client.py:396:101: E501 Line too long (102 > 100)
+src/lucy_ng/nus/runner.py:345:9: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/lucy_ng/prediction/lookup.py:11:1: UP035 [*] Import from `collections.abc` instead: `Iterator`
+src/lucy_ng/prediction/lookup.py:17:38: F401 [*] `.models.ShiftEntry` imported but unused
+src/lucy_ng/prediction/lookup.py:221:29: UP015 [*] Unnecessary mode argument
+src/lucy_ng/prediction/lookup.py:6:8: F401 [*] `os` imported but unused
+src/lucy_ng/prediction/predictor.py:11:21: F401 [*] `.lookup.HOSELookupProtocol` imported but unused
+src/lucy_ng/processing/dept_guided_picker.py:225:101: E501 Line too long (101 > 100)
+src/lucy_ng/processing/dept_guided_picker.py:272:101: E501 Line too long (107 > 100)
+src/lucy_ng/processing/hmbc_guided_picker.py:240:101: E501 Line too long (101 > 100)
+src/lucy_ng/ranking/models.py:197:13: F541 [*] f-string without any placeholders
+src/lucy_ng/ranking/models.py:205:26: F541 [*] f-string without any placeholders
+src/lucy_ng/visualization/arrow_router.py:357:9: B007 Loop control variable `src` not used within loop body
+src/lucy_ng/visualization/arrow_router.py:8:21: F401 [*] `.models.ArrowStyle` imported but unused
+src/lucy_ng/visualization/diagram_generator.py:10:33: F401 [*] `rdkit.Chem.Draw` imported but unused
+src/lucy_ng/visualization/diagram_generator.py:14:48: F401 [*] `.layout_optimizer.OptimizationConfig` imported but unused
+src/lucy_ng/visualization/diagram_generator.py:47:101: E501 Line too long (101 > 100)
+src/lucy_ng/visualization/diagram_generator.py:498:101: E501 Line too long (118 > 100)
+src/lucy_ng/visualization/diagram_generator.py:499:101: E501 Line too long (118 > 100)
+src/lucy_ng/visualization/diagram_generator.py:500:101: E501 Line too long (118 > 100)
+src/lucy_ng/visualization/diagram_generator.py:501:101: E501 Line too long (121 > 100)
+src/lucy_ng/visualization/diagram_generator.py:504:101: E501 Line too long (122 > 100)
+src/lucy_ng/visualization/diagram_generator.py:505:101: E501 Line too long (122 > 100)
+src/lucy_ng/visualization/diagram_generator.py:506:101: E501 Line too long (122 > 100)
+src/lucy_ng/visualization/diagram_generator.py:507:101: E501 Line too long (125 > 100)
+src/lucy_ng/visualization/diagram_generator.py:533:13: F841 Local variable `solution` is assigned to but never used
+src/lucy_ng/visualization/diagram_generator.py:597:101: E501 Line too long (106 > 100)
+src/lucy_ng/visualization/diagram_generator.py:997:17: F841 Local variable `ctrl_y` is assigned to but never used
+src/lucy_ng/visualization/layout_optimizer.py:22:5: F401 [*] `.models.ArrowElement` imported but unused
+src/lucy_ng/visualization/layout_optimizer.py:25:5: F401 [*] `.models.ElementType` imported but unused
+src/lucy_ng/visualization/models.py:316:101: E501 Line too long (107 > 100)
+src/lucy_ng/visualization/models.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+src/lucy_ng/visualization/svg_builder.py:270:9: F841 Local variable `legend_width` is assigned to but never used
+src/lucy_ng/visualization/svg_builder.py:8:37: F401 [*] `.models.CorrelationType` imported but unused
+tests/case-benchmark/blind_case_batch.py:85:101: E501 Line too long (107 > 100)
+tests/case-benchmark/grade_blind.py:144:101: E501 Line too long (101 > 100)
+tests/test_bond_pair_generator.py:10:101: E501 Line too long (102 > 100)
+tests/test_bond_pair_generator.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_bond_pair_generator.py:9:37: F401 [*] `lucy_ng.database.models.BondPairStatsRecord` imported but unused
+tests/test_cli_analyze.py:100:101: E501 Line too long (106 > 100)
+tests/test_cli_lsd.py:120:101: E501 Line too long (101 > 100)
+tests/test_cli_lsd.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_cli_read.py:4:21: F401 [*] `pathlib.Path` imported but unused
+tests/test_cli_visualize.py:8:8: F401 [*] `pytest` imported but unused
+tests/test_cli_webview.py:11:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_cli_webview.py:13:8: F401 [*] `importlib` imported but unused
+tests/test_cli_webview.py:426:13: I001 [*] Import block is un-sorted or un-formatted
+tests/test_cli_webview.py:439:29: F541 [*] f-string without any placeholders
+tests/test_cli_webview.py:449:29: F541 [*] f-string without any placeholders
+tests/test_cli_webview.py:625:17: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+tests/test_database.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_dept_guided_picker.py:399:9: F841 Local variable `mult_values` is assigned to but never used
+tests/test_dept_guided_picker.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_dereplication.py:200:65: B905 `zip()` without an explicit `strict=` parameter
+tests/test_dereplication.py:22:5: F401 [*] `lucy_ng.dereplication.service.DereplicationResult` imported but unused
+tests/test_dereplication.py:26:28: F401 [*] `lucy_ng.models.Peak1D` imported but unused
+tests/test_dereplication.py:26:36: F401 [*] `lucy_ng.models.PeakList1D` imported but unused
+tests/test_fingerprint.py:116:31: B905 `zip()` without an explicit `strict=` parameter
+tests/test_fingerprint.py:12:8: F401 [*] `pytest` imported but unused
+tests/test_fingerprint.py:47:101: E501 Line too long (111 > 100)
+tests/test_fragment_db.py:100:9: F841 Local variable `record` is assigned to but never used
+tests/test_fragment_db.py:12:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_fragment_db.py:17:8: F401 [*] `pytest` imported but unused
+tests/test_fragment_db.py:300:13: F841 Local variable `all_ids` is assigned to but never used
+tests/test_fragment_db.py:305:13: F841 Local variable `smiles_list` is assigned to but never used
+tests/test_fragment_searcher.py:11:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_fragment_searcher.py:15:17: F401 [*] `numpy` imported but unused
+tests/test_fragment_searcher.py:16:8: F401 [*] `pytest` imported but unused
+tests/test_fragment_searcher.py:18:56: F401 [*] `lucy_ng.fragments.SSCMatch` imported but unused
+tests/test_fragment_searcher.py:20:5: F401 [*] `lucy_ng.fragments.fingerprint.FINGERPRINT_BITS` imported but unused
+tests/test_hmbc_guided_picker.py:36:101: E501 Line too long (101 > 100)
+tests/test_hmbc_guided_picker.py:6:28: F401 [*] `lucy_ng.models.Peak1D` imported but unused
+tests/test_hmbc_guided_picker.py:6:44: F401 [*] `lucy_ng.models.PeakList1D` imported but unused
+tests/test_hose_stats_generator.py:11:53: F401 [*] `lucy_ng.database.models.HOSEStatsRecord` imported but unused
+tests/test_hose_stats_generator.py:523:13: F841 Local variable `result` is assigned to but never used
+tests/test_hose_stats_generator.py:5:8: F401 [*] `math` imported but unused
+tests/test_hose_stats_generator.py:770:101: E501 Line too long (104 > 100)
+tests/test_intensity_symmetry.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_inventory_schema.py:113:101: E501 Line too long (101 > 100)
+tests/test_inventory_schema.py:159:101: E501 Line too long (105 > 100)
+tests/test_inventory_schema.py:172:101: E501 Line too long (102 > 100)
+tests/test_inventory_schema.py:178:101: E501 Line too long (124 > 100)
+tests/test_inventory_schema.py:181:101: E501 Line too long (106 > 100)
+tests/test_inventory_schema.py:187:101: E501 Line too long (128 > 100)
+tests/test_inventory_schema.py:207:101: E501 Line too long (114 > 100)
+tests/test_inventory_schema.py:299:101: E501 Line too long (106 > 100)
+tests/test_inventory_schema.py:350:101: E501 Line too long (107 > 100)
+tests/test_inventory_schema.py:353:101: E501 Line too long (109 > 100)
+tests/test_inventory_schema.py:360:101: E501 Line too long (121 > 100)
+tests/test_inventory_schema.py:367:101: E501 Line too long (101 > 100)
+tests/test_inventory_schema.py:397:101: E501 Line too long (101 > 100)
+tests/test_inventory_schema.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_inventory_schema.py:404:101: E501 Line too long (124 > 100)
+tests/test_inventory_schema.py:448:101: E501 Line too long (110 > 100)
+tests/test_inventory_schema.py:507:101: E501 Line too long (105 > 100)
+tests/test_inventory_schema.py:514:101: E501 Line too long (118 > 100)
+tests/test_inventory_schema.py:515:101: E501 Line too long (105 > 100)
+tests/test_inventory_schema.py:526:101: E501 Line too long (118 > 100)
+tests/test_inventory_schema.py:535:101: E501 Line too long (105 > 100)
+tests/test_inventory_schema.py:546:101: E501 Line too long (123 > 100)
+tests/test_inventory_schema.py:549:101: E501 Line too long (104 > 100)
+tests/test_inventory_schema.py:567:101: E501 Line too long (126 > 100)
+tests/test_inventory_schema.py:583:101: E501 Line too long (105 > 100)
+tests/test_inventory_schema.py:586:101: E501 Line too long (109 > 100)
+tests/test_inventory_schema.py:651:101: E501 Line too long (105 > 100)
+tests/test_inventory_schema.py:667:101: E501 Line too long (101 > 100)
+tests/test_inventory_schema.py:680:101: E501 Line too long (117 > 100)
+tests/test_inventory_schema.py:685:101: E501 Line too long (124 > 100)
+tests/test_inventory_schema.py:696:101: E501 Line too long (103 > 100)
+tests/test_inventory_schema.py:789:9: I001 [*] Import block is un-sorted or un-formatted
+tests/test_inventory_schema.py:802:9: I001 [*] Import block is un-sorted or un-formatted
+tests/test_inventory_schema.py:90:101: E501 Line too long (149 > 100)
+tests/test_lsd_analyzer.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_lsd_form_tolerance.py:15:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_lsd_form_tolerance.py:16:8: F401 [*] `subprocess` imported but unused
+tests/test_lsd_generator.py:102:29: E741 Ambiguous variable name: `l`
+tests/test_lsd_generator.py:10:38: F401 [*] `lucy_ng.detection.models.SignalGroup` imported but unused
+tests/test_lsd_generator.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_lsd_generator.py:452:101: E501 Line too long (108 > 100)
+tests/test_lsd_generator.py:816:101: E501 Line too long (109 > 100)
+tests/test_lsd_generator.py:909:101: E501 Line too long (101 > 100)
+tests/test_lsd_generator.py:969:16: F401 [*] `shutil` imported but unused
+tests/test_lsd_integration.py:191:9: F841 Local variable `issues` is assigned to but never used
+tests/test_lsd_integration.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_lsd_models.py:62:101: E501 Line too long (102 > 100)
+tests/test_lsd_orchestrator.py:108:101: E501 Line too long (106 > 100)
+tests/test_lsd_orchestrator.py:110:13: F841 Local variable `result` is assigned to but never used
+tests/test_lsd_orchestrator.py:138:13: F841 Local variable `result` is assigned to but never used
+tests/test_lsd_orchestrator.py:180:101: E501 Line too long (105 > 100)
+tests/test_lsd_orchestrator.py:250:101: E501 Line too long (109 > 100)
+tests/test_lsd_orchestrator.py:252:101: E501 Line too long (137 > 100)
+tests/test_lsd_orchestrator.py:391:101: E501 Line too long (102 > 100)
+tests/test_lsd_orchestrator.py:545:24: E741 Ambiguous variable name: `l`
+tests/test_lsd_orchestrator.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_lsd_orchestrator.py:78:1: E402 Module level import not at top of file
+tests/test_lsd_orchestrator.py:78:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_lsd_orchestrator.py:79:5: F401 [*] `lucy_ng.lsd.orchestrator.OrchestrationResult` imported but unused
+tests/test_lsd_orchestrator.py:7:8: F401 [*] `subprocess` imported but unused
+tests/test_lsd_orchestrator.py:820:9: I001 [*] Import block is un-sorted or un-formatted
+tests/test_lsd_parser.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_lsd_regression.py:20:101: E501 Line too long (116 > 100)
+tests/test_lsd_runner.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_nmrglue_integration.py:7:8: F401 [*] `pytest` imported but unused
+tests/test_nmrxiv.py:349:50: F841 Local variable `zf` is assigned to but never used
+tests/test_nmrxiv.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_peak_picker_2d.py:46:9: F841 Local variable `hsqc_peaks` is assigned to but never used
+tests/test_peak_picker_2d.py:5:8: F401 [*] `pytest` imported but unused
+tests/test_peak_picker_snr.py:14:28: F401 [*] `lucy_ng.models.PeakList1D` imported but unused
+tests/test_peak_picker_snr.py:94:101: E501 Line too long (104 > 100)
+tests/test_peak_validator.py:376:15: F541 [*] f-string without any placeholders
+tests/test_peak_validator.py:379:101: E501 Line too long (106 > 100)
+tests/test_peak_validator.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_prediction.py:147:13: B007 Loop control variable `atom_idx` not used within loop body
+tests/test_prediction.py:3:8: F401 [*] `json` imported but unused
+tests/test_prediction.py:712:9: I001 [*] Import block is un-sorted or un-formatted
+tests/test_pylsd_cli.py:156:101: E501 Line too long (112 > 100)
+tests/test_pylsd_cli.py:16:5: F401 [*] `lucy_ng.lsd.orchestrator.PermutationResult` imported but unused
+tests/test_pylsd_cli.py:344:101: E501 Line too long (109 > 100)
+tests/test_pylsd_cli.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_ranking.py:271:101: E501 Line too long (103 > 100)
+tests/test_ranking.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_ranking.py:534:101: E501 Line too long (117 > 100)
+tests/test_ranking.py:553:101: E501 Line too long (103 > 100)
+tests/test_ranking.py:564:101: E501 Line too long (101 > 100)
+tests/test_ranking.py:577:101: E501 Line too long (103 > 100)
+tests/test_ranking.py:587:101: E501 Line too long (106 > 100)
+tests/test_ranking.py:595:101: E501 Line too long (108 > 100)
+tests/test_ranking.py:596:101: E501 Line too long (114 > 100)
+tests/test_ranking.py:598:101: E501 Line too long (131 > 100)
+tests/test_ranking.py:5:38: F401 [*] `unittest.mock.patch` imported but unused
+tests/test_ranking.py:602:101: E501 Line too long (111 > 100)
+tests/test_ranking.py:603:101: E501 Line too long (132 > 100)
+tests/test_ranking.py:770:9: I001 [*] Import block is un-sorted or un-formatted
+tests/test_ranking.py:7:8: F401 [*] `tempfile` imported but unused
+tests/test_ranking.py:815:101: E501 Line too long (102 > 100)
+tests/test_ranking.py:858:101: E501 Line too long (102 > 100)
+tests/test_ranking.py:861:101: E501 Line too long (102 > 100)
+tests/test_ranking.py:890:101: E501 Line too long (101 > 100)
+tests/test_ranking.py:892:101: E501 Line too long (101 > 100)
+tests/test_schema_migration_v6.py:12:58: F401 [*] `lucy_ng.database.models.HOSEStatsRecord` imported but unused
+tests/test_schema_migration_v6.py:17:5: F401 [*] `lucy_ng.database.schema.CREATE_HOSE_STATS_MEAN_RADIUS_INDEX` imported but unused
+tests/test_schema_migration_v6.py:18:5: F401 [*] `lucy_ng.database.schema.CREATE_HOSE_STATS_TABLE` imported but unused
+tests/test_schema_migration_v6.py:23:5: F401 [*] `lucy_ng.database.schema.migrate_v5_to_v6` imported but unused
+tests/test_schema_migration_v6.py:9:8: F401 [*] `pytest` imported but unused
+tests/test_ssc_extractor.py:15:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_ssc_extractor.py:18:8: F401 [*] `sys` imported but unused
+tests/test_ssc_extractor.py:25:56: F401 [*] `lucy_ng.fragments.SSCRecord` imported but unused
+tests/test_ssc_extractor.py:27:5: F401 [*] `lucy_ng.fragments.extractor.SSCExtractionResult` imported but unused
+tests/test_ssc_extractor.py:283:13: F841 Local variable `result1` is assigned to but never used
+tests/test_ssc_extractor.py:50:101: E501 Line too long (103 > 100)
+tests/test_ssc_extractor.py:52:101: E501 Line too long (104 > 100)
+tests/test_ssc_extractor.py:60:101: E501 Line too long (104 > 100)
+tests/test_stats_generator_hybridisation.py:122:101: E501 Line too long (131 > 100)
+tests/test_symmetry_analysis.py:11:5: F401 [*] `lucy_ng.analysis.CarbonHInfo` imported but unused
+tests/test_symmetry_analysis.py:16:5: F401 [*] `lucy_ng.analysis.PeakIntensityInfo` imported but unused
+tests/test_symmetry_analysis.py:551:101: E501 Line too long (106 > 100)
+tests/test_symmetry_analysis.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_validation_detection.py:327:90: B033 [*] Sets should not contain duplicate item `"O"`
+tests/test_validation_detection.py:332:100: B033 [*] Sets should not contain duplicate item `"O"`
+tests/test_validation_detection.py:332:101: E501 Line too long (104 > 100)
+tests/test_validation_detection.py:9:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_validation_ranking.py:109:101: E501 Line too long (103 > 100)
+tests/test_validation_ranking.py:119:101: E501 Line too long (106 > 100)
+tests/test_validation_ranking.py:12:36: F401 [*] `lucy_ng.ranking.models.RankedSolution` imported but unused
+tests/test_validation_ranking.py:145:101: E501 Line too long (119 > 100)
+tests/test_validation_ranking.py:148:101: E501 Line too long (119 > 100)
+tests/test_validation_ranking.py:85:101: E501 Line too long (103 > 100)
+tests/test_validation_ranking.py:8:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_verify_case_solution.py:148:101: E501 Line too long (101 > 100)
+tests/test_verify_case_solution.py:19:8: F401 [*] `pytest` imported but unused
+tests/test_verify_case_solution.py:8:101: E501 Line too long (104 > 100)

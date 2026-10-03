@@ -1,0 +1,15 @@
+{
+  "mode": "identity",
+  "reported_name": null,
+  "derived": {
+    "matched": true,
+    "name": "ethanol",
+    "source": "nmrshiftdb",
+    "inchi_key": "LFQSCWFLJHTTHZ-UHFFFAOYSA-N",
+    "canonical_smiles": "CCO",
+    "confidence": "confirmed"
+  },
+  "name_match": null,
+  "verdict": "confirmed",
+  "warning": null
+}
