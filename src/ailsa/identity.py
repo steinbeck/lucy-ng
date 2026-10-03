@@ -54,18 +54,24 @@ def _resolve_db_path(db_path: str | Path | None) -> Path | None:
     except Exception:  # pragma: no cover - import fallback path
         import os
 
+        # PKG-05: this branch runs exactly when the DatabaseFinder import
+        # failed, so it cannot import DatabaseFinder.DB_NAMES/PROJECT_DIR_NAMES
+        # — the new and legacy filenames/directory names are literals here.
         env_db = os.environ.get("LUCY_DATABASE")
-        candidates = [
-            Path(env_db) if env_db else None,
-            Path("data/reference/lucy-ng-derep.db"),
-            Path.home()
-            / "Dropbox"
-            / "develop"
-            / "lucy-ng"
-            / "data"
-            / "reference"
-            / "lucy-ng-derep.db",
-        ]
+        candidates = [Path(env_db) if env_db else None]
+        for name in ("ailsa-derep.db", "lucy-ng-derep.db"):
+            candidates.append(Path("data/reference") / name)
+        for project_dir in ("ailsa", "lucy-ng"):
+            for name in ("ailsa-derep.db", "lucy-ng-derep.db"):
+                candidates.append(
+                    Path.home()
+                    / "Dropbox"
+                    / "develop"
+                    / project_dir
+                    / "data"
+                    / "reference"
+                    / name
+                )
         for cand in candidates:
             if cand is not None and cand.exists():
                 return cand

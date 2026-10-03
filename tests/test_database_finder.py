@@ -8,7 +8,6 @@ real 3.97 GB ``lucy-ng-derep.db`` on this machine is never found by accident.
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -51,7 +50,11 @@ class TestDatabaseFinderDualName:
         legacy = ref / "lucy-ng-derep.db"
         legacy.touch()
 
-        assert DatabaseFinder.find_derep_database() == legacy
+        # find_derep_database() returns a path relative to the cwd for this
+        # tier (unchanged pre-rename behaviour) — compare resolved paths.
+        found = DatabaseFinder.find_derep_database()
+        assert found is not None
+        assert found.resolve() == legacy.resolve()
 
     def test_new_name_only_in_project_location(self, isolated) -> None:
         """Test 2: only data/reference/ailsa-derep.db exists."""
@@ -61,7 +64,9 @@ class TestDatabaseFinderDualName:
         new = ref / "ailsa-derep.db"
         new.touch()
 
-        assert DatabaseFinder.find_derep_database() == new
+        found = DatabaseFinder.find_derep_database()
+        assert found is not None
+        assert found.resolve() == new.resolve()
 
     def test_new_name_wins_when_both_exist(self, isolated) -> None:
         """Test 3: both exist -> the new name wins."""
@@ -73,7 +78,9 @@ class TestDatabaseFinderDualName:
         new.touch()
         legacy.touch()
 
-        assert DatabaseFinder.find_derep_database() == new
+        found = DatabaseFinder.find_derep_database()
+        assert found is not None
+        assert found.resolve() == new.resolve()
 
     def test_neither_name_found_anywhere_returns_none(self, isolated) -> None:
         """Test 4: neither name exists anywhere -> None (mdfind mocked out)."""
@@ -126,13 +133,17 @@ class TestDatabaseFinderDualName:
         legacy = tmp_path / "lucy-ng-derep.db"
         legacy.touch()
 
-        assert DatabaseFinder.find_hose_database() == legacy
+        found = DatabaseFinder.find_hose_database()
+        assert found is not None
+        assert found.resolve() == legacy.resolve()
 
         legacy.unlink()
         new = tmp_path / "ailsa-derep.db"
         new.touch()
 
-        assert DatabaseFinder.find_hose_database() == new
+        found = DatabaseFinder.find_hose_database()
+        assert found is not None
+        assert found.resolve() == new.resolve()
 
     def test_resolve_default_derep_path(self, isolated) -> None:
         """Test 9: resolve_default_derep_path() picks new path when neither exists,
@@ -143,13 +154,13 @@ class TestDatabaseFinderDualName:
         new_path = ref / "ailsa-derep.db"
         legacy_path = ref / "lucy-ng-derep.db"
 
-        assert DatabaseFinder.resolve_default_derep_path() == new_path
+        assert DatabaseFinder.resolve_default_derep_path().resolve() == new_path.resolve()
 
         legacy_path.touch()
-        assert DatabaseFinder.resolve_default_derep_path() == legacy_path
+        assert DatabaseFinder.resolve_default_derep_path().resolve() == legacy_path.resolve()
 
         new_path.touch()
-        assert DatabaseFinder.resolve_default_derep_path() == new_path
+        assert DatabaseFinder.resolve_default_derep_path().resolve() == new_path.resolve()
 
     def test_dropbox_dev_tier_legacy_and_new_project_dirs(self, isolated) -> None:
         """Test 10: ~/Dropbox/develop/lucy-ng/data/reference/lucy-ng-derep.db only ->
