@@ -5,11 +5,11 @@ import json
 import numpy as np
 from click.testing import CliRunner
 
-from lucy_ng.cli.pick import _detect_multiplicity_edited, pick
+from ailsa.cli.pick import _detect_multiplicity_edited, pick
 
 
 class TestPick1D:
-    """Tests for lucy pick 1d command."""
+    """Tests for ailsa pick 1d command."""
 
     def test_pick_1d_text(self) -> None:
         """Test picking 1D peaks with text output."""
@@ -126,7 +126,7 @@ class TestPick1D:
 
 
 class TestPick2D:
-    """Tests for lucy pick 2d command."""
+    """Tests for ailsa pick 2d command."""
 
     def test_pick_2d_text(self) -> None:
         """Test picking 2D peaks with text output."""
@@ -153,7 +153,7 @@ class TestPick2D:
 
 
 class TestPickHSQC:
-    """Tests for lucy pick hsqc command."""
+    """Tests for ailsa pick hsqc command."""
 
     def test_pick_hsqc_text(self) -> None:
         """Test raw HSQC picking with text output."""
@@ -266,7 +266,7 @@ class TestDetectMultiplicityEdited:
 
 
 class TestPickHMBC:
-    """Tests for lucy pick hmbc command."""
+    """Tests for ailsa pick hmbc command."""
 
     def test_pick_hmbc_text(self) -> None:
         """Test raw HMBC picking with text output."""

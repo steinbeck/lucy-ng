@@ -1,7 +1,7 @@
-"""RECON-05 tests: `lucy nus reconstruct <expdir>` CLI knob-flag surface.
+"""RECON-05 tests: `ailsa nus reconstruct <expdir>` CLI knob-flag surface.
 
 Implemented in Plan 06 (`cli/nus.py::reconstruct` command). Exposes
-lucy-ng's own descriptive flag names (`--iterations`/`--threshold`/
+ailsa's own descriptive flag names (`--iterations`/`--threshold`/
 `--virtual-echo`/`--no-virtual-echo`, plus phase-override flags) that map
 internally to SMILE's `-maxIter`/`-thresh`/`-nSigma`/`-EA` -- per
 RESEARCH.md's Alternatives Considered recommendation (insulates the CLI
@@ -30,13 +30,13 @@ def _copy_fixture(nus_fixture_dir, tmp_path: Path, name: str) -> Path:
 
 
 def test_reconstruct_help_lists_knob_flags() -> None:
-    """`lucy nus reconstruct --help` must list the RECON-05 knob flags:
+    """`ailsa nus reconstruct --help` must list the RECON-05 knob flags:
     iteration-count upper bound, threshold, and the virtual-echo toggle
     (plus phase-override flags per D-02).
     """
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     runner = CliRunner()
     result = runner.invoke(nus, ["reconstruct", "--help"])
@@ -64,8 +64,8 @@ def test_flags_thread_through_to_smile_invocation(
     """
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
-    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+    from ailsa.cli.nus import nus
+    from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
 
     # Neutralize the PORT-01 preflight gate (this dev machine has no real
     # NMRPipe+SMILE on PATH) so the CLI's real NusRunner().reconstruct(...)

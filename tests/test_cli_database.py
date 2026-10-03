@@ -5,10 +5,10 @@ from __future__ import annotations
 import pytest
 from click.testing import CliRunner
 
-from lucy_ng.cli import cli
-from lucy_ng.database import DatabaseManager
-from lucy_ng.database.models import CompoundRecord, ShiftRecord
-from lucy_ng.prediction.hose import HOSEGEN_AVAILABLE
+from ailsa.cli import cli
+from ailsa.database import DatabaseManager
+from ailsa.database.models import CompoundRecord, ShiftRecord
+from ailsa.prediction.hose import HOSEGEN_AVAILABLE
 
 
 class TestDatabaseCommand:

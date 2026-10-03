@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from lucy_ng.readers.bruker import BrukerReader
+from ailsa.readers.bruker import BrukerReader
 
 # Test data paths
 DATA_DIR = Path(__file__).parent.parent / "data"

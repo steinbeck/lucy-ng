@@ -36,10 +36,10 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from lucy_ng.models import Peak2D, Spectrum2D
-from lucy_ng.processing import HMBCGuidedPicker, HMBCGuidedResult
-from lucy_ng.processing.peak_picker_2d import PeakPicker2D
-from lucy_ng.readers import BrukerReader
+from ailsa.models import Peak2D, Spectrum2D
+from ailsa.processing import HMBCGuidedPicker, HMBCGuidedResult
+from ailsa.processing.peak_picker_2d import PeakPicker2D
+from ailsa.readers import BrukerReader
 
 # In-repo CASE1 datasets (always available — keeps the regression live in CI)
 DATA_DIR = Path(__file__).parent.parent / "data"

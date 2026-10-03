@@ -28,7 +28,7 @@ from rdkit.Chem import rdMolDescriptors
 # (D-05). This script is now a thin adapter: it imports the shared functions
 # and constants rather than duplicating them. The legacy positional
 # aromatic-ring/formula mode below is unchanged.
-from lucy_ng.identity import (  # noqa: F401  (re-exported for back-compat callers)
+from ailsa.identity import (  # noqa: F401  (re-exported for back-compat callers)
     _COCONUT_ACCESSION_RE,
     _name_match,
     _normalize_name,
@@ -97,7 +97,7 @@ def _check_smiles(smiles: str, formula: str) -> dict:
 def _check_identity(args: argparse.Namespace) -> None:
     """``check-identity`` subcommand: derive identity, gate the reported name.
 
-    Thin adapter over :func:`lucy_ng.identity.check_identity_result` — emits the
+    Thin adapter over :func:`ailsa.identity.check_identity_result` — emits the
     identity JSON block and ALWAYS exits 0 (D-06: a name<->structure
     disagreement downgrades to "tentative" + warning; it does not hard-fail).
     """

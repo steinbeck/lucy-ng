@@ -1,4 +1,4 @@
-"""Render the C20H32O2-jcamp spectra straight from lucy-ng's own JCAMP reader.
+"""Render the C20H32O2-jcamp spectra straight from ailsa's own JCAMP reader.
 
 Read-only: opens the .dx files, writes PNGs to ~/Downloads. Touches nothing else.
 """
@@ -12,7 +12,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from lucy_ng.readers.jcamp import JcampReader
+from ailsa.readers.jcamp import JcampReader
 
 warnings.filterwarnings("ignore")
 

@@ -17,10 +17,10 @@ def test_known_bad_dir_fails(known_bad_peaks_dir) -> None:
     signal-to-ridge (COSY 7/7 sharing h1a=5.32) critical violations are
     both present in this fixture (RESEARCH.md Common Pitfalls #3/#5).
 
-    Implementing plan: Plan 02 (`lucy_ng.nus.qc.run_qc_checks`).
+    Implementing plan: Plan 02 (`ailsa.nus.qc.run_qc_checks`).
     """
-    from lucy_ng.models.nus import QcVerdict
-    from lucy_ng.nus.qc import run_qc_checks
+    from ailsa.models.nus import QcVerdict
+    from ailsa.nus.qc import run_qc_checks
 
     report = run_qc_checks(known_bad_peaks_dir)
     assert report.verdict == QcVerdict.FAIL
@@ -32,10 +32,10 @@ def test_synthetic_clean_dir_passes(clean_peaks_dir) -> None:
     hits, no ridge, self-consistent edited signs, and diagonal-symmetric
     COSY (Plan 01 Task 2 acceptance criteria).
 
-    Implementing plan: Plan 02 (`lucy_ng.nus.qc.run_qc_checks`).
+    Implementing plan: Plan 02 (`ailsa.nus.qc.run_qc_checks`).
     """
-    from lucy_ng.models.nus import QcVerdict
-    from lucy_ng.nus.qc import run_qc_checks
+    from ailsa.models.nus import QcVerdict
+    from ailsa.nus.qc import run_qc_checks
 
     report = run_qc_checks(clean_peaks_dir)
     assert report.verdict == QcVerdict.PASS

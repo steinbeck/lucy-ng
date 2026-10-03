@@ -2,7 +2,7 @@
 
 import pytest
 
-from lucy_ng.lsd.models import Hybridization, LSDAtom, LSDConstraint, LSDCorrelation, LSDProblem
+from ailsa.lsd.models import Hybridization, LSDAtom, LSDConstraint, LSDCorrelation, LSDProblem
 
 
 class TestHybridization:

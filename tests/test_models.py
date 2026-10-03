@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from lucy_ng.models import Peak1D, Peak2D, PeakList1D, PeakList2D, Spectrum1D, Spectrum2D
+from ailsa.models import Peak1D, Peak2D, PeakList1D, PeakList2D, Spectrum1D, Spectrum2D
 
 
 class TestSpectrum1D:

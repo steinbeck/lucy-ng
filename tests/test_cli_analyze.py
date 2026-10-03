@@ -4,11 +4,11 @@ import json
 
 from click.testing import CliRunner
 
-from lucy_ng.cli.analyze import analyze
+from ailsa.cli.analyze import analyze
 
 
 class TestAnalyzeSymmetry:
-    """Tests for lucy analyze symmetry command."""
+    """Tests for ailsa analyze symmetry command."""
 
     def test_analyze_symmetry_text(self) -> None:
         """Test symmetry analysis with text output."""

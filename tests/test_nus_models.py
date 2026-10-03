@@ -2,7 +2,7 @@
 
 import pytest
 
-from lucy_ng.models import NusAcquisitionParams, NusSchedule
+from ailsa.models import NusAcquisitionParams, NusSchedule
 
 
 def _exp3_hsqc_kwargs() -> dict:

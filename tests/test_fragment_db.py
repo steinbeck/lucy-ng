@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from lucy_ng.fragments import FragmentDatabaseManager, SSCMatch, SSCRecord
-from lucy_ng.fragments.schema import FRAGMENT_SCHEMA_VERSION
+from ailsa.fragments import FragmentDatabaseManager, SSCMatch, SSCRecord
+from ailsa.fragments.schema import FRAGMENT_SCHEMA_VERSION
 
 
 # ---------------------------------------------------------------------------
@@ -361,8 +361,8 @@ class TestSchemaIsolation:
         This confirms that Phase 49 did not modify database/schema.py and
         that the compound/HOSE database is completely unaffected.
         """
-        from lucy_ng.database.manager import DatabaseManager  # noqa: F401
-        from lucy_ng.database.schema import SCHEMA_VERSION
+        from ailsa.database.manager import DatabaseManager  # noqa: F401
+        from ailsa.database.schema import SCHEMA_VERSION
 
         assert SCHEMA_VERSION == 6, (
             f"database/schema.py SCHEMA_VERSION must remain 6, got {SCHEMA_VERSION}"

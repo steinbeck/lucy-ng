@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from lucy_ng.database import DatabaseImporter, DatabaseManager, ImportResult
-from lucy_ng.dereplication.nmrshiftdb import CarbonSignal, HydrogenCount, NMRShiftDBEntry
+from ailsa.database import DatabaseImporter, DatabaseManager, ImportResult
+from ailsa.dereplication.nmrshiftdb import CarbonSignal, HydrogenCount, NMRShiftDBEntry
 
 # Path to test data
 DATA_DIR = Path(__file__).parent.parent / "data"

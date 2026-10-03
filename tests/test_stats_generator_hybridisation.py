@@ -2,7 +2,7 @@
 
 from rdkit import Chem
 
-from lucy_ng.prediction.stats_generator import WelfordAccumulator, extract_hybridisation
+from ailsa.prediction.stats_generator import WelfordAccumulator, extract_hybridisation
 
 
 def test_extract_hybridisation_sp3():

@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lucy_ng.lsd.models import Hybridization, LSDAtom, LSDCorrelation, LSDProblem
-from lucy_ng.lsd.runner import LSDResult
+from ailsa.lsd.models import Hybridization, LSDAtom, LSDCorrelation, LSDProblem
+from ailsa.lsd.runner import LSDResult
 
 
 # ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ def _make_lsd_result(solution_count: int = 3) -> LSDResult:
 # Imports under test
 # ---------------------------------------------------------------------------
 
-from lucy_ng.lsd.orchestrator import (
+from ailsa.lsd.orchestrator import (
     OrchestrationResult,
     PermutationResult,
     PyLSDOrchestrator,
@@ -170,14 +170,14 @@ class TestPermutationContent:
         written_problems: list[LSDProblem] = []
 
         # Capture the problems passed to write_file
-        from lucy_ng.lsd.generator import LSDInputGenerator
+        from ailsa.lsd.generator import LSDInputGenerator
         original_write = LSDInputGenerator.write_file
 
         def capture_write(prob: LSDProblem, path: Path) -> Path:
             written_problems.append(prob)
             return original_write(prob, path)
 
-        with patch("lucy_ng.lsd.orchestrator.LSDInputGenerator.write_file", side_effect=capture_write), \
+        with patch("ailsa.lsd.orchestrator.LSDInputGenerator.write_file", side_effect=capture_write), \
              patch.object(orchestrator.runner, "run_file", return_value=_make_lsd_result()), \
              patch.object(orchestrator, "_run_outlsd", return_value=None):
             orchestrator.run(problem, suspects, output_dir=tmp_path / "out")
@@ -245,11 +245,11 @@ class TestPermutationContent:
         captured: list[LSDProblem] = []
 
         def capture_write(prob: LSDProblem, path: Path) -> Path:
-            from lucy_ng.lsd.generator import LSDInputGenerator as Gen
+            from ailsa.lsd.generator import LSDInputGenerator as Gen
             captured.append(prob)
             return Gen.write_file.__wrapped__(prob, path) if hasattr(Gen.write_file, "__wrapped__") else path
 
-        with patch("lucy_ng.lsd.orchestrator.LSDInputGenerator.write_file", side_effect=lambda p, path: (captured.append(p), path)[1]), \
+        with patch("ailsa.lsd.orchestrator.LSDInputGenerator.write_file", side_effect=lambda p, path: (captured.append(p), path)[1]), \
              patch.object(orchestrator.runner, "run_file", return_value=_make_lsd_result()), \
              patch.object(orchestrator, "_run_outlsd", return_value=None):
             orchestrator.run(problem, [suspect], output_dir=tmp_path / "out")
@@ -329,7 +329,7 @@ class TestKBoundary:
         orchestrator = PyLSDOrchestrator()
         captured: list[LSDProblem] = []
 
-        with patch("lucy_ng.lsd.orchestrator.LSDInputGenerator.write_file",
+        with patch("ailsa.lsd.orchestrator.LSDInputGenerator.write_file",
                    side_effect=lambda p, path: (captured.append(p), path)[1]), \
              patch.object(orchestrator.runner, "run_file", return_value=_make_lsd_result()), \
              patch.object(orchestrator, "_run_outlsd", return_value=None):
@@ -387,8 +387,8 @@ class TestOutlsdBypass:
 
         orchestrator = PyLSDOrchestrator()
 
-        with patch("lucy_ng.lsd.orchestrator.shutil.which", return_value=fake_outlsd), \
-             patch("lucy_ng.lsd.orchestrator.subprocess.run", return_value=mock_proc) as mock_subproc:
+        with patch("ailsa.lsd.orchestrator.shutil.which", return_value=fake_outlsd), \
+             patch("ailsa.lsd.orchestrator.subprocess.run", return_value=mock_proc) as mock_subproc:
             result_path = orchestrator._run_outlsd(perm_dir, lsd_file)
 
         # Verify subprocess.run was called with [outlsd_path, "5"]
@@ -411,7 +411,7 @@ class TestOutlsdBypass:
         lsd_file = perm_dir / "test.lsd"
 
         orchestrator = PyLSDOrchestrator()
-        with patch("lucy_ng.lsd.orchestrator.shutil.which", return_value=None):
+        with patch("ailsa.lsd.orchestrator.shutil.which", return_value=None):
             result = orchestrator._run_outlsd(perm_dir, lsd_file)
 
         assert result is None
@@ -423,7 +423,7 @@ class TestOutlsdBypass:
         lsd_file = perm_dir / "test.lsd"
 
         orchestrator = PyLSDOrchestrator()
-        with patch("lucy_ng.lsd.orchestrator.shutil.which", return_value="/usr/bin/outlsd"):
+        with patch("ailsa.lsd.orchestrator.shutil.which", return_value="/usr/bin/outlsd"):
             result = orchestrator._run_outlsd(perm_dir, lsd_file)
 
         assert result is None
@@ -499,7 +499,7 @@ class TestSolutionMerger:
 
     def test_deduplication(self, tmp_path: Path) -> None:
         """Same structure in 3 permutations → appears once in merged output."""
-        from lucy_ng.lsd.orchestrator import SolutionMerger
+        from ailsa.lsd.orchestrator import SolutionMerger
 
         # Ethanol SMILES variants (same InChI, different notation)
         ethanol_smiles = ["CCO", "OCC", "C(C)O"]
@@ -521,7 +521,7 @@ class TestSolutionMerger:
 
     def test_merged_smi_written(self, tmp_path: Path) -> None:
         """merged.smi written with correct count of unique SMILES."""
-        from lucy_ng.lsd.orchestrator import SolutionMerger
+        from ailsa.lsd.orchestrator import SolutionMerger
 
         # Two distinct molecules: ethanol + ibuprofen
         molecules = [
@@ -547,7 +547,7 @@ class TestSolutionMerger:
 
     def test_skips_permutations_without_smiles_file(self, tmp_path: Path) -> None:
         """Permutation results without smiles_file are skipped gracefully."""
-        from lucy_ng.lsd.orchestrator import SolutionMerger
+        from ailsa.lsd.orchestrator import SolutionMerger
 
         smi_file = tmp_path / "perm_00" / "solutions.smi"
         smi_file.parent.mkdir()
@@ -578,7 +578,7 @@ class TestRunReportProvenance:
 
     def test_run_report_provenance(self, tmp_path: Path) -> None:
         """run_report.json has perm_index, include_flags, active_correlations."""
-        from lucy_ng.lsd.orchestrator import SolutionMerger
+        from ailsa.lsd.orchestrator import SolutionMerger
 
         suspects = [
             LSDCorrelation(atom1_index=4, atom2_index=8, correlation_type="HMBC"),
@@ -629,7 +629,7 @@ class TestRunReportProvenance:
 
     def test_multi_perm_provenance(self, tmp_path: Path) -> None:
         """Structure in 3 permutations → 3 provenance entries in report."""
-        from lucy_ng.lsd.orchestrator import SolutionMerger
+        from ailsa.lsd.orchestrator import SolutionMerger
 
         suspects = [LSDCorrelation(atom1_index=4, atom2_index=8, correlation_type="HMBC")]
 
@@ -817,7 +817,7 @@ class TestSolutionMergerPostFix:
         This is the post-Phase-73 correctness test: with outlsd producing real
         SMILES content (not just a header), the merge pipeline works correctly.
         """
-        from lucy_ng.lsd.orchestrator import SolutionMerger
+        from ailsa.lsd.orchestrator import SolutionMerger
         import json
 
         # Two distinct real molecules — not deduplicated (different InChI keys)
@@ -878,7 +878,7 @@ class TestSolutionMergerEdgeCases:
 
     def test_invalid_smiles_skipped(self, tmp_path: Path) -> None:
         """SMILES file containing an invalid SMILES string is skipped without error."""
-        from lucy_ng.lsd.orchestrator import SolutionMerger
+        from ailsa.lsd.orchestrator import SolutionMerger
 
         # Write a file with one invalid SMILES and one valid SMILES
         smi_file_invalid = tmp_path / "perm_00" / "solutions.smi"
@@ -906,7 +906,7 @@ class TestSolutionMergerEdgeCases:
 
     def test_empty_smiles_file(self, tmp_path: Path) -> None:
         """Permutation with smiles_file=None is skipped gracefully."""
-        from lucy_ng.lsd.orchestrator import SolutionMerger
+        from ailsa.lsd.orchestrator import SolutionMerger
 
         smi_file = tmp_path / "perm_00" / "solutions.smi"
         smi_file.parent.mkdir()

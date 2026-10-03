@@ -8,13 +8,13 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from lucy_ng.cli.visualize import (
+from ailsa.cli.visualize import (
     parse_correlation_string,
     parse_shifts,
     visualize,
 )
-from lucy_ng.lsd.parser import LSDInputParser
-from lucy_ng.visualization import CorrelationType
+from ailsa.lsd.parser import LSDInputParser
+from ailsa.visualization import CorrelationType
 
 
 class TestParseCorrelationString:

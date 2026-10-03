@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from lucy_ng.cli.lsd import lsd
+from ailsa.cli.lsd import lsd
 
 
 # ---------------------------------------------------------------------------
@@ -18,13 +18,13 @@ class TestPerformRanking:
     """Tests for the _perform_ranking module-private helper."""
 
     def test_importable_without_click_context(self) -> None:
-        """_perform_ranking must be importable directly from lucy_ng.cli.lsd."""
-        from lucy_ng.cli.lsd import _perform_ranking  # noqa: F401
+        """_perform_ranking must be importable directly from ailsa.cli.lsd."""
+        from ailsa.cli.lsd import _perform_ranking  # noqa: F401
         assert callable(_perform_ranking)
 
     def test_callable_with_smiles_file_and_shifts(self, tmp_path: Path) -> None:
         """_perform_ranking must be callable without any Click context."""
-        from lucy_ng.cli.lsd import _perform_ranking
+        from ailsa.cli.lsd import _perform_ranking
 
         # Write a minimal SMILES file (ethanol)
         smiles_file = tmp_path / "solutions.smi"
@@ -49,7 +49,7 @@ class TestPerformRanking:
 
     def test_empty_smiles_file_raises_system_exit(self, tmp_path: Path) -> None:
         """Empty SMILES file must raise SystemExit(1) — not an unhandled exception."""
-        from lucy_ng.cli.lsd import _perform_ranking
+        from ailsa.cli.lsd import _perform_ranking
 
         smiles_file = tmp_path / "empty.smi"
         smiles_file.write_text("")
@@ -67,7 +67,7 @@ class TestPerformRanking:
 
     def test_json_output_format_returns_dict(self, tmp_path: Path) -> None:
         """_perform_ranking with output_format='json' must return a dict (not None)."""
-        from lucy_ng.cli.lsd import _perform_ranking
+        from ailsa.cli.lsd import _perform_ranking
 
         smiles_file = tmp_path / "solutions.smi"
         smiles_file.write_text("CCO\n")
@@ -89,7 +89,7 @@ class TestPerformRanking:
 
 
 class TestLSDCheck:
-    """Tests for lucy lsd check command."""
+    """Tests for ailsa lsd check command."""
 
     def test_lsd_check(self) -> None:
         """Test LSD availability check."""
@@ -104,7 +104,7 @@ class TestLSDCheck:
 
 
 class TestLSDRun:
-    """Tests for lucy lsd run command."""
+    """Tests for ailsa lsd run command."""
 
     def test_run_without_lsd(self, tmp_path: Path) -> None:
         """Test error when LSD not installed."""
@@ -129,7 +129,7 @@ class TestLSDRun:
 
 
 class TestLSDAnalyze:
-    """Tests for lucy lsd analyze command."""
+    """Tests for ailsa lsd analyze command."""
 
     def test_analyze_help(self) -> None:
         """Test analyze command help."""

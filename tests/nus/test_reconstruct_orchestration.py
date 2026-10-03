@@ -92,7 +92,7 @@ def test_f2_before_f1_gate_raises_before_any_subprocess(
     SMILE's own hard requirement (Sec.4), not just an internal convention,
     and it must be testable/mockable with zero backend installed (D-04).
     """
-    from lucy_ng.nus.runner import NusRunner
+    from ailsa.nus.runner import NusRunner
 
     expdir = _copy_fixture(nus_fixture_dir, tmp_path, "exp3_hsqc")
     runner = NusRunner()
@@ -124,8 +124,8 @@ def test_f2_before_f1_guard_raises_when_smile_would_get_raw_converted_fid(
     a real fnmode (no impossible-state monkeypatch of _resolve_f2_plan),
     unlike the recipe gate which is defense-in-depth only.
     """
-    import lucy_ng.nus.runner as runner_module
-    from lucy_ng.nus.runner import NusRunner
+    import ailsa.nus.runner as runner_module
+    from ailsa.nus.runner import NusRunner
 
     expdir = _copy_fixture(nus_fixture_dir, tmp_path, "exp3_hsqc")
 
@@ -161,8 +161,8 @@ def test_orchestration_sequences_convert_then_direct_then_smile_then_indirect(
     `process_direct()`'s own return value (SMILE never runs on the raw
     converted FID).
     """
-    import lucy_ng.nus.runner as runner_module
-    from lucy_ng.nus.runner import NusRunner
+    import ailsa.nus.runner as runner_module
+    from ailsa.nus.runner import NusRunner
 
     expdir = _copy_fixture(nus_fixture_dir, tmp_path, "exp3_hsqc")
 
@@ -206,8 +206,8 @@ def test_reconstruct_returns_result_with_stage_paths(
     default) -- consumed by Phase 99's `nus/bridge.py` (not built in this
     phase). The stage dir must exist and not be deleted after the run.
     """
-    import lucy_ng.nus.runner as runner_module
-    from lucy_ng.nus.runner import NusRunner
+    import ailsa.nus.runner as runner_module
+    from ailsa.nus.runner import NusRunner
 
     expdir = _copy_fixture(nus_fixture_dir, tmp_path, "exp3_hsqc")
 

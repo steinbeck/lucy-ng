@@ -5,26 +5,26 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from lucy_ng.dereplication.coconut import CoconutLoader
-from lucy_ng.dereplication.matcher import (
+from ailsa.dereplication.coconut import CoconutLoader
+from ailsa.dereplication.matcher import (
     MatchingConfig,
     MatchMode,
     ObservedPeak,
     SpectrumMatcher,
 )
-from lucy_ng.dereplication.nmrshiftdb import (
+from ailsa.dereplication.nmrshiftdb import (
     CarbonSignal,
     HydrogenCount,
     NMRShiftDBEntry,
     NMRShiftDBLoader,
 )
-from lucy_ng.dereplication.service import (
+from ailsa.dereplication.service import (
     DereplicationResult,
     DereplicationService,
     create_observed_peaks_with_dept,
 )
-from lucy_ng.models import Peak1D, PeakList1D, Spectrum1D
-from lucy_ng.processing import AdaptivePeakPicker
+from ailsa.models import Peak1D, PeakList1D, Spectrum1D
+from ailsa.processing import AdaptivePeakPicker
 
 # Path to test data
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -168,7 +168,7 @@ class TestAdaptivePeakPicker:
     @pytest.mark.skipif(not IBUPROFEN_DIR.exists(), reason="Test data not available")
     def test_peak_picker_13c(self):
         """Test picking peaks from Ibuprofen 13C spectrum."""
-        from lucy_ng.readers import BrukerReader
+        from ailsa.readers import BrukerReader
 
         spectrum = BrukerReader.read_1d(IBUPROFEN_DIR / "2")
 
@@ -563,7 +563,7 @@ class TestIntegration:
 
     def test_dereplicate_ibuprofen_ranking(self):
         """Test that Ibuprofen ranks highly among C13H18O2 candidates."""
-        from lucy_ng.readers import BrukerReader
+        from ailsa.readers import BrukerReader
 
         # Create COCONUT loader (streaming - no load() call needed)
         loader = CoconutLoader(COCONUT_FILE)
@@ -590,7 +590,7 @@ class TestIntegration:
 
     def test_dereplicate_from_spectrum(self):
         """Test full pipeline from raw spectrum."""
-        from lucy_ng.readers import BrukerReader
+        from ailsa.readers import BrukerReader
 
         # Create loader (streaming - no load() needed)
         loader = CoconutLoader(COCONUT_FILE)

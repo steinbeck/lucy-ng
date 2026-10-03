@@ -11,9 +11,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from lucy_ng.models import PeakList1D
-from lucy_ng.processing.peak_picker import AdaptivePeakPicker, _compute_snr_threshold
-from lucy_ng.readers import BrukerReader
+from ailsa.models import PeakList1D
+from ailsa.processing.peak_picker import AdaptivePeakPicker, _compute_snr_threshold
+from ailsa.readers import BrukerReader
 
 # Real Bruker data paths — confirmed available by RESEARCH.md
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -89,10 +89,10 @@ class TestSNRThreshold:
         data[peak_idx - 1] = 0.3
         data[peak_idx + 1] = 0.3
 
-        from lucy_ng.models import Spectrum1D
+        from ailsa.models import Spectrum1D
 
         spectrum = Spectrum1D(data=data, ppm_scale=ppm, nucleus="13C", frequency=100.0, solvent="CDCl3")
-        from lucy_ng.processing.peak_picker import AdaptivePeakPicker
+        from ailsa.processing.peak_picker import AdaptivePeakPicker
         peaks = AdaptivePeakPicker.pick_peaks(spectrum)
         # The fallback threshold (5% of max = 0.05) must leave the 1.0-intensity peak visible
         assert len(peaks.peaks) >= 1
@@ -187,7 +187,7 @@ class TestCLIPick1D:
 
         from click.testing import CliRunner
 
-        from lucy_ng.cli.pick import pick
+        from ailsa.cli.pick import pick
 
         runner = CliRunner()
         result = runner.invoke(pick, ["1d", str(CASE1_C13), "--format", "json"])
@@ -204,7 +204,7 @@ class TestCLIPick1D:
 
         from click.testing import CliRunner
 
-        from lucy_ng.cli.pick import pick
+        from ailsa.cli.pick import pick
 
         runner = CliRunner()
         result = runner.invoke(pick, ["1d", str(CASE1_C13), "--format", "json"])

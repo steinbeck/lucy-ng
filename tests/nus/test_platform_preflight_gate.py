@@ -40,7 +40,7 @@ def test_preflight_gate_raises_on_missing_tools(
 ) -> None:
     """A diagnose() reporting missing_tools must raise RuntimeError BEFORE
     any subprocess is dispatched."""
-    from lucy_ng.nus.runner import NusRunner
+    from ailsa.nus.runner import NusRunner
 
     expdir = _copy_fixture(nus_fixture_dir, tmp_path, "exp3_hsqc")
     backend = _DiagnoseOnlyBackend(
@@ -60,7 +60,7 @@ def test_preflight_gate_raises_on_critical_platform_issue(
     """A diagnose() reporting a critical platform issue (e.g. missing
     csh/tcsh) must raise RuntimeError BEFORE any subprocess dispatch, even
     with zero missing_tools."""
-    from lucy_ng.nus.runner import NusRunner
+    from ailsa.nus.runner import NusRunner
 
     expdir = _copy_fixture(nus_fixture_dir, tmp_path, "exp3_hsqc")
     backend = _DiagnoseOnlyBackend(
@@ -86,7 +86,7 @@ def test_preflight_gate_passes_when_diagnose_clean(
     issues must NOT raise the preflight RuntimeError -- reconstruct()
     proceeds past the gate (it may still fail later for unrelated reasons
     since this fake backend has no real convert()/reconstruct_indirect())."""
-    from lucy_ng.nus.runner import NusRunner
+    from ailsa.nus.runner import NusRunner
 
     expdir = _copy_fixture(nus_fixture_dir, tmp_path, "exp3_hsqc")
 
@@ -114,7 +114,7 @@ def test_preflight_gate_defensive_on_missing_platform_key(
     """A diagnose() dict with no "platform" key at all must still be
     handled defensively (`.get("platform", {})`) rather than raising
     KeyError -- only missing_tools drives the gate in that case."""
-    from lucy_ng.nus.runner import NusRunner
+    from ailsa.nus.runner import NusRunner
 
     expdir = _copy_fixture(nus_fixture_dir, tmp_path, "exp3_hsqc")
     backend = _DiagnoseOnlyBackend({"missing_tools": ["nmrPipe"]})

@@ -24,10 +24,10 @@ from typing import Any
 import pytest
 from click.testing import CliRunner
 
-# Top-level import: RED until wave 2 delivers lucy_ng.cli.webview.
+# Top-level import: RED until wave 2 delivers ailsa.cli.webview.
 # Use try/except so pytest can still *collect* this file in Wave 0.
 try:
-    from lucy_ng.cli.webview import webview  # pyright: ignore[reportMissingModuleSource]
+    from ailsa.cli.webview import webview  # pyright: ignore[reportMissingModuleSource]
 except ImportError:
     webview = None  # type: ignore[assignment]
 
@@ -38,7 +38,7 @@ except ImportError:
 
 
 class TestImportSafety:
-    """WV-08: importing lucy_ng.cli.main must not pull in fastapi/uvicorn."""
+    """WV-08: importing ailsa.cli.main must not pull in fastapi/uvicorn."""
 
     def test_main_importable_without_fastapi(self) -> None:
         """Core CLI main imports cleanly without loading fastapi into sys.modules.
@@ -47,7 +47,7 @@ class TestImportSafety:
         mask a real dependency leak.
         """
         check_code = (
-            "import lucy_ng.cli.main, sys; "
+            "import ailsa.cli.main, sys; "
             "leaked = {k for k in sys.modules if k == 'fastapi' or k.startswith('fastapi.')}; "
             "assert not leaked, f'fastapi leaked into core CLI import: {leaked}'"
         )
@@ -57,7 +57,7 @@ class TestImportSafety:
             text=True,
         )
         assert result.returncode == 0, (
-            f"lucy_ng.cli.main import leaked fastapi.\n"
+            f"ailsa.cli.main import leaked fastapi.\n"
             f"stdout: {result.stdout}\n"
             f"stderr: {result.stderr}"
         )
@@ -71,7 +71,7 @@ class TestImportSafety:
         instruction (no raw ImportError traceback).
         """
         if webview is None:
-            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+            pytest.skip("ailsa.cli.webview not yet available (Wave 0)")
 
         import builtins
 
@@ -101,7 +101,7 @@ class TestImportSafety:
             "Expected non-zero exit when fastapi absent, got 0.\n"
             f"Output: {result.output}"
         )
-        assert "pip install lucy-ng[webview]" in result.output, (
+        assert "pip install ailsa[webview]" in result.output, (
             "Expected friendly install hint in output.\n"
             f"Got: {result.output}"
         )
@@ -130,7 +130,7 @@ class TestWebviewOptOut:
         servers behind on the dev machine: the opt-out path is what is under
         test, so the enabled path must be faked, never executed.
         """
-        import lucy_ng.webview.server as server
+        import ailsa.webview.server as server
 
         calls: list[object] = []
 
@@ -154,7 +154,7 @@ class TestWebviewOptOut:
     ) -> None:
         """With the variable set, `serve` exits 0 and never calls server.start."""
         if webview is None:
-            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+            pytest.skip("ailsa.cli.webview not yet available (Wave 0)")
 
         calls = started
         monkeypatch.setenv("LUCY_NO_WEBVIEW", "1")
@@ -180,7 +180,7 @@ class TestWebviewOptOut:
         must not yield a URL there.
         """
         if webview is None:
-            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+            pytest.skip("ailsa.cli.webview not yet available (Wave 0)")
 
         monkeypatch.setenv("LUCY_NO_WEBVIEW", "1")
         result = CliRunner().invoke(webview, ["serve", str(tmp_path)])
@@ -202,7 +202,7 @@ class TestWebviewOptOut:
         point is to do nothing, which needs no dependency.
         """
         if webview is None:
-            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+            pytest.skip("ailsa.cli.webview not yet available (Wave 0)")
 
         import builtins
 
@@ -235,7 +235,7 @@ class TestWebviewOptOut:
     ) -> None:
         """`--format json` stays valid JSON with a null url and a disabled flag."""
         if webview is None:
-            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+            pytest.skip("ailsa.cli.webview not yet available (Wave 0)")
 
         monkeypatch.setenv("LUCY_NO_WEBVIEW", "1")
         result = CliRunner().invoke(
@@ -257,7 +257,7 @@ class TestWebviewOptOut:
     ) -> None:
         """Common affirmative spellings all disable the server."""
         if webview is None:
-            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+            pytest.skip("ailsa.cli.webview not yet available (Wave 0)")
 
         monkeypatch.setenv("LUCY_NO_WEBVIEW", value)
         result = CliRunner().invoke(webview, ["serve", str(tmp_path)])
@@ -285,7 +285,7 @@ class TestWebviewOptOut:
         mean "keep the dashboard" must not silently lose it.
         """
         if webview is None:
-            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+            pytest.skip("ailsa.cli.webview not yet available (Wave 0)")
 
         monkeypatch.setenv("LUCY_NO_WEBVIEW", value)
 
@@ -355,7 +355,7 @@ class TestWebviewApp:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.app import create_app  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.app import create_app  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra not installed or webview.app not yet available")
 
@@ -382,7 +382,7 @@ class TestFreePort:
     def test_pick_free_port(self) -> None:
         """_pick_free_port() returns an int in [1024, 65535] that can be bound."""
         try:
-            from lucy_ng.webview import server  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview import server  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra not installed or webview.server not yet available")
 
@@ -411,7 +411,7 @@ class TestWebviewStatus:
     def test_status_no_file(self, webview_analysis_dir: Path) -> None:
         """status() returns None when no .webview.json exists."""
         try:
-            from lucy_ng.webview import server  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview import server  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra not installed or webview.server not yet available")
 
@@ -423,8 +423,8 @@ class TestWebviewStatus:
     def test_status_stale_pid(self, webview_analysis_dir: Path) -> None:
         """status() returns None for a stale .webview.json and removes the file."""
         try:
-            from lucy_ng.webview import server  # pyright: ignore[reportMissingModuleSource]
-            from lucy_ng.webview.state import WebviewState  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview import server  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.state import WebviewState  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra not installed or webview modules not yet available")
 
@@ -505,7 +505,7 @@ class TestWebviewLifecycle:
     ) -> None:
         """A second serve on a live dir returns the same URL without rebinding."""
         if webview is None:
-            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+            pytest.skip("ailsa.cli.webview not yet available (Wave 0)")
 
         state, analysis_dir = webview_server
         if state is None:
@@ -530,7 +530,7 @@ class TestWebviewLifecycle:
     ) -> None:
         """stop() removes .webview.json and the server process is dead."""
         if webview is None:
-            pytest.skip("lucy_ng.cli.webview not yet available (Wave 0)")
+            pytest.skip("ailsa.cli.webview not yet available (Wave 0)")
 
         state, analysis_dir = webview_server
         if state is None:
@@ -558,7 +558,7 @@ class TestWebviewLifecycle:
     ) -> None:
         """status() reports a running server while the fixture server is live."""
         try:
-            from lucy_ng.webview import server  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview import server  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra not installed or webview.server not yet available")
 
@@ -579,7 +579,7 @@ class TestWebviewLifecycle:
         in < 10 s (non-blocking) and the server PID is still alive after it exits.
 
         Uses webview_analysis_dir (not webview_server) so we control the launch.
-        The finally block always calls 'lucy webview stop' to prevent orphan processes.
+        The finally block always calls 'ailsa webview stop' to prevent orphan processes.
         """
         try:
             import fastapi  # noqa: F401  # pyright: ignore[reportMissingModuleSource]
@@ -593,7 +593,7 @@ class TestWebviewLifecycle:
                 [
                     sys.executable,
                     "-m",
-                    "lucy_ng.cli",
+                    "ailsa.cli",
                     "webview",
                     "serve",
                     str(webview_analysis_dir),
@@ -607,11 +607,11 @@ class TestWebviewLifecycle:
             elapsed = time.monotonic() - t0
 
             assert result.returncode == 0, (
-                f"'lucy webview serve' exited with code {result.returncode}.\n"
+                f"'ailsa webview serve' exited with code {result.returncode}.\n"
                 f"stdout: {result.stdout}\nstderr: {result.stderr}"
             )
             assert elapsed < 10.0, (
-                f"'lucy webview serve' took {elapsed:.2f} s to return — "
+                f"'ailsa webview serve' took {elapsed:.2f} s to return — "
                 "must return in < 10 s (non-blocking contract)"
             )
 
@@ -635,7 +635,7 @@ class TestWebviewLifecycle:
                 [
                     sys.executable,
                     "-m",
-                    "lucy_ng.cli",
+                    "ailsa.cli",
                     "webview",
                     "stop",
                     str(webview_analysis_dir),

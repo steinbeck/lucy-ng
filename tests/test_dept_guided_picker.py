@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 
-from lucy_ng import (
+from ailsa import (
     BrukerReader,
     DEPTGuidedPicker,
     DEPTGuidedResult,
@@ -29,7 +29,7 @@ class TestDEPTGuidedResult:
             carbon_multiplicities={},
         )
         # Create proper PeakList2D for peaks
-        from lucy_ng.models import PeakList2D
+        from ailsa.models import PeakList2D
         result.peaks = PeakList2D(
             peaks=[], f1_nucleus="13C", f2_nucleus="1H", experiment_type="HSQC"
         )
@@ -42,7 +42,7 @@ class TestDEPTGuidedResult:
 
     def test_summary_with_unmatched(self):
         """Test summary shows unmatched peaks."""
-        from lucy_ng.models import PeakList2D
+        from ailsa.models import PeakList2D
 
         unmatched = [Peak1D(position=45.0, intensity=1000.0)]
         result = DEPTGuidedResult(
@@ -64,7 +64,7 @@ class TestDEPTGuidedResult:
 
     def test_summary_with_multiplicities(self):
         """Test summary shows carbon multiplicities."""
-        from lucy_ng.models import PeakList2D
+        from ailsa.models import PeakList2D
 
         result = DEPTGuidedResult(
             peaks=PeakList2D(
@@ -366,7 +366,7 @@ class TestIbuprofenIntegration:
 
     def test_filters_noise_peaks(self, ibuprofen_hsqc, ibuprofen_dept135):
         """Test that noise peaks are filtered out."""
-        from lucy_ng import PeakPicker2D
+        from ailsa import PeakPicker2D
 
         # Pick all peaks at low threshold
         all_peaks = PeakPicker2D.pick_peaks(ibuprofen_hsqc, threshold=0.02)
@@ -417,14 +417,14 @@ class TestModuleExports:
 
     def test_import_from_processing(self):
         """Test import from processing module."""
-        from lucy_ng.processing import DEPTGuidedPicker, DEPTGuidedResult
+        from ailsa.processing import DEPTGuidedPicker, DEPTGuidedResult
 
         assert DEPTGuidedPicker is not None
         assert DEPTGuidedResult is not None
 
     def test_import_from_top_level(self):
         """Test import from top-level package."""
-        from lucy_ng import DEPTGuidedPicker, DEPTGuidedResult
+        from ailsa import DEPTGuidedPicker, DEPTGuidedResult
 
         assert DEPTGuidedPicker is not None
         assert DEPTGuidedResult is not None

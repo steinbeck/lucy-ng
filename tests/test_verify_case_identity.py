@@ -1,7 +1,7 @@
 """Tests for the identity-derivation core and name<->structure gate.
 
 The deterministic identity core now lives in the installed package
-(``lucy_ng.identity``, D-05). These tests import it directly. The
+(``ailsa.identity``, D-05). These tests import it directly. The
 ``check-identity`` subprocess invocations exercise the thin
 ``scripts/verify_case_solution.py`` adapter that imports the same core, so the
 back-compat CLI contract stays locked.
@@ -10,7 +10,7 @@ Two layers are exercised:
 
 1. Direct import of ``derive_identity`` / ``check_identity_result`` (and the
    ``_normalize_name`` token helper + ``_COCONUT_ACCESSION_RE`` constant) from
-   ``lucy_ng.identity``.
+   ``ailsa.identity``.
 2. A subprocess invocation of ``check-identity`` to lock the CLI contract.
 
 Regression fixtures (VERIFIED against the live DB, see 87-RESEARCH.md):
@@ -35,9 +35,9 @@ from pathlib import Path
 
 import pytest
 
-from lucy_ng import identity as lucy_identity
-from lucy_ng.database.finder import DatabaseFinder
-from lucy_ng.identity import derive_identity
+from ailsa import identity as lucy_identity
+from ailsa.database.finder import DatabaseFinder
+from ailsa.identity import derive_identity
 
 SCRIPT = Path(__file__).parent.parent / "scripts" / "verify_case_solution.py"
 

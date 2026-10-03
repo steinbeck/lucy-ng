@@ -5,9 +5,9 @@ from pathlib import Path
 
 from rdkit import Chem
 
-from lucy_ng.database import DatabaseManager
-from lucy_ng.database.models import BondPairStatsRecord, CompoundRecord, ShiftRecord
-from lucy_ng.prediction.bond_pair_generator import BondPairStatsGenerator, extract_hetero_hetero_bonds
+from ailsa.database import DatabaseManager
+from ailsa.database.models import BondPairStatsRecord, CompoundRecord, ShiftRecord
+from ailsa.prediction.bond_pair_generator import BondPairStatsGenerator, extract_hetero_hetero_bonds
 
 
 def test_no_hhb_in_methanol():

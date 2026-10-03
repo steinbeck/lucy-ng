@@ -7,14 +7,14 @@ import statistics
 
 import pytest
 
-from lucy_ng.database import DatabaseManager
-from lucy_ng.database.models import CompoundRecord, HOSEStatsRecord, ShiftRecord
-from lucy_ng.prediction import (
+from ailsa.database import DatabaseManager
+from ailsa.database.models import CompoundRecord, HOSEStatsRecord, ShiftRecord
+from ailsa.prediction import (
     HOSEStatsGenerator,
     ResumableHOSEStatsGenerator,
     WelfordAccumulator,
 )
-from lucy_ng.prediction.hose import HOSEGEN_AVAILABLE
+from ailsa.prediction.hose import HOSEGEN_AVAILABLE
 
 
 @pytest.fixture

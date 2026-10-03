@@ -15,14 +15,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from lucy_ng.fragments import FragmentDatabaseManager, SSCMatch, SSCRecord
-from lucy_ng.fragments.fingerprint import (
+from ailsa.fragments import FragmentDatabaseManager, SSCMatch, SSCRecord
+from ailsa.fragments.fingerprint import (
     FINGERPRINT_BITS,
     FINGERPRINT_BYTES,
     expand_query_fingerprint,
     shifts_to_fingerprint,
 )
-from lucy_ng.fragments.searcher import FragmentSearcher
+from ailsa.fragments.searcher import FragmentSearcher
 
 
 # ---------------------------------------------------------------------------
@@ -443,7 +443,7 @@ class TestSearchEndToEnd:
             assert len(matches) <= 3
 
     def test_import_from_package(self) -> None:
-        """FragmentSearcher must be importable from lucy_ng.fragments."""
-        from lucy_ng.fragments import FragmentSearcher as FS
+        """FragmentSearcher must be importable from ailsa.fragments."""
+        from ailsa.fragments import FragmentSearcher as FS
 
         assert FS is FragmentSearcher

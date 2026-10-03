@@ -22,7 +22,7 @@ def test_echo_antiecho_expand_first() -> None:
 
     Implementing plan: Plan 02 (`nus/runner.py::_ordering_for_fnmode`).
     """
-    from lucy_ng.nus.runner import _ordering_for_fnmode
+    from ailsa.nus.runner import _ordering_for_fnmode
 
     assert _ordering_for_fnmode(6) == "expand_first"
 
@@ -35,7 +35,7 @@ def test_qf_convert_first() -> None:
 
     Implementing plan: Plan 02 (`nus/runner.py::_ordering_for_fnmode`).
     """
-    from lucy_ng.nus.runner import _ordering_for_fnmode
+    from ailsa.nus.runner import _ordering_for_fnmode
 
     assert _ordering_for_fnmode(1) == "convert_first"
 
@@ -48,7 +48,7 @@ def test_unknown_fnmode_raises() -> None:
 
     Implementing plan: Plan 02 (`nus/runner.py::_ordering_for_fnmode`).
     """
-    from lucy_ng.nus.runner import _ordering_for_fnmode
+    from ailsa.nus.runner import _ordering_for_fnmode
 
     with pytest.raises(NotImplementedError):
         _ordering_for_fnmode(99)

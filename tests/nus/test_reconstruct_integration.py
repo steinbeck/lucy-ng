@@ -32,7 +32,7 @@ _EXTERNAL_DATA = Path(os.environ.get("LUCY_NUS_TEST_DATA", str(_DEFAULT_EXTERNAL
 
 def _backend_available() -> bool:
     try:
-        from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+        from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
     except ImportError:
         return False
     return NmrPipeSmileBackend.is_available()
@@ -57,7 +57,7 @@ def test_reconstruct_exp3_hsqc_end_to_end(tmp_path: Path) -> None:
     not this test -- this test only asserts the pipeline completes and
     produces the expected, non-empty output artefact.
     """
-    from lucy_ng.nus.runner import NusRunner
+    from ailsa.nus.runner import NusRunner
 
     expdir = _EXTERNAL_DATA / "3"
     runner = NusRunner()

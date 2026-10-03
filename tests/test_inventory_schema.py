@@ -8,7 +8,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 from jsonschema import Draft202012Validator
 
-from lucy_ng.cli.lsd import lsd
+from ailsa.cli.lsd import lsd
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ class TestSchemaLoading:
         function used by the CLI, catching any future packaging regressions where the
         schema file is not bundled in the wheel (CR-01).
         """
-        from lucy_ng.cli.lsd import _get_schema_path
+        from ailsa.cli.lsd import _get_schema_path
         schema_path = _get_schema_path()
         assert schema_path.exists(), f"_get_schema_path() returned non-existent path: {schema_path}"
         content = schema_path.read_text()
@@ -496,7 +496,7 @@ def _minimal_v2_inventory_json() -> str:
 
 
 class TestValidateInventoryCLI:
-    """Integration tests for lucy lsd validate-inventory via CliRunner."""
+    """Integration tests for ailsa lsd validate-inventory via CliRunner."""
 
     def test_valid_v2_file_exits_0(self, tmp_path):
         """Valid v2 LSD file must cause validate-inventory to exit with code 0."""
@@ -677,7 +677,7 @@ class TestValidateInventoryCLI:
         lsd_file = tmp_path / "compound.lsd"
         lsd_file.write_text(_make_v2_lsd_content(_minimal_v2_inventory_json()))
         runner = CliRunner()
-        with patch("lucy_ng.cli.lsd.Path.read_text", side_effect=PermissionError("Permission denied: compound.lsd")):
+        with patch("ailsa.cli.lsd.Path.read_text", side_effect=PermissionError("Permission denied: compound.lsd")):
             result = runner.invoke(
                 lsd, ["validate-inventory", str(lsd_file), "--format", "json"],
                 catch_exceptions=False
@@ -693,7 +693,7 @@ class TestValidateInventoryCLI:
         lsd_file = tmp_path / "compound.lsd"
         lsd_file.write_text(_make_v2_lsd_content(_minimal_v2_inventory_json()))
         runner = CliRunner()
-        with patch("lucy_ng.cli.lsd.Path.read_text", side_effect=PermissionError("Permission denied")):
+        with patch("ailsa.cli.lsd.Path.read_text", side_effect=PermissionError("Permission denied")):
             result = runner.invoke(
                 lsd, ["validate-inventory", str(lsd_file)],
                 catch_exceptions=False
@@ -755,13 +755,13 @@ class TestValidateAndParseInventory:
     """Tests for the _validate_and_parse_inventory module-private helper."""
 
     def test_importable_without_click_context(self) -> None:
-        """_validate_and_parse_inventory must be importable directly from lucy_ng.cli.lsd."""
-        from lucy_ng.cli.lsd import _validate_and_parse_inventory  # noqa: F401
+        """_validate_and_parse_inventory must be importable directly from ailsa.cli.lsd."""
+        from ailsa.cli.lsd import _validate_and_parse_inventory  # noqa: F401
         assert callable(_validate_and_parse_inventory)
 
     def test_valid_v2_file_returns_dict_with_deferred_4j(self, tmp_path: Path) -> None:
         """Valid v2 LSD file must return a dict containing the deferred_4j key."""
-        from lucy_ng.cli.lsd import _validate_and_parse_inventory
+        from ailsa.cli.lsd import _validate_and_parse_inventory
 
         lsd_file = tmp_path / "compound.lsd"
         lsd_file.write_text(_make_v2_lsd_content(_minimal_v2_inventory_json()))
@@ -775,7 +775,7 @@ class TestValidateAndParseInventory:
 
     def test_no_block_returns_none(self, tmp_path: Path) -> None:
         """LSD file with no inventory block must return None (not raise SystemExit)."""
-        from lucy_ng.cli.lsd import _validate_and_parse_inventory
+        from ailsa.cli.lsd import _validate_and_parse_inventory
 
         lsd_file = tmp_path / "compound.lsd"
         lsd_file.write_text("; Plain LSD file without any inventory block\nMULT 1 C 2 0\n")
@@ -786,7 +786,7 @@ class TestValidateAndParseInventory:
 
     def test_v1_block_raises_system_exit(self, tmp_path: Path) -> None:
         """LSD file with v1 inventory block must raise SystemExit(1)."""
-        from lucy_ng.cli.lsd import _validate_and_parse_inventory
+        from ailsa.cli.lsd import _validate_and_parse_inventory
         import pytest
 
         v1_content = "; === CONSTRAINT INVENTORY v1 ===\n; {}\n; === END CONSTRAINT INVENTORY ===\n"
@@ -799,7 +799,7 @@ class TestValidateAndParseInventory:
 
     def test_schema_invalid_raises_system_exit(self, tmp_path: Path) -> None:
         """v2 LSD file with schema-violating content must raise SystemExit(1)."""
-        from lucy_ng.cli.lsd import _validate_and_parse_inventory
+        from ailsa.cli.lsd import _validate_and_parse_inventory
         import pytest
 
         bad_json = json.dumps({

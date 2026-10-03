@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-from lucy_ng.nmrxiv import (
+from ailsa.nmrxiv import (
     DownloadResult,
     NMRXivClient,
     NMRXivDataset,
@@ -179,7 +179,7 @@ class TestNMRXivClientIdentifierParsing:
 class TestNMRXivClientAPI:
     """Tests for API interactions with mocking."""
 
-    @patch("lucy_ng.nmrxiv.client.requests.Session")
+    @patch("ailsa.nmrxiv.client.requests.Session")
     def test_get_project_success(self, mock_session_class):
         """Test successful project fetch."""
         # Setup mock
@@ -212,7 +212,7 @@ class TestNMRXivClientAPI:
         assert len(project.studies) == 1
         assert project.studies[0].id == "S1"
 
-    @patch("lucy_ng.nmrxiv.client.requests.Session")
+    @patch("ailsa.nmrxiv.client.requests.Session")
     def test_get_project_not_found(self, mock_session_class):
         """Test project not found error."""
         mock_session = MagicMock()
@@ -235,7 +235,7 @@ class TestNMRXivClientAPI:
 class TestNMRXivClientDownload:
     """Tests for download functionality with mocking."""
 
-    @patch("lucy_ng.nmrxiv.client.requests.Session")
+    @patch("ailsa.nmrxiv.client.requests.Session")
     def test_download_creates_directories(self, mock_session_class):
         """Test that download creates proper directory structure."""
         mock_session = MagicMock()
@@ -295,7 +295,7 @@ class TestNMRXivCLI:
 
     def test_fetch_help(self):
         """Test fetch command help."""
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
 
         runner = CliRunner()
         result = runner.invoke(cli, ["fetch", "--help"])
@@ -304,7 +304,7 @@ class TestNMRXivCLI:
 
     def test_fetch_nmrxiv_help(self):
         """Test fetch nmrxiv subcommand help."""
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
 
         runner = CliRunner()
         result = runner.invoke(cli, ["fetch", "nmrxiv", "--help"])
@@ -313,17 +313,17 @@ class TestNMRXivCLI:
         assert "--output" in result.output
         assert "--all" in result.output
 
-    @patch("lucy_ng.nmrxiv.client.requests.Session")
+    @patch("ailsa.nmrxiv.client.requests.Session")
     def test_fetch_nmrxiv_invalid_identifier(self, mock_session_class):
         """Test fetch with invalid identifier."""
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
 
         runner = CliRunner()
         result = runner.invoke(cli, ["fetch", "nmrxiv", "invalid-id"])
         assert result.exit_code == 1
         assert "Error" in result.output or "error" in result.output.lower()
 
-    @patch("lucy_ng.nmrxiv.client.requests.Session")
+    @patch("ailsa.nmrxiv.client.requests.Session")
     def test_fetch_nmrxiv_json_output(self, mock_session_class):
         """Test fetch with JSON output format."""
         mock_session = MagicMock()
@@ -362,7 +362,7 @@ class TestNMRXivCLI:
 
         mock_session.get.side_effect = side_effect
 
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
 
         runner = CliRunner()
         with runner.isolated_filesystem():

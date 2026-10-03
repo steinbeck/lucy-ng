@@ -7,8 +7,8 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from lucy_ng.cli.dereplicate import dereplicate
-from lucy_ng.database import DatabaseFinder
+from ailsa.cli.dereplicate import dereplicate
+from ailsa.database import DatabaseFinder
 
 
 class TestDatabaseDetection:
@@ -57,7 +57,7 @@ class TestDatabaseDetection:
 
 
 class TestDereplicateC13:
-    """Tests for lucy dereplicate c13 command."""
+    """Tests for ailsa dereplicate c13 command."""
 
     def test_dereplicate_invalid_database(self) -> None:
         """Test error when specified database does not exist."""

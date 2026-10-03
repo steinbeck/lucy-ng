@@ -6,10 +6,10 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from lucy_ng.cli.main import cli
-from lucy_ng.database import DatabaseManager
-from lucy_ng.detection import StatisticalDetector
-from lucy_ng.detection.models import HybridisationDistribution
+from ailsa.cli.main import cli
+from ailsa.database import DatabaseManager
+from ailsa.detection import StatisticalDetector
+from ailsa.detection.models import HybridisationDistribution
 
 
 @pytest.fixture
@@ -252,7 +252,7 @@ def test_hybridisation_result_json_format(test_db: Path) -> None:
 
 
 def test_cli_detect_command_exists() -> None:
-    """Test that 'lucy detect hybridisation --help' works."""
+    """Test that 'ailsa detect hybridisation --help' works."""
     runner = CliRunner()
     result = runner.invoke(cli, ["detect", "hybridisation", "--help"])
 
@@ -266,7 +266,7 @@ def test_cli_detect_command_exists() -> None:
 
 
 def test_cli_detect_group_exists() -> None:
-    """Test that 'lucy detect --help' shows hybridisation subcommand."""
+    """Test that 'ailsa detect --help' shows hybridisation subcommand."""
     runner = CliRunner()
     result = runner.invoke(cli, ["detect", "--help"])
 

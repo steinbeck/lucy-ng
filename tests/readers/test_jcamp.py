@@ -1,6 +1,6 @@
 """Tests for the JCAMP-DX reader (D-08 layer 2: integration on the trimmed real fixture).
 
-Imports of `lucy_ng.readers.jcamp` / `lucy_ng.readers._jcampdx_decode` go
+Imports of `ailsa.readers.jcamp` / `ailsa.readers._jcampdx_decode` go
 INSIDE test function bodies (WV-08 convention) so collection succeeds while
 the target modules are still absent (Wave 0, RED per-test).
 """
@@ -31,7 +31,7 @@ class TestJcampReader2D:
 
     def test_read_2d_shape(self) -> None:
         """Trimmed HSQC fixture (16 real F1 pages, 2048 F2 points) decodes to (16, 2048)."""
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.readers.jcamp import JcampReader
 
         spectrum = JcampReader.read_2d(HSQC_TRIMMED)
         assert spectrum.data.shape == (16, 2048)
@@ -49,7 +49,7 @@ class TestJcampReader2D:
         ``_assert_plausible_ppm_axis``'s own docstring) -- that remains
         the JC-02 1D cross-check's job, not this test's.
         """
-        from lucy_ng.readers.jcamp import _assert_plausible_ppm_axis
+        from ailsa.readers.jcamp import _assert_plausible_ppm_axis
 
         # Plausible, correctly-reversed 13C axis: no error.
         _assert_plausible_ppm_axis(np.array([175.0, 100.0, 0.0]), "13C")
@@ -85,7 +85,7 @@ class TestJcampReader2D:
         step must be exercised directly rather than via the fixture (a
         fixture whose Y_FACTOR is 1 would not catch a missing multiplication).
         """
-        from lucy_ng.readers.jcamp import _apply_yfactor
+        from ailsa.readers.jcamp import _apply_yfactor
 
         raw = [100.0, 105.0, 105.0, 102.0]
         scaled = _apply_yfactor(raw, 2.5)
@@ -101,7 +101,7 @@ class TestJcampReaderPpmCrossCheck:
         Verified real cross-peak (101-RESEARCH.md): 13C ~21.7-23.5 ppm,
         1H ~0.96-0.99 ppm -- genuine signal in the trimmed fixture's page window.
         """
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.readers.jcamp import JcampReader
 
         spectrum_2d = JcampReader.read_2d(HSQC_TRIMMED)
         ref_1h = JcampReader.read_1d(REF_1H)
@@ -130,7 +130,7 @@ class TestJcampReader1D:
 
     def test_read_1d(self) -> None:
         """1H and 13C references decode to Spectrum1D with the correct nucleus."""
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.readers.jcamp import JcampReader
 
         spectrum_1h = JcampReader.read_1d(REF_1H)
         assert spectrum_1h.nucleus == "1H"
@@ -161,7 +161,7 @@ class TestJcampReaderHomonuclear:
         "index 0 = F2/direct, index 1 = F1/indirect" on data where the
         answer is independently knowable, not merely assumed.
         """
-        from lucy_ng.readers.jcamp import _read_metadata, _resolve_dim
+        from ailsa.readers.jcamp import _read_metadata, _resolve_dim
 
         inner = _read_metadata(HSQC_TRIMMED)
 
@@ -177,7 +177,7 @@ class TestJcampReaderHomonuclear:
 
     def test_read_2d_homonuclear_cosy(self) -> None:
         """JcampReader.read_2d() on the COSY fixture does not raise."""
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.readers.jcamp import JcampReader
 
         spectrum = JcampReader.read_2d(COSY_TRIMMED)
         assert spectrum.data.shape == (16, 2048)
@@ -194,7 +194,7 @@ class TestJcampReaderHomonuclear:
         F2=1.4796 -- a real COSY diagonal peak. A wrong-by-orders axis on
         either dimension breaks this self-consistency check.
         """
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.readers.jcamp import JcampReader
 
         spectrum = JcampReader.read_2d(COSY_TRIMMED)
         row, col = np.unravel_index(
@@ -211,7 +211,7 @@ class TestJcampReaderHomonuclear:
         exactly -- absolute-truth cross-check, not just internal
         self-consistency.
         """
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.readers.jcamp import JcampReader
 
         spectrum = JcampReader.read_2d(COSY_TRIMMED)
         ref_1h = JcampReader.read_1d(REF_1H)
@@ -235,7 +235,7 @@ class TestJcampReaderHomonuclear:
 
     def test_read_2d_homonuclear_noesy(self) -> None:
         """Phase 102 must READ NOESY fine even though D-06 skips picking it."""
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.readers.jcamp import JcampReader
 
         spectrum = JcampReader.read_2d(NOESY_TRIMMED)
         assert spectrum.experiment_type == "NOESY"
@@ -243,7 +243,7 @@ class TestJcampReaderHomonuclear:
 
     def test_ambiguous_without_hint_still_raises(self) -> None:
         """The fail-loud default is preserved when no procs_index hint is supplied (T-102-02)."""
-        from lucy_ng.readers.jcamp import _read_metadata, _resolve_dim
+        from ailsa.readers.jcamp import _read_metadata, _resolve_dim
 
         inner = _read_metadata(COSY_TRIMMED)
         with pytest.raises(ValueError, match="Ambiguous nucleus"):
@@ -255,14 +255,14 @@ class TestJcampReaderErrors:
 
     def test_invalid_path(self) -> None:
         """Test that FileNotFoundError is raised for a non-existent path."""
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.readers.jcamp import JcampReader
 
         with pytest.raises(FileNotFoundError):
             JcampReader.read_1d("/nonexistent/path.dx")
 
     def test_invalid_path_message(self) -> None:
         """Test that the error message includes the path."""
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.readers.jcamp import JcampReader
 
         with pytest.raises(FileNotFoundError, match="nonexistent"):
             JcampReader.read_1d("/nonexistent/path.dx")

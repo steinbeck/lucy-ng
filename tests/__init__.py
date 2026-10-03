@@ -1,1 +1,1 @@
-"""Tests for lucy-ng."""
+"""Tests for ailsa."""

@@ -1,7 +1,7 @@
 """Black-box tests for scripts/verify_case_solution.py.
 
 Runs the verification script via subprocess so that tests remain completely
-independent of lucy_ng internals.  No imports from lucy_ng are used here.
+independent of ailsa internals.  No imports from ailsa are used here.
 
 Test SMILES used:
 - ``"CC(Cc1ccc(cc1)C(C)C)C(=O)O"`` — ibuprofen; C13H18O2; 6 aromatic atoms (PASS)

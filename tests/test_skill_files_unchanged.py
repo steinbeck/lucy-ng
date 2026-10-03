@@ -34,7 +34,7 @@ revert the unintended edit, or (b) update the baseline as an explicit part
 of a phase whose scope includes changing the CASE orchestrator, recorded in
 that phase's SUMMARY.
 
-WHAT IS DELIBERATELY *NOT* FROZEN HERE: `src/lucy_ng/nus/qc.py`,
+WHAT IS DELIBERATELY *NOT* FROZEN HERE: `src/ailsa/nus/qc.py`,
 `nus/bridge.py`, `cli/pick.py`, and the two pickers
 (`processing/peak_picker.py`, `processing/peak_picker_2d.py`) are
 byte-unchanged for THIS PHASE ONLY, already verified by the

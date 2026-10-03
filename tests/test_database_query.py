@@ -6,13 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from lucy_ng.database import (
+from ailsa.database import (
     CompoundRecord,
     DatabaseManager,
     DatabaseQueryService,
     ShiftRecord,
 )
-from lucy_ng.dereplication.nmrshiftdb import HydrogenCount
+from ailsa.dereplication.nmrshiftdb import HydrogenCount
 
 
 class TestCompoundConversion:

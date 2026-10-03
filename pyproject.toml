@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "lucy-ng"
+name = "ailsa"
 version = "0.1.0"
 description = "AI-agent powered Computer-Assisted Structure Elucidation for organic natural products"
 readme = "README.md"
@@ -40,7 +40,7 @@ dependencies = [
 ]
 
 [project.scripts]
-lucy = "lucy_ng.cli:cli"
+ailsa = "ailsa.cli:cli"
 
 [project.optional-dependencies]
 dev = [
@@ -73,11 +73,11 @@ nus = [
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/lucy_ng"]
+packages = ["src/ailsa"]
 artifacts = [
-    "src/lucy_ng/data/schemas/*",
-    "src/lucy_ng/lsd/filters/*",
-    "src/lucy_ng/webview/static/*",
+    "src/ailsa/data/schemas/*",
+    "src/ailsa/lsd/filters/*",
+    "src/ailsa/webview/static/*",
 ]
 
 [tool.pytest.ini_options]
@@ -90,7 +90,7 @@ python_version = "3.10"
 strict = true
 warn_return_any = true
 warn_unused_ignores = true
-packages = ["lucy_ng"]
+packages = ["ailsa"]
 mypy_path = "src"
 
 [tool.ruff]

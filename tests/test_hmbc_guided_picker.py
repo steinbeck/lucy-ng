@@ -2,9 +2,9 @@
 
 import pytest
 
-from lucy_ng import BrukerReader
-from lucy_ng.models import Peak1D, Peak2D, PeakList1D, PeakList2D
-from lucy_ng.processing import HMBCGuidedPicker, HMBCGuidedResult
+from ailsa import BrukerReader
+from ailsa.models import Peak1D, Peak2D, PeakList1D, PeakList2D
+from ailsa.processing import HMBCGuidedPicker, HMBCGuidedResult
 
 
 class TestHMBCGuidedResult:
@@ -275,7 +275,7 @@ class TestModuleExports:
 
     def test_import_from_processing(self):
         """Test importing from processing module."""
-        from lucy_ng.processing import HMBCGuidedPicker, HMBCGuidedResult
+        from ailsa.processing import HMBCGuidedPicker, HMBCGuidedResult
 
         assert HMBCGuidedPicker is not None
         assert HMBCGuidedResult is not None

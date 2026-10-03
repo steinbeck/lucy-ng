@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 import tempfile
 
-from lucy_ng.lsd.parser import LSDOutputParser, LSDSolution
+from ailsa.lsd.parser import LSDOutputParser, LSDSolution
 
 
 class TestLSDSolution:

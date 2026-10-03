@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 from numpy.typing import NDArray
 
-from lucy_ng.models import Spectrum1D
+from ailsa.models import Spectrum1D
 
 REF_1H = Path(__file__).parent / "fixtures" / "jcamp" / "C20H32O2_1H.dx"
 REF_13C = Path(__file__).parent / "fixtures" / "jcamp" / "C20H32O2_13C.dx"
@@ -65,8 +65,8 @@ class TestJcamp1dBridgeSchema:
     """Pitfall-2 guard: schema shape must match cli/pick.py::pick_1d exactly."""
 
     def test_payload_has_pick_1d_top_level_keys(self) -> None:
-        from lucy_ng.processing.jcamp_1d_bridge import bridge_peak_pick_1d
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.processing.jcamp_1d_bridge import bridge_peak_pick_1d
+        from ailsa.readers.jcamp import JcampReader
 
         spectrum = JcampReader.read_1d(REF_13C)
         payload = bridge_peak_pick_1d(spectrum)
@@ -85,8 +85,8 @@ class TestJcamp1dBridgeSchema:
         assert "h1_ppm" not in payload
 
     def test_peak_entries_have_ppm_intensity_snr(self) -> None:
-        from lucy_ng.processing.jcamp_1d_bridge import bridge_peak_pick_1d
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.processing.jcamp_1d_bridge import bridge_peak_pick_1d
+        from ailsa.readers.jcamp import JcampReader
 
         spectrum = JcampReader.read_1d(REF_13C)
         payload = bridge_peak_pick_1d(spectrum)
@@ -98,7 +98,7 @@ class TestJcamp1dBridgeSchema:
             assert isinstance(peak["ppm"], float)
 
     def test_negative_detection_matches_pick_1d_heuristic(self) -> None:
-        from lucy_ng.processing.jcamp_1d_bridge import bridge_peak_pick_1d
+        from ailsa.processing.jcamp_1d_bridge import bridge_peak_pick_1d
 
         with_negative = _build_synthetic_1d_spectrum(
             "13C", positive_peaks=[150.0, 100.0], negative_peaks=[40.0]
@@ -114,7 +114,7 @@ class TestJcamp1dBridgeSchema:
         assert payload_without["negative_detected"] is False
 
     def test_snr_floor_used_reporting(self) -> None:
-        from lucy_ng.processing.jcamp_1d_bridge import bridge_peak_pick_1d
+        from ailsa.processing.jcamp_1d_bridge import bridge_peak_pick_1d
 
         spectrum = _build_synthetic_1d_spectrum("13C", positive_peaks=[150.0, 100.0])
 
@@ -130,7 +130,7 @@ class TestJcamp1dBridgeSchema:
     def test_unknown_nucleus_filename_raises(self) -> None:
         import pytest
 
-        from lucy_ng.processing.jcamp_1d_bridge import peak_json_filename
+        from ailsa.processing.jcamp_1d_bridge import peak_json_filename
 
         with pytest.raises(ValueError):
             peak_json_filename("19F")
@@ -142,10 +142,10 @@ class TestJcamp1dBridgeQcDiscovery:
     QcReferenceData.resolve() run."""
 
     def test_qc_gate_discovers_bridge_output_as_trusted_reference(self, tmp_path: Path) -> None:
-        from lucy_ng.nus.bridge import write_peak_json
-        from lucy_ng.nus.qc import QcReferenceData
-        from lucy_ng.processing.jcamp_1d_bridge import bridge_peak_pick_1d
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.nus.bridge import write_peak_json
+        from ailsa.nus.qc import QcReferenceData
+        from ailsa.processing.jcamp_1d_bridge import bridge_peak_pick_1d
+        from ailsa.readers.jcamp import JcampReader
 
         for ref_path in (REF_1H, REF_13C):
             spectrum = JcampReader.read_1d(ref_path)
@@ -159,10 +159,10 @@ class TestJcamp1dBridgeQcDiscovery:
         assert ref.classification_source != "insufficient_reference_data"
 
     def test_glob_does_not_cross_match_1d_filenames(self, tmp_path: Path) -> None:
-        from lucy_ng.nus.bridge import write_peak_json
-        from lucy_ng.nus.qc import _glob_by_keyword
-        from lucy_ng.processing.jcamp_1d_bridge import bridge_peak_pick_1d
-        from lucy_ng.readers.jcamp import JcampReader
+        from ailsa.nus.bridge import write_peak_json
+        from ailsa.nus.qc import _glob_by_keyword
+        from ailsa.processing.jcamp_1d_bridge import bridge_peak_pick_1d
+        from ailsa.readers.jcamp import JcampReader
 
         for ref_path in (REF_1H, REF_13C):
             spectrum = JcampReader.read_1d(ref_path)
@@ -183,7 +183,7 @@ class TestJcamp1dBridgeQcDiscovery:
         cross_peaks[].c13_ppm."""
         import json
 
-        from lucy_ng.nus.qc import QcReferenceData
+        from ailsa.nus.qc import QcReferenceData
 
         wrong_schema_dir = tmp_path / "wrong_schema"
         wrong_schema_dir.mkdir()

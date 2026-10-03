@@ -8,11 +8,11 @@ encoded in agent knowledge.
 import pytest
 from unittest.mock import MagicMock
 
-from lucy_ng.ranking.ranker import SolutionRanker
-from lucy_ng.ranking.models import RankedSolution
-from lucy_ng.lsd.parser import LSDSolution
-from lucy_ng.prediction import C13Predictor
-from lucy_ng.prediction.models import PredictionResult, PredictedShift
+from ailsa.ranking.ranker import SolutionRanker
+from ailsa.ranking.models import RankedSolution
+from ailsa.lsd.parser import LSDSolution
+from ailsa.prediction import C13Predictor
+from ailsa.prediction.models import PredictionResult, PredictedShift
 
 
 def make_predicted_shift(atom_index: int, shift: float, confidence: float = 0.9) -> PredictedShift:

@@ -1,10 +1,10 @@
-"""Tests for `lucy_ng.nus.params.read_nus_params` (NUS-02)."""
+"""Tests for `ailsa.nus.params.read_nus_params` (NUS-02)."""
 
 from pathlib import Path
 
 import pytest
 
-from lucy_ng.nus.params import read_nus_params
+from ailsa.nus.params import read_nus_params
 
 DATA_DIR = Path(__file__).parent / "fixtures" / "nus"
 EXP2_COSY = DATA_DIR / "exp2_cosy"

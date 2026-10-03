@@ -1,8 +1,8 @@
-"""Tests for `lucy nus` CLI commands (check/params/schedule).
+"""Tests for `ailsa nus` CLI commands (check/params/schedule).
 
 Covers NUS-01 (check surface), NUS-04 (JSON CLI over the three fixtures),
 and NUS-05's import-safety invariant for `cli/nus.py` specifically (D-02:
-imports of `lucy_ng.nus.*` must be deferred into command bodies, never
+imports of `ailsa.nus.*` must be deferred into command bodies, never
 top-level).
 """
 
@@ -14,13 +14,13 @@ import sys
 
 from click.testing import CliRunner
 
-from lucy_ng.cli.nus import nus
+from ailsa.cli.nus import nus
 
 FIXTURES = "tests/fixtures/nus"
 
 
 class TestNusCheck:
-    """Tests for `lucy nus check`."""
+    """Tests for `ailsa nus check`."""
 
     def test_check_text_reports_status(self) -> None:
         runner = CliRunner()
@@ -42,7 +42,7 @@ class TestNusCheck:
 
 
 class TestNusParams:
-    """Tests for `lucy nus params <expdir>`."""
+    """Tests for `ailsa nus params <expdir>`."""
 
     def test_params_exp3_hsqc_json(self) -> None:
         runner = CliRunner()
@@ -88,7 +88,7 @@ class TestNusParams:
 
 
 class TestNusSchedule:
-    """Tests for `lucy nus schedule <expdir>`."""
+    """Tests for `ailsa nus schedule <expdir>`."""
 
     def test_schedule_exp2_cosy_json(self) -> None:
         runner = CliRunner()
@@ -122,16 +122,16 @@ class TestNusSchedule:
 
 
 class TestImportSafety:
-    """NUS-05/D-02: importing lucy_ng.cli.nus must not pull in lucy_ng.nus.*."""
+    """NUS-05/D-02: importing ailsa.cli.nus must not pull in ailsa.nus.*."""
 
     def test_no_top_level_nus_submodule_import(self) -> None:
         result = subprocess.run(
-            [sys.executable, "-c", "import lucy_ng.cli.nus"],
+            [sys.executable, "-c", "import ailsa.cli.nus"],
             capture_output=True,
             text=True,
         )
         assert result.returncode == 0, (
-            f"lucy_ng.cli.nus failed to import cleanly.\n"
+            f"ailsa.cli.nus failed to import cleanly.\n"
             f"stdout: {result.stdout}\nstderr: {result.stderr}"
         )
 

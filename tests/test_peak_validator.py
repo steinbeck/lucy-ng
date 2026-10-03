@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from lucy_ng.models import Peak1D, Peak2D, PeakList1D, PeakList2D
-from lucy_ng.processing.peak_validator import PeakValidator, ValidationResult
-from lucy_ng.processing import PeakPicker2D, AdaptivePeakPicker
-from lucy_ng.readers import BrukerReader
+from ailsa.models import Peak1D, Peak2D, PeakList1D, PeakList2D
+from ailsa.processing.peak_validator import PeakValidator, ValidationResult
+from ailsa.processing import PeakPicker2D, AdaptivePeakPicker
+from ailsa.readers import BrukerReader
 
 # Test data paths
 DATA_DIR = Path(__file__).parent.parent / "data"

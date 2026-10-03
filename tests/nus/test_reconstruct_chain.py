@@ -28,9 +28,9 @@ def test_echo_antiecho_convert_dispatches_expand_then_bruk2pipe(
 
     Implementing plan: Plan 03 (`nus/backends/nmrpipe_smile.py::convert`).
     """
-    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
-    from lucy_ng.nus.params import read_nus_params
-    from lucy_ng.nus.schedule import read_nus_schedule
+    from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+    from ailsa.nus.params import read_nus_params
+    from ailsa.nus.schedule import read_nus_schedule
 
     expdir = nus_fixture_dir("exp3_hsqc")
     params = read_nus_params(expdir)
@@ -54,9 +54,9 @@ def test_echo_antiecho_expand_argv_passes_acqus_paths(
     Implementing plan: Plan 03 (`nus/backends/nmrpipe_smile.py::convert`),
     Phase-100 VAL fix.
     """
-    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
-    from lucy_ng.nus.params import read_nus_params
-    from lucy_ng.nus.schedule import read_nus_schedule
+    from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+    from ailsa.nus.params import read_nus_params
+    from ailsa.nus.schedule import read_nus_schedule
 
     expdir = nus_fixture_dir("exp3_hsqc")
     params = read_nus_params(expdir)
@@ -82,9 +82,9 @@ def test_qf_convert_dispatches_bruk2pipe_then_expand(
 
     Implementing plan: Plan 03 (`nus/backends/nmrpipe_smile.py::convert`).
     """
-    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
-    from lucy_ng.nus.params import read_nus_params
-    from lucy_ng.nus.schedule import read_nus_schedule
+    from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+    from ailsa.nus.params import read_nus_params
+    from ailsa.nus.schedule import read_nus_schedule
 
     expdir = nus_fixture_dir("exp2_cosy")
     params = read_nus_params(expdir)
@@ -104,7 +104,7 @@ def test_smile_argv_carries_default_knobs(mock_run_stage, tmp_path) -> None:
 
     Implementing plan: Plan 03 (`nus/backends/nmrpipe_smile.py::reconstruct_indirect`).
     """
-    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+    from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
 
     f2_processed_fid = tmp_path / "f2_processed.fid"
     f2_processed_fid.write_bytes(b"\x01" * 64)
@@ -126,9 +126,9 @@ def test_bruk2pipe_uses_nus_td_not_f1_td(mock_run_stage, nus_fixture_dir, tmp_pa
 
     Implementing plan: Plan 03 (`nus/backends/nmrpipe_smile.py::convert`).
     """
-    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
-    from lucy_ng.nus.params import read_nus_params
-    from lucy_ng.nus.schedule import read_nus_schedule
+    from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+    from ailsa.nus.params import read_nus_params
+    from ailsa.nus.schedule import read_nus_schedule
 
     expdir = nus_fixture_dir("exp3_hsqc")
     params = read_nus_params(expdir)
@@ -153,9 +153,9 @@ def test_grpdly_passed_exact_non_integer(mock_run_stage, nus_fixture_dir, tmp_pa
 
     Implementing plan: Plan 03 (`nus/backends/nmrpipe_smile.py::convert`).
     """
-    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
-    from lucy_ng.nus.params import read_nus_params
-    from lucy_ng.nus.schedule import read_nus_schedule
+    from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+    from ailsa.nus.params import read_nus_params
+    from ailsa.nus.schedule import read_nus_schedule
 
     expdir = nus_fixture_dir("exp3_hsqc")
     params = read_nus_params(expdir)
@@ -185,7 +185,7 @@ def test_smile_input_is_f2_processed_not_raw_converted_fid(mock_run_stage, tmp_p
     ::reconstruct_indirect` input contract; wired end-to-end by
     `nus/runner.py` in Plan 05).
     """
-    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+    from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
 
     f2_processed_fid = tmp_path / "f2_processed.fid"
     f2_processed_fid.write_bytes(b"\x01" * 64)
@@ -212,7 +212,7 @@ def test_reconstruct_indirect_omits_ea_for_qf_fnmode(mock_run_stage, tmp_path) -
     Implementing plan: Plan 03 (`nus/backends/nmrpipe_smile.py
     ::reconstruct_indirect`), Task 2 (QF branch).
     """
-    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+    from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
 
     f2_processed_fid = tmp_path / "f2_processed.fid"
     f2_processed_fid.write_bytes(b"\x01" * 64)

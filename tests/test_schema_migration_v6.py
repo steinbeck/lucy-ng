@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from lucy_ng.database.manager import DatabaseManager
-from lucy_ng.database.models import BondPairStatsRecord, HOSEStatsRecord
-from lucy_ng.database.schema import (
+from ailsa.database.manager import DatabaseManager
+from ailsa.database.models import BondPairStatsRecord, HOSEStatsRecord
+from ailsa.database.schema import (
     CREATE_COMPOUNDS_TABLE,
     CREATE_FORMULA_INDEX,
     CREATE_HOSE_STATS_INDEX,
@@ -64,7 +64,7 @@ def create_v5_database(db_path: Path) -> None:
     conn.commit()
 
     # Migrate to v4 (adds hybridisation columns)
-    from lucy_ng.database.schema import migrate_v3_to_v4
+    from ailsa.database.schema import migrate_v3_to_v4
 
     migrate_v3_to_v4(conn)
 

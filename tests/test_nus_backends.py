@@ -7,8 +7,8 @@ path. The positive/sourced path is manual-only (see 97-VALIDATION.md).
 
 import subprocess
 
-from lucy_ng.nus.backends import get_backend, list_available_backends
-from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+from ailsa.nus.backends import get_backend, list_available_backends
+from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
 
 
 class TestNusBackendAvailability:

@@ -11,8 +11,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from lucy_ng.cli.fragment import fragment
-from lucy_ng.fragments.lsd_formatter import DEFFFormatter
+from ailsa.cli.fragment import fragment
+from ailsa.fragments.lsd_formatter import DEFFFormatter
 
 
 @pytest.fixture()
@@ -330,7 +330,7 @@ class TestLSDSmokeGoodlist:
 
 
 class TestToLsdFilterIndex:
-    """Test --filter-index option for lucy fragment to-lsd CLI."""
+    """Test --filter-index option for ailsa fragment to-lsd CLI."""
 
     def test_to_lsd_default_filter_index_is_3(self, runner: CliRunner, tmp_path: Path) -> None:
         """Default --filter-index is 3 (reserves F1/F2 for ring exclusion)."""

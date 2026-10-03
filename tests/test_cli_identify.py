@@ -1,6 +1,6 @@
-"""CliRunner tests for the ``lucy identify`` command.
+"""CliRunner tests for the ``ailsa identify`` command.
 
-``lucy identify`` adapts the shared identity core (:mod:`lucy_ng.identity`) to
+``ailsa identify`` adapts the shared identity core (:mod:`ailsa.identity`) to
 Click I/O. These tests lock the --format json schema (inchi_key + verdict) and
 the text-format smoke path, plus the CASE5 (indigo vs isoindigo) mismatch and
 CASE4 (chamazulene no-hit) verdicts. The DB-dependent CASE4/CASE5 cases skip
@@ -16,8 +16,8 @@ import json
 import pytest
 from click.testing import CliRunner
 
-from lucy_ng.cli.identify import identify
-from lucy_ng.database.finder import DatabaseFinder
+from ailsa.cli.identify import identify
+from ailsa.database.finder import DatabaseFinder
 
 # Reused fixtures (VERIFIED against the live DB, see 87-RESEARCH.md).
 CHAMAZULENE_SMILES = "CCc1ccc2ccc(C)c-2c(C)c1"

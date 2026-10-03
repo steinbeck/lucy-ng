@@ -5,8 +5,8 @@ import sys
 
 from click.testing import CliRunner
 
-from lucy_ng import __version__
-from lucy_ng.cli import cli
+from ailsa import __version__
+from ailsa.cli import cli
 
 
 class TestCLIMain:
@@ -24,7 +24,7 @@ class TestCLIMain:
         runner = CliRunner()
         result = runner.invoke(cli, ["--help"])
         assert result.exit_code == 0
-        assert "lucy-ng" in result.output
+        assert "ailsa" in result.output
         assert "Computer-Assisted Structure Elucidation" in result.output
 
     def test_no_args(self) -> None:
@@ -64,7 +64,7 @@ class TestCLIMain:
 
     def test_nus_help_lists_check_params_schedule(self) -> None:
         """D-02: only the implemented check/params/schedule subcommands are
-        registered on `lucy nus`; no dead reconstruct/pipeline stubs."""
+        registered on `ailsa nus`; no dead reconstruct/pipeline stubs."""
         runner = CliRunner()
         result = runner.invoke(cli, ["nus", "--help"])
         assert result.exit_code == 0
@@ -74,7 +74,7 @@ class TestCLIMain:
 
 
 class TestNusImportSafe:
-    """NUS-05: core `lucy` CLI stays importable without the [nus] extra.
+    """NUS-05: core `ailsa` CLI stays importable without the [nus] extra.
 
     Phase 97's nus/ submodules only use core dependencies (nmrglue, pydantic,
     click stdlib), so this is a plain "does the process exit 0" smoke check --
@@ -84,12 +84,12 @@ class TestNusImportSafe:
 
     def test_cli_import_without_nus_extra(self) -> None:
         result = subprocess.run(
-            [sys.executable, "-c", "from lucy_ng.cli import cli"],
+            [sys.executable, "-c", "from ailsa.cli import cli"],
             capture_output=True,
             text=True,
         )
         assert result.returncode == 0, (
-            f"lucy_ng.cli failed to import.\n"
+            f"ailsa.cli failed to import.\n"
             f"stdout: {result.stdout}\nstderr: {result.stderr}"
         )
 

@@ -1,8 +1,8 @@
-"""Regression test: lucy lsd run on ibuprofen_no_4j.lsd produces stable InChI set.
+"""Regression test: ailsa lsd run on ibuprofen_no_4j.lsd produces stable InChI set.
 
 What this test does
 -------------------
-Runs ``lucy lsd run`` (via LSDRunner) on the versioned ibuprofen LSD fixture
+Runs ``ailsa lsd run`` (via LSDRunner) on the versioned ibuprofen LSD fixture
 (no 4J correlations, classic v1 form — no inventory block, no `; ELIM`
 annotations).  The resulting SMILES are converted to InChIs and compared as a
 **set** against a manually-verified baseline file.  Order does not matter; only
@@ -14,7 +14,7 @@ When this test fails after an LSD version update
 2. Verify that the new InChI set is chemically plausible: all structures should
    be C13H18O2 isomers without strained rings or other LSD artefacts.
 3. If the new set is correct, regenerate the baseline **manually**:
-   a. Run LSD on the fixture: ``lucy lsd run tests/fixtures/regression/ibuprofen_no_4j.lsd``
+   a. Run LSD on the fixture: ``ailsa lsd run tests/fixtures/regression/ibuprofen_no_4j.lsd``
    b. Convert solutions to SMILES with outlsd: ``outlsd 5 < compound.sol > solutions.smi``
    c. Convert SMILES to InChIs:
       ``python3 -c "from pathlib import Path; from rdkit import Chem; from rdkit.Chem.inchi import MolToInchi; ...``
@@ -39,7 +39,7 @@ import pytest
 from rdkit import Chem
 from rdkit.Chem.inchi import MolToInchi  # type: ignore[import-untyped]
 
-from lucy_ng.lsd.runner import LSDRunner
+from ailsa.lsd.runner import LSDRunner
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "regression"
 

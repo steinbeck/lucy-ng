@@ -1,7 +1,7 @@
 """Test neighbour element tracking in HOSE stats generator."""
 
-from lucy_ng.prediction.hose_parser import parse_sphere_1
-from lucy_ng.prediction.stats_generator import WelfordAccumulator
+from ailsa.prediction.hose_parser import parse_sphere_1
+from ailsa.prediction.stats_generator import WelfordAccumulator
 
 
 def test_update_with_neighbors_counts():

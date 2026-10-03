@@ -9,9 +9,9 @@ that detection results match expected chemistry principles.
 import pytest
 from pathlib import Path
 
-from lucy_ng.database import DatabaseManager
-from lucy_ng.detection import StatisticalDetector
-from lucy_ng.detection.grouping import group_signals
+from ailsa.database import DatabaseManager
+from ailsa.detection import StatisticalDetector
+from ailsa.detection.grouping import group_signals
 
 
 @pytest.fixture

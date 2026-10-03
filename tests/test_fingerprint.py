@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from lucy_ng.fragments import shifts_to_fingerprint
+from ailsa.fragments import shifts_to_fingerprint
 
 
 class TestShiftsToFingerprint:

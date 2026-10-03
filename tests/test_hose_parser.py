@@ -1,6 +1,6 @@
 """Tests for HOSE code sphere 1 parsing."""
 
-from lucy_ng.prediction.hose_parser import parse_sphere_1
+from ailsa.prediction.hose_parser import parse_sphere_1
 
 
 def test_parse_simple():

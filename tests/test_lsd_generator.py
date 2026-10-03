@@ -4,12 +4,12 @@ import pytest
 from pathlib import Path
 import tempfile
 
-from lucy_ng import BrukerReader, DEPTGuidedPicker, Peak1D, Peak2D, PeakList1D, PeakList2D
-from lucy_ng.lsd.models import Hybridization, LSDAtom, LSDConstraint, LSDCorrelation, LSDProblem
-from lucy_ng.lsd.generator import LSDInputGenerator
-from lucy_ng.detection.models import SignalGroup
-from lucy_ng.detection.grouping import group_signals
-from lucy_ng.lsd.generator import detect_aromatic_cosy_pairs
+from ailsa import BrukerReader, DEPTGuidedPicker, Peak1D, Peak2D, PeakList1D, PeakList2D
+from ailsa.lsd.models import Hybridization, LSDAtom, LSDConstraint, LSDCorrelation, LSDProblem
+from ailsa.lsd.generator import LSDInputGenerator
+from ailsa.detection.models import SignalGroup
+from ailsa.detection.grouping import group_signals
+from ailsa.lsd.generator import detect_aromatic_cosy_pairs
 
 
 class TestLSDInputGeneratorBasic:
@@ -515,7 +515,7 @@ class TestPyLSDValidator:
 
     def test_validate_pylsd_carbon_mismatch(self):
         """Raises ValueError when FORM declares 13 carbons but MULT defines 12."""
-        from lucy_ng.lsd.generator import validate_pylsd_input
+        from ailsa.lsd.generator import validate_pylsd_input
         problem = LSDProblem(molecular_formula="C13H18O2")
         # Add only 12 carbon atoms
         for i in range(1, 13):
@@ -525,7 +525,7 @@ class TestPyLSDValidator:
 
     def test_validate_pylsd_carbon_match(self):
         """No error when FORM carbon count matches MULT carbon count."""
-        from lucy_ng.lsd.generator import validate_pylsd_input
+        from ailsa.lsd.generator import validate_pylsd_input
         problem = LSDProblem(molecular_formula="C2H4O2")
         problem.add_atom(LSDAtom(1, "C", Hybridization.SP2, 0))
         problem.add_atom(LSDAtom(2, "C", Hybridization.SP3, 2))
@@ -533,14 +533,14 @@ class TestPyLSDValidator:
 
     def test_validate_pylsd_no_formula(self):
         """No error when molecular_formula is None."""
-        from lucy_ng.lsd.generator import validate_pylsd_input
+        from ailsa.lsd.generator import validate_pylsd_input
         problem = LSDProblem(molecular_formula=None)
         problem.add_atom(LSDAtom(1, "C", Hybridization.SP3, 0))
         validate_pylsd_input(problem)  # Should not raise
 
     def test_validate_pylsd_ignores_heteroatom_count(self):
         """Only carbon count is checked — mismatched oxygen count does not raise."""
-        from lucy_ng.lsd.generator import validate_pylsd_input
+        from ailsa.lsd.generator import validate_pylsd_input
         problem = LSDProblem(molecular_formula="C2H4O2")
         problem.add_atom(LSDAtom(1, "C", Hybridization.SP2, 0))
         problem.add_atom(LSDAtom(2, "C", Hybridization.SP3, 2))
@@ -652,7 +652,7 @@ class TestLSDGeneratorEndToEnd:
 
         from rdkit import Chem
 
-        from lucy_ng.lsd.runner import LSDRunner
+        from ailsa.lsd.runner import LSDRunner
 
         # Build a minimal benzene-ring-capable problem:
         # 6 sp2 CH atoms with 3 COSY pairs encoding ring adjacency.
@@ -970,7 +970,7 @@ class TestDetectAromaticCosyIntegration:
 
         from rdkit import Chem
 
-        from lucy_ng.lsd.runner import LSDRunner
+        from ailsa.lsd.runner import LSDRunner
 
         lsd_fixture = FIXTURE_DIR_GENERATOR / "arm_a_ring_excl.lsd"
         assert lsd_fixture.exists(), f"Fixture not found: {lsd_fixture}"

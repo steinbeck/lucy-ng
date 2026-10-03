@@ -1,6 +1,6 @@
 """QC-03/D-07: the pipeline write/quarantine boundary (Phase 99 Plan 04).
 
-`lucy nus pipeline` writes productive `analysis/nmr_peaks/*.json` only when
+`ailsa nus pipeline` writes productive `analysis/nmr_peaks/*.json` only when
 the QC verdict is PASS or PARTIAL; on FAIL, nothing reaches the consumable
 location -- output goes to `<stage_dir>/qc_failed/` instead, and the
 command exits non-zero. This extends the FIX-10 constraint-hardness-guard
@@ -35,7 +35,7 @@ def test_fail_verdict_quarantines_and_exits_nonzero(tmp_path, mock_pipeline_stag
     """
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     expdir = tmp_path / "expdir"
     expdir.mkdir()
@@ -70,7 +70,7 @@ def test_pass_writes_consumable_peaks(tmp_path, mock_pipeline_stages) -> None:
     """
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     expdir = tmp_path / "expdir"
     expdir.mkdir()
@@ -103,7 +103,7 @@ def test_partial_writes_with_warning(tmp_path, mock_pipeline_stages) -> None:
     """
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     expdir = tmp_path / "expdir"
     expdir.mkdir()
@@ -134,7 +134,7 @@ def test_fail_never_writes_staged_verdict_less_payload_to_consumable(
     """
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     expdir = tmp_path / "expdir"
     expdir.mkdir()

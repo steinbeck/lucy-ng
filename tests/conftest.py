@@ -1,11 +1,11 @@
-"""Pytest fixtures for lucy-ng tests."""
+"""Pytest fixtures for ailsa tests."""
 
 from pathlib import Path
 
 import numpy as np
 import pytest
 
-from lucy_ng.models import Peak1D, Peak2D, PeakList1D, PeakList2D, Spectrum1D, Spectrum2D
+from ailsa.models import Peak1D, Peak2D, PeakList1D, PeakList2D, Spectrum1D, Spectrum2D
 
 
 @pytest.fixture
@@ -170,7 +170,7 @@ def webview_analysis_dir(tmp_path: Path) -> Path:
 def webview_server(webview_analysis_dir: Path):  # type: ignore[no-untyped-def]
     """Start a real webview server subprocess and yield (state, analysis_dir).
 
-    The fixture invokes ``lucy webview serve`` as a background subprocess so
+    The fixture invokes ``ailsa webview serve`` as a background subprocess so
     that the lifecycle code under test actually writes ``.webview.json``.
     Teardown sends SIGTERM to the server pid recorded in the state file and
     removes the file, guaranteeing no orphan processes.
@@ -194,7 +194,7 @@ def webview_server(webview_analysis_dir: Path):  # type: ignore[no-untyped-def]
         [
             sys.executable,
             "-m",
-            "lucy_ng.cli",
+            "ailsa.cli",
             "webview",
             "serve",
             str(webview_analysis_dir),
@@ -215,7 +215,7 @@ def webview_server(webview_analysis_dir: Path):  # type: ignore[no-untyped-def]
     state = None
     if state_file.exists():
         try:
-            from lucy_ng.webview.state import WebviewState  # noqa: PLC0415
+            from ailsa.webview.state import WebviewState  # noqa: PLC0415
 
             state = WebviewState.model_validate_json(state_file.read_text())
         except Exception:  # noqa: BLE001
@@ -351,7 +351,7 @@ def final_analysis_dir(tmp_path: Path) -> Path:
         )
     )
 
-    # ranking_results.json — written by lucy lsd rank --format json
+    # ranking_results.json — written by ailsa lsd rank --format json
     (d / "ranking_results.json").write_text(
         _json.dumps(
             {

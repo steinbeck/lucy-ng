@@ -8,8 +8,8 @@ NMRPipe/SMILE binary on PATH -- D-04's CI-safe mocked-subprocess-boundary
 strategy.
 
 CRITICAL (collection safety): this file must NOT import
-`lucy_ng.nus.runner` or `lucy_ng.nus.postprocess` at module level -- neither
-module exists yet in Wave 0 (they ship in Plans 02-05). All `lucy_ng.nus.*`
+`ailsa.nus.runner` or `ailsa.nus.postprocess` at module level -- neither
+module exists yet in Wave 0 (they ship in Plans 02-05). All `ailsa.nus.*`
 references are deferred as *string* monkeypatch targets inside fixture
 bodies (`raising=False`), never as top-level imports, so `tests/nus/` stays
 collectable on a machine with no NMRPipe and before those modules exist.
@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 
 # Directory holding the Phase-97 real-data fixtures (acqus/acqu2s/nuslist/
-# pdata) for the three C20H32O2 NUS experiments. Pure pathlib -- no lucy_ng
+# pdata) for the three C20H32O2 NUS experiments. Pure pathlib -- no ailsa
 # import required to resolve this path.
 _NUS_FIXTURES_ROOT = Path(__file__).parent.parent / "fixtures" / "nus"
 
@@ -34,7 +34,7 @@ _FIXTURE_NAMES = {"exp2_cosy", "exp3_hsqc", "exp4_hmbc"}
 # Phase 99 (Peak-Pick Bridge + QC Gate + CLI) Wave 0 fixture directories --
 # real known-bad home-IST peak lists (QC-02 FAIL side) and hand-authored
 # synthetic clean peak lists (QC-02 PASS side, no real clean reconstruction
-# exists until Phase 100). Pure pathlib, no lucy_ng import required.
+# exists until Phase 100). Pure pathlib, no ailsa import required.
 _KNOWN_BAD_PEAKS_DIR = _NUS_FIXTURES_ROOT / "known_bad_peaks"
 _CLEAN_PEAKS_DIR = _NUS_FIXTURES_ROOT / "clean_peaks_synthetic"
 
@@ -214,7 +214,7 @@ def make_valid_ft2(tmp_path: Path) -> Callable[..., Path]:
 
 @pytest.fixture
 def mock_run_stage(monkeypatch: pytest.MonkeyPatch) -> dict:
-    """Monkeypatch `lucy_ng.nus.runner.run_stage` with a call recorder.
+    """Monkeypatch `ailsa.nus.runner.run_stage` with a call recorder.
 
     `run_stage` does not exist yet in Wave 0 (ships Plan 02) -- monkeypatch
     BY STRING TARGET with `raising=False` so this fixture is safe to use
@@ -243,10 +243,10 @@ def mock_run_stage(monkeypatch: pytest.MonkeyPatch) -> dict:
         captured["pipelines"][name] = stages
 
     monkeypatch.setattr(
-        "lucy_ng.nus.runner.run_stage", _fake_run_stage, raising=False
+        "ailsa.nus.runner.run_stage", _fake_run_stage, raising=False
     )
     monkeypatch.setattr(
-        "lucy_ng.nus.runner.run_pipeline_stage",
+        "ailsa.nus.runner.run_pipeline_stage",
         _fake_run_pipeline_stage,
         raising=False,
     )
@@ -255,7 +255,7 @@ def mock_run_stage(monkeypatch: pytest.MonkeyPatch) -> dict:
 
 @pytest.fixture
 def mock_pipeline_stages(monkeypatch: pytest.MonkeyPatch) -> Callable[..., object]:
-    """Factory: monkeypatch `lucy nus pipeline`'s three external-dependency
+    """Factory: monkeypatch `ailsa nus pipeline`'s three external-dependency
     seams for CLI tests (Phase 99 Plan 04) -- `NusRunner.reconstruct()`
     (no real NMRPipe+SMILE binary needed), `read_nus_params()` (no real
     Bruker `acqus`/`acqu2s` needed), and `build_spectrum2d()` (no real
@@ -283,8 +283,8 @@ def mock_pipeline_stages(monkeypatch: pytest.MonkeyPatch) -> Callable[..., objec
     ) -> object:
         import numpy as np
 
-        from lucy_ng.models import Spectrum2D
-        from lucy_ng.models.nus import (
+        from ailsa.models import Spectrum2D
+        from ailsa.models.nus import (
             NusAcquisitionParams,
             NusReconstructionResult,
             QcCheckResult,
@@ -314,7 +314,7 @@ def mock_pipeline_stages(monkeypatch: pytest.MonkeyPatch) -> Callable[..., objec
             nus_td=256,
         )
         monkeypatch.setattr(
-            "lucy_ng.nus.params.read_nus_params", lambda expdir: params
+            "ailsa.nus.params.read_nus_params", lambda expdir: params
         )
 
         def _fake_reconstruct(
@@ -334,7 +334,7 @@ def mock_pipeline_stages(monkeypatch: pytest.MonkeyPatch) -> Callable[..., objec
             )
 
         monkeypatch.setattr(
-            "lucy_ng.nus.runner.NusRunner.reconstruct", _fake_reconstruct
+            "ailsa.nus.runner.NusRunner.reconstruct", _fake_reconstruct
         )
 
         rng = np.random.default_rng(11)
@@ -355,7 +355,7 @@ def mock_pipeline_stages(monkeypatch: pytest.MonkeyPatch) -> Callable[..., objec
             frequency=500.13,
         )
         monkeypatch.setattr(
-            "lucy_ng.nus.bridge.build_spectrum2d",
+            "ailsa.nus.bridge.build_spectrum2d",
             lambda processed_ft2, params, experiment_type: spectrum,
         )
 
@@ -386,7 +386,7 @@ def mock_pipeline_stages(monkeypatch: pytest.MonkeyPatch) -> Callable[..., objec
             errors=[],
         )
         monkeypatch.setattr(
-            "lucy_ng.nus.qc.run_qc_checks", lambda peaks_dir, config=None: report
+            "ailsa.nus.qc.run_qc_checks", lambda peaks_dir, config=None: report
         )
         return report
 

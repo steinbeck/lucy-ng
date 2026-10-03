@@ -21,7 +21,7 @@ def test_f2_direct_chain_runs_before_transpose_before_smile_input(
 
     Implementing plan: Plan 04 (`nus/postprocess.py::process_direct`).
     """
-    from lucy_ng.nus.postprocess import process_direct
+    from ailsa.nus.postprocess import process_direct
 
     converted_fid = tmp_path / "converted.fid"
     converted_fid.write_bytes(b"\x01" * 64)
@@ -53,7 +53,7 @@ def test_f2_phase_constants_thread_through(mock_run_stage, tmp_path) -> None:
 
     Implementing plan: Plan 04 (`nus/postprocess.py::process_direct`).
     """
-    from lucy_ng.nus.postprocess import process_direct
+    from ailsa.nus.postprocess import process_direct
 
     converted_fid = tmp_path / "converted.fid"
     converted_fid.write_bytes(b"\x01" * 64)
@@ -73,7 +73,7 @@ def test_magnitude_branch_skips_phase(mock_run_stage, tmp_path) -> None:
 
     Implementing plan: Plan 04 (`nus/postprocess.py::process_direct`).
     """
-    from lucy_ng.nus.postprocess import process_direct
+    from ailsa.nus.postprocess import process_direct
 
     converted_fid = tmp_path / "converted.fid"
     converted_fid.write_bytes(b"\x01" * 64)
@@ -93,7 +93,7 @@ def test_ppm_axes_reversed(tmp_path) -> None:
     Implementing plan: Plan 04 (`nus/postprocess.py::process_indirect` /
     its ppm-axis helper).
     """
-    from lucy_ng.nus.postprocess import ppm_axis_for_dimension
+    from ailsa.nus.postprocess import ppm_axis_for_dimension
 
     reconstructed_fid = tmp_path / "reconstructed.ft1"
     reconstructed_fid.write_bytes(b"\x01" * 64)
@@ -118,7 +118,7 @@ def test_ppm_calibrated_to_1d_reference(tmp_path) -> None:
     Implementing plan: Plan 04 (`nus/postprocess.py::process_indirect` /
     its calibration cross-check helper).
     """
-    from lucy_ng.nus.postprocess import calibrate_against_1d_reference
+    from ailsa.nus.postprocess import calibrate_against_1d_reference
 
     computed_axis = [200.0, 150.0, 100.0, 50.0, 0.0]
     reference_shifts = [145.2, 42.1]

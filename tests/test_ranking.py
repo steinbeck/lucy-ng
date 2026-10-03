@@ -6,11 +6,11 @@ from unittest.mock import MagicMock, patch
 from pathlib import Path
 import tempfile
 
-from lucy_ng.ranking.models import ShiftAssignment, RankedSolution, RankingResult
-from lucy_ng.ranking.ranker import SolutionRanker
-from lucy_ng.lsd.parser import LSDSolution
-from lucy_ng.prediction import C13Predictor
-from lucy_ng.prediction.models import PredictionResult, PredictedShift
+from ailsa.ranking.models import ShiftAssignment, RankedSolution, RankingResult
+from ailsa.ranking.ranker import SolutionRanker
+from ailsa.lsd.parser import LSDSolution
+from ailsa.prediction import C13Predictor
+from ailsa.prediction.models import PredictionResult, PredictedShift
 
 
 def make_predicted_shift(atom_index: int, shift: float, confidence: float = 0.9) -> PredictedShift:
@@ -767,7 +767,7 @@ class TestRankingCLI:
 
     def test_cli_imports(self):
         """Test that CLI imports work correctly."""
-        from lucy_ng.cli.lsd import lsd_rank, _get_default_table_path
+        from ailsa.cli.lsd import lsd_rank, _get_default_table_path
         assert callable(lsd_rank)
         assert callable(_get_default_table_path)
 
@@ -915,8 +915,8 @@ def temp_db(tmp_path):
     so SolutionRanker.from_database / resolve_c13_predictor can be exercised
     without the 3.97 GB production database.
     """
-    from lucy_ng.database import DatabaseManager
-    from lucy_ng.database.models import HOSEStatsRecord
+    from ailsa.database import DatabaseManager
+    from ailsa.database.models import HOSEStatsRecord
 
     db_path = tmp_path / "test_rank.db"
     db = DatabaseManager(db_path)
@@ -937,7 +937,7 @@ class TestSolutionRankerFromDatabase:
 
     def test_from_database_returns_db_backed_ranker(self, temp_db):
         """from_database returns a ranker whose predictor uses a DatabaseHOSELookup."""
-        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+        from ailsa.prediction.db_lookup import DatabaseHOSELookup
 
         ranker = SolutionRanker.from_database(temp_db)
 
@@ -971,7 +971,7 @@ class TestResolveC13Predictor:
 
     def _make_json_table(self, tmp_path):
         """Build a minimal on-disk JSON HOSE lookup table the loader accepts."""
-        from lucy_ng.prediction.lookup import HOSELookupTable
+        from ailsa.prediction.lookup import HOSELookupTable
 
         table = HOSELookupTable()
         table.add_entry("C-4;HHHC(//", 15.0)
@@ -982,8 +982,8 @@ class TestResolveC13Predictor:
 
     def test_resolve_explicit_db(self, temp_db):
         """Explicit db= yields a DB-backed predictor (priority 1)."""
-        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
-        from lucy_ng.prediction.resolver import resolve_c13_predictor
+        from ailsa.prediction.db_lookup import DatabaseHOSELookup
+        from ailsa.prediction.resolver import resolve_c13_predictor
 
         predictor = resolve_c13_predictor(db=temp_db)
 
@@ -991,8 +991,8 @@ class TestResolveC13Predictor:
 
     def test_resolve_explicit_table(self, tmp_path):
         """Explicit table= yields a table-backed predictor (priority 2)."""
-        from lucy_ng.prediction.lookup import HOSELookupTable
-        from lucy_ng.prediction.resolver import resolve_c13_predictor
+        from ailsa.prediction.lookup import HOSELookupTable
+        from ailsa.prediction.resolver import resolve_c13_predictor
 
         table_path = self._make_json_table(tmp_path)
         predictor = resolve_c13_predictor(table=table_path)
@@ -1001,9 +1001,9 @@ class TestResolveC13Predictor:
 
     def test_resolve_autodetect_prefers_database(self, temp_db, monkeypatch):
         """With no explicit args, an auto-detected DB wins over any table (priority 3)."""
-        from lucy_ng.database.finder import DatabaseFinder
-        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
-        from lucy_ng.prediction.resolver import resolve_c13_predictor
+        from ailsa.database.finder import DatabaseFinder
+        from ailsa.prediction.db_lookup import DatabaseHOSELookup
+        from ailsa.prediction.resolver import resolve_c13_predictor
 
         monkeypatch.setattr(
             DatabaseFinder, "find_hose_database", staticmethod(lambda: temp_db)
@@ -1014,9 +1014,9 @@ class TestResolveC13Predictor:
 
     def test_resolve_no_backend_raises(self, monkeypatch, tmp_path):
         """No db/table and no auto-detected backend raises a clear error."""
-        from lucy_ng.database.finder import DatabaseFinder
-        from lucy_ng.prediction import resolver
-        from lucy_ng.prediction.resolver import resolve_c13_predictor
+        from ailsa.database.finder import DatabaseFinder
+        from ailsa.prediction import resolver
+        from ailsa.prediction.resolver import resolve_c13_predictor
 
         monkeypatch.setattr(
             DatabaseFinder, "find_hose_database", staticmethod(lambda: None)
@@ -1029,27 +1029,27 @@ class TestResolveC13Predictor:
             resolver, "_shipped_table_candidates", lambda: [tmp_path / "nope.json.gz"]
         )
 
-        with pytest.raises(Exception, match="lucy database download"):
+        with pytest.raises(Exception, match="ailsa database download"):
             resolve_c13_predictor()
 
     def test_resolve_propagates_max_radius(self, temp_db):
         """max_radius is propagated to the constructed predictor."""
-        from lucy_ng.prediction.resolver import resolve_c13_predictor
+        from ailsa.prediction.resolver import resolve_c13_predictor
 
         predictor = resolve_c13_predictor(db=temp_db, max_radius=3)
 
         assert predictor._max_radius == 3
 
     def test_resolver_no_cli_layering_inversion(self):
-        """The resolver module must not import from lucy_ng.cli (layering guard)."""
-        import lucy_ng.prediction.resolver as resolver_mod
+        """The resolver module must not import from ailsa.cli (layering guard)."""
+        import ailsa.prediction.resolver as resolver_mod
 
         source = Path(resolver_mod.__file__).read_text()
         import_lines = [
             line for line in source.splitlines()
             if line.strip().startswith(("import ", "from "))
         ]
-        assert not any("lucy_ng.cli" in line for line in import_lines)
+        assert not any("ailsa.cli" in line for line in import_lines)
 
 
 @pytest.fixture
@@ -1069,15 +1069,15 @@ def smiles_file(tmp_path):
 
 
 class TestRankCLIBackendWiring:
-    """RANK-01: `lucy lsd rank` resolves its predictor through resolve_c13_predictor.
+    """RANK-01: `ailsa lsd rank` resolves its predictor through resolve_c13_predictor.
 
     These CLI-level tests pin that the ranker command honours --db / --table /
     --max-radius and auto-detects the SQLite DB first, exactly like predict c13.
     """
 
     def test_cli_db_uses_database_backend(self, cli_runner, temp_db, smiles_file):
-        """`lucy lsd rank --db <temp_db>` ranks via the DB backend (JSON output parses)."""
-        from lucy_ng.cli import cli
+        """`ailsa lsd rank --db <temp_db>` ranks via the DB backend (JSON output parses)."""
+        from ailsa.cli import cli
 
         result = cli_runner.invoke(
             cli,
@@ -1094,9 +1094,9 @@ class TestRankCLIBackendWiring:
         assert "solutions" in data
 
     def test_cli_table_uses_table_backend(self, cli_runner, tmp_path, smiles_file):
-        """`lucy lsd rank --table <json>` ranks via the JSON table backend."""
-        from lucy_ng.cli import cli
-        from lucy_ng.prediction.lookup import HOSELookupTable
+        """`ailsa lsd rank --table <json>` ranks via the JSON table backend."""
+        from ailsa.cli import cli
+        from ailsa.prediction.lookup import HOSELookupTable
 
         table = HOSELookupTable()
         table.add_entry("C-4;HHHC(//", 15.0)
@@ -1121,8 +1121,8 @@ class TestRankCLIBackendWiring:
         self, cli_runner, temp_db, smiles_file, monkeypatch
     ):
         """With no --db/--table, the rank command auto-detects the DB first (priority 3)."""
-        from lucy_ng.cli import cli
-        from lucy_ng.database.finder import DatabaseFinder
+        from ailsa.cli import cli
+        from ailsa.database.finder import DatabaseFinder
 
         monkeypatch.setattr(
             DatabaseFinder, "find_hose_database", staticmethod(lambda: temp_db)
@@ -1140,8 +1140,8 @@ class TestRankCLIBackendWiring:
         assert data["total_solutions"] == 1
 
     def test_cli_max_radius_option_accepted(self, cli_runner, temp_db, smiles_file):
-        """`lucy lsd rank --max-radius 4` is accepted and propagated without error."""
-        from lucy_ng.cli import cli
+        """`ailsa lsd rank --max-radius 4` is accepted and propagated without error."""
+        from ailsa.cli import cli
 
         result = cli_runner.invoke(
             cli,
@@ -1158,8 +1158,8 @@ class TestRankCLIBackendWiring:
         assert data["total_solutions"] == 1
 
     def test_cli_help_lists_db_and_max_radius(self, cli_runner):
-        """`lucy lsd rank --help` advertises both --db and --max-radius (parity surface)."""
-        from lucy_ng.cli import cli
+        """`ailsa lsd rank --help` advertises both --db and --max-radius (parity surface)."""
+        from ailsa.cli import cli
 
         result = cli_runner.invoke(cli, ["lsd", "rank", "--help"])
         assert result.exit_code == 0
@@ -1168,7 +1168,7 @@ class TestRankCLIBackendWiring:
 
     def test_cli_predict_c13_db_path_still_works(self, cli_runner, temp_db):
         """RANK-01 parity: predict c13 --db still works after the shared-helper refactor."""
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
 
         result = cli_runner.invoke(
             cli,
@@ -1222,7 +1222,7 @@ def _carbon_hose_codes(smiles, max_radius=6):
     """
     from rdkit import Chem
 
-    from lucy_ng.prediction.hose import HOSECodeGenerator
+    from ailsa.prediction.hose import HOSECodeGenerator
 
     gen = HOSECodeGenerator()
     mol = HOSECodeGenerator.prepare_mol(smiles)
@@ -1257,8 +1257,8 @@ def _seed_db_for_smiles(db_path, smiles, shifts, seed_radius=6):
     non-circular: low-radius collisions between isomers cannot give the wrong
     isomer a spurious perfect score.
     """
-    from lucy_ng.database import DatabaseManager
-    from lucy_ng.database.models import HOSEStatsRecord
+    from ailsa.database import DatabaseManager
+    from ailsa.database.models import HOSEStatsRecord
 
     db = DatabaseManager(db_path)
     db.create_tables()
@@ -1330,12 +1330,12 @@ class TestRankPredictParity:
     def test_rank01_path_parity_per_shift(self, request, fixture_name, smiles):
         """Both paths (ranker predictor vs C13Predictor.from_database) give
         bit-identical per-carbon PredictedShift lists (RANK-01)."""
-        from lucy_ng.prediction.predictor import C13Predictor
-        from lucy_ng.prediction.resolver import resolve_c13_predictor
+        from ailsa.prediction.predictor import C13Predictor
+        from ailsa.prediction.resolver import resolve_c13_predictor
 
         db_path = request.getfixturevalue(fixture_name)
 
-        # Path A: the SHARED resolver (what `lucy lsd rank` + `predict c13` use)
+        # Path A: the SHARED resolver (what `ailsa lsd rank` + `predict c13` use)
         resolver_pred = resolve_c13_predictor(db=db_path)
         # Path B: the direct factory (what predict c13 used before unification)
         direct_pred = C13Predictor.from_database(db_path)
@@ -1364,7 +1364,7 @@ class TestRankMAEAgreement:
     def test_rank02_agreement(self, request, fixture_name, smiles, shift_map):
         """Ranker sol.mae equals a hand-recomputed MAE within 0.05 ppm and
         matched_count agrees exactly (RANK-02)."""
-        from lucy_ng.prediction.resolver import resolve_c13_predictor
+        from ailsa.prediction.resolver import resolve_c13_predictor
 
         db_path = request.getfixturevalue(fixture_name)
         experimental = sorted(set(shift_map.values()))
@@ -1450,9 +1450,9 @@ class TestRankOrderingNonCircular:
 
 
 @pytest.mark.skipif(
-    __import__("lucy_ng.database.finder", fromlist=["DatabaseFinder"])
+    __import__("ailsa.database.finder", fromlist=["DatabaseFinder"])
     .DatabaseFinder.find_hose_database() is None,
-    reason="real HOSE DB not present (run: lucy database download)",
+    reason="real HOSE DB not present (run: ailsa database download)",
 )
 class TestRankRealDBOrderingFix:
     """RANK-03 ordering-fix validation against the production HOSE DB.
@@ -1493,7 +1493,7 @@ class TestRankRealDBOrderingFix:
     def test_rank03_real_db_ordering_fix(
         self, correct, wrong, experimental, total_carbons, mae_max, assert_full_match
     ):
-        from lucy_ng.database.finder import DatabaseFinder
+        from ailsa.database.finder import DatabaseFinder
 
         db_path = DatabaseFinder.find_hose_database()
         ranker = SolutionRanker.from_database(db_path, tolerance=3.0)

@@ -7,7 +7,7 @@ symmetry analysis for detecting equivalent atoms.
 import pytest
 import numpy as np
 
-from lucy_ng.analysis import (
+from ailsa.analysis import (
     CarbonHInfo,
     HydrogenBudgetAnalyzer,
     HydrogenBudgetResult,
@@ -17,8 +17,8 @@ from lucy_ng.analysis import (
     SymmetryAnalysisResult,
     SymmetryAnalyzer,
 )
-from lucy_ng.models import Peak1D, Peak2D, PeakList1D, PeakList2D, Spectrum2D
-from lucy_ng.processing.dept_guided_picker import DEPTGuidedResult
+from ailsa.models import Peak1D, Peak2D, PeakList1D, PeakList2D, Spectrum2D
+from ailsa.processing.dept_guided_picker import DEPTGuidedResult
 
 
 # --- Fixtures ---

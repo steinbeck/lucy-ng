@@ -1,4 +1,4 @@
-"""Tests for `lucy_ng.nus.schedule` (NUS-03).
+"""Tests for `ailsa.nus.schedule` (NUS-03).
 
 Covers the FnMODE-derived hard-fail assertion (`expected_sample_count`,
 `validate_schedule`), acquisition-order-preserving `nuslist` parsing
@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from lucy_ng.nus.schedule import (
+from ailsa.nus.schedule import (
     expected_sample_count,
     read_nus_schedule,
     validate_schedule,

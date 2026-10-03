@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from rdkit import Chem
 
-from lucy_ng.prediction import (
+from ailsa.prediction import (
     C13Predictor,
     HOSECodeGenerator,
     HOSELookupTable,
@@ -408,7 +408,7 @@ class TestCLIPredict:
 
     def test_predict_help(self, cli_runner):
         """Test predict command help."""
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
         result = cli_runner.invoke(cli, ["predict", "--help"])
         assert result.exit_code == 0
         assert "c13" in result.output
@@ -422,7 +422,7 @@ class TestCLIPredict:
         prediction succeeds (exit 0). If not found, it fails with a helpful error.
         Both outcomes are acceptable.
         """
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
 
         # Run from a temp directory where no database or table exists
         monkeypatch.chdir(tmp_path)
@@ -439,7 +439,7 @@ class TestCLIPredict:
 
     def test_predict_build_table_help(self, cli_runner):
         """Test build-table command help."""
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
         result = cli_runner.invoke(cli, ["predict", "build-table", "--help"])
         assert result.exit_code == 0
         assert "SD_PATH" in result.output
@@ -447,7 +447,7 @@ class TestCLIPredict:
 
     def test_predict_table_info_no_table(self, cli_runner):
         """Test table-info without table."""
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
         result = cli_runner.invoke(cli, ["predict", "table-info"])
         assert result.exit_code != 0
 
@@ -469,7 +469,7 @@ class TestHOSEStatsResult:
 
     def test_hose_stats_result_creation(self):
         """Test creating HOSEStatsResult."""
-        from lucy_ng.prediction.models import HOSEStatsResult
+        from ailsa.prediction.models import HOSEStatsResult
 
         result = HOSEStatsResult(mean=128.5, std=2.5, count=100)
         assert result.mean == 128.5
@@ -478,7 +478,7 @@ class TestHOSEStatsResult:
 
     def test_hose_stats_result_immutable(self):
         """Test that HOSEStatsResult is a dataclass."""
-        from lucy_ng.prediction.models import HOSEStatsResult
+        from ailsa.prediction.models import HOSEStatsResult
 
         result = HOSEStatsResult(mean=100.0, std=5.0, count=10)
         # Dataclasses are mutable by default but we just test it works
@@ -490,15 +490,15 @@ class TestHOSELookupProtocol:
 
     def test_lookup_table_implements_protocol(self):
         """Test that HOSELookupTable implements the protocol."""
-        from lucy_ng.prediction.lookup import HOSELookupProtocol, HOSELookupTable
+        from ailsa.prediction.lookup import HOSELookupProtocol, HOSELookupTable
 
         table = HOSELookupTable()
         assert isinstance(table, HOSELookupProtocol)
 
     def test_protocol_method_lookup_stats_at_radius(self):
         """Test protocol method lookup_stats_at_radius."""
-        from lucy_ng.prediction.lookup import HOSELookupTable
-        from lucy_ng.prediction.models import HOSEStatsResult
+        from ailsa.prediction.lookup import HOSELookupTable
+        from ailsa.prediction.models import HOSEStatsResult
 
         table = HOSELookupTable()
         table.add_entry("TEST", 10.0)
@@ -513,7 +513,7 @@ class TestHOSELookupProtocol:
 
     def test_protocol_method_has_code_at_radius(self):
         """Test protocol method has_code_at_radius."""
-        from lucy_ng.prediction.lookup import HOSELookupTable
+        from ailsa.prediction.lookup import HOSELookupTable
 
         table = HOSELookupTable()
         table.add_entry("EXISTS", 100.0)
@@ -528,8 +528,8 @@ class TestDatabaseHOSELookup:
     @pytest.fixture
     def temp_db(self, tmp_path):
         """Create a temporary database with test HOSE stats."""
-        from lucy_ng.database import DatabaseManager
-        from lucy_ng.database.models import HOSEStatsRecord
+        from ailsa.database import DatabaseManager
+        from ailsa.database.models import HOSEStatsRecord
 
         db_path = tmp_path / "test_hose.db"
         db = DatabaseManager(db_path)
@@ -549,7 +549,7 @@ class TestDatabaseHOSELookup:
 
     def test_from_db_path(self, temp_db):
         """Test creating DatabaseHOSELookup from path."""
-        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+        from ailsa.prediction.db_lookup import DatabaseHOSELookup
 
         lookup = DatabaseHOSELookup.from_db_path(temp_db)
         assert lookup.get_stats_count() == 4
@@ -557,8 +557,8 @@ class TestDatabaseHOSELookup:
 
     def test_lookup_stats_at_radius_found(self, temp_db):
         """Test lookup_stats_at_radius when code exists."""
-        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
-        from lucy_ng.prediction.models import HOSEStatsResult
+        from ailsa.prediction.db_lookup import DatabaseHOSELookup
+        from ailsa.prediction.models import HOSEStatsResult
 
         lookup = DatabaseHOSELookup.from_db_path(temp_db)
 
@@ -573,7 +573,7 @@ class TestDatabaseHOSELookup:
 
     def test_lookup_stats_at_radius_not_found(self, temp_db):
         """Test lookup_stats_at_radius when code doesn't exist."""
-        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+        from ailsa.prediction.db_lookup import DatabaseHOSELookup
 
         lookup = DatabaseHOSELookup.from_db_path(temp_db)
 
@@ -584,7 +584,7 @@ class TestDatabaseHOSELookup:
 
     def test_has_code_at_radius(self, temp_db):
         """Test has_code_at_radius method."""
-        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+        from ailsa.prediction.db_lookup import DatabaseHOSELookup
 
         lookup = DatabaseHOSELookup.from_db_path(temp_db)
 
@@ -597,8 +597,8 @@ class TestDatabaseHOSELookup:
 
     def test_implements_protocol(self, temp_db):
         """Test that DatabaseHOSELookup implements the protocol."""
-        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
-        from lucy_ng.prediction.lookup import HOSELookupProtocol
+        from ailsa.prediction.db_lookup import DatabaseHOSELookup
+        from ailsa.prediction.lookup import HOSELookupProtocol
 
         lookup = DatabaseHOSELookup.from_db_path(temp_db)
         assert isinstance(lookup, HOSELookupProtocol)
@@ -606,7 +606,7 @@ class TestDatabaseHOSELookup:
 
     def test_repr(self, temp_db):
         """Test string representation."""
-        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+        from ailsa.prediction.db_lookup import DatabaseHOSELookup
 
         lookup = DatabaseHOSELookup.from_db_path(temp_db)
         repr_str = repr(lookup)
@@ -621,8 +621,8 @@ class TestC13PredictorWithDatabase:
     @pytest.fixture
     def temp_db_with_ethanol(self, tmp_path):
         """Create a database with HOSE stats for ethanol prediction."""
-        from lucy_ng.database import DatabaseManager
-        from lucy_ng.database.models import HOSEStatsRecord
+        from ailsa.database import DatabaseManager
+        from ailsa.database.models import HOSEStatsRecord
 
         db_path = tmp_path / "test_predict.db"
         db = DatabaseManager(db_path)
@@ -661,7 +661,7 @@ class TestC13PredictorWithDatabase:
 
     def test_lookup_property(self, temp_db_with_ethanol):
         """Test that lookup property returns the backend."""
-        from lucy_ng.prediction.db_lookup import DatabaseHOSELookup
+        from ailsa.prediction.db_lookup import DatabaseHOSELookup
 
         predictor = C13Predictor.from_database(temp_db_with_ethanol)
         assert isinstance(predictor.lookup, DatabaseHOSELookup)
@@ -680,8 +680,8 @@ class TestCLIPredictWithDatabase:
     @pytest.fixture
     def temp_db_for_cli(self, tmp_path):
         """Create a database for CLI testing."""
-        from lucy_ng.database import DatabaseManager
-        from lucy_ng.database.models import HOSEStatsRecord
+        from ailsa.database import DatabaseManager
+        from ailsa.database.models import HOSEStatsRecord
 
         db_path = tmp_path / "test_cli.db"
         db = DatabaseManager(db_path)
@@ -698,7 +698,7 @@ class TestCLIPredictWithDatabase:
 
     def test_predict_c13_with_db_option(self, cli_runner, temp_db_for_cli):
         """Test prediction with explicit --db option."""
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
 
         result = cli_runner.invoke(
             cli, ["predict", "c13", "CC", "--db", str(temp_db_for_cli)]
@@ -709,7 +709,7 @@ class TestCLIPredictWithDatabase:
 
     def test_predict_c13_with_db_json_output(self, cli_runner, temp_db_for_cli):
         """Test JSON output with database."""
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
         import json as json_module
 
         result = cli_runner.invoke(
@@ -725,7 +725,7 @@ class TestCLIPredictWithDatabase:
 
     def test_predict_c13_help_shows_db_option(self, cli_runner):
         """Test that help shows --db option."""
-        from lucy_ng.cli import cli
+        from ailsa.cli import cli
 
         result = cli_runner.invoke(cli, ["predict", "c13", "--help"])
         assert result.exit_code == 0

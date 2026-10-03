@@ -1,6 +1,6 @@
 """QC-01: the six individual QC check functions.
 
-Implemented in Plan 02 (`lucy_ng.nus.qc`). One class per check (per D-02's
+Implemented in Plan 02 (`ailsa.nus.qc`). One class per check (per D-02's
 critical/soft split), each documenting the intended callable name.
 
 Critical checks (D-02, any violation -> FAIL): quaternary exclusion, ppm
@@ -17,25 +17,25 @@ class TestQuaternaryExclusion:
     known-quaternary shift (RESEARCH.md Pitfall 3; the primary defense
     against the known-bad HSQC's 4/27 false quaternary hits).
 
-    Intended callable: `lucy_ng.nus.qc.quaternary_exclusion(hsqc_peaks,
+    Intended callable: `ailsa.nus.qc.quaternary_exclusion(hsqc_peaks,
     known_quaternary_shifts, tol=0.5) -> QcCheckResult`.
     """
 
     def test_clean_passes(self, clean_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.quaternary_exclusion`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.quaternary_exclusion`)."""
         import json
 
-        from lucy_ng.nus.qc import quaternary_exclusion
+        from ailsa.nus.qc import quaternary_exclusion
 
         peaks = json.loads((clean_peaks_dir / "HSQC_exp3.json").read_text())["cross_peaks"]
         result = quaternary_exclusion(peaks, [142.00, 135.86, 79.35, 36.23, 37.86])
         assert result.passed is True
 
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.quaternary_exclusion`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.quaternary_exclusion`)."""
         import json
 
-        from lucy_ng.nus.qc import quaternary_exclusion
+        from ailsa.nus.qc import quaternary_exclusion
 
         peaks = json.loads((known_bad_peaks_dir / "HSQC_exp3.json").read_text())["cross_peaks"]
         result = quaternary_exclusion(peaks, [142.00, 135.86, 79.35, 36.23, 37.86])
@@ -46,15 +46,15 @@ class TestPpmCalibration:
     """Critical check: reuse `nus/postprocess.py::check_calibration()`
     against `GUIDE_S10_C13` (Don't Hand-Roll -- do not reimplement).
 
-    Intended callable: `lucy_ng.nus.qc.qc_check_ppm_calibration(hsqc_c13_shifts,
+    Intended callable: `ailsa.nus.qc.qc_check_ppm_calibration(hsqc_c13_shifts,
     tol=DEFAULT_CALIBRATION_TOL) -> QcCheckResult`.
     """
 
     def test_clean_passes(self, clean_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.qc_check_ppm_calibration`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.qc_check_ppm_calibration`)."""
         import json
 
-        from lucy_ng.nus.qc import qc_check_ppm_calibration
+        from ailsa.nus.qc import qc_check_ppm_calibration
 
         peaks = json.loads((clean_peaks_dir / "HSQC_exp3.json").read_text())["cross_peaks"]
         shifts = [p["c13_ppm"] for p in peaks]
@@ -62,10 +62,10 @@ class TestPpmCalibration:
         assert result.passed is True
 
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.qc_check_ppm_calibration`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.qc_check_ppm_calibration`)."""
         import json
 
-        from lucy_ng.nus.qc import qc_check_ppm_calibration
+        from ailsa.nus.qc import qc_check_ppm_calibration
 
         peaks = json.loads((known_bad_peaks_dir / "HSQC_exp3.json").read_text())["cross_peaks"]
         shifts = [p["c13_ppm"] + 5.0 for p in peaks]  # simulate a gross offset
@@ -78,26 +78,26 @@ class TestSignalToRidge:
     3, RESEARCH.md Pitfall 5). Known-bad COSY: 7/7 peaks share h1a=5.32
     (ridge_fraction == 1.0). Recommended starting FAIL threshold 0.5.
 
-    Intended callable: `lucy_ng.nus.qc.ridge_fraction(peaks, axis_key,
-    tol=0.05) -> float`, wrapped by `lucy_ng.nus.qc.signal_to_ridge(peaks,
+    Intended callable: `ailsa.nus.qc.ridge_fraction(peaks, axis_key,
+    tol=0.05) -> float`, wrapped by `ailsa.nus.qc.signal_to_ridge(peaks,
     axis_key, threshold=0.5) -> QcCheckResult`.
     """
 
     def test_clean_passes(self, clean_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.signal_to_ridge`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.signal_to_ridge`)."""
         import json
 
-        from lucy_ng.nus.qc import signal_to_ridge
+        from ailsa.nus.qc import signal_to_ridge
 
         peaks = json.loads((clean_peaks_dir / "COSY_exp2.json").read_text())["cross_peaks"]
         result = signal_to_ridge(peaks, "h1a_ppm")
         assert result.passed is True
 
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.signal_to_ridge`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.signal_to_ridge`)."""
         import json
 
-        from lucy_ng.nus.qc import signal_to_ridge
+        from ailsa.nus.qc import signal_to_ridge
 
         peaks = json.loads((known_bad_peaks_dir / "COSY_exp2.json").read_text())["cross_peaks"]
         result = signal_to_ridge(peaks, "h1a_ppm")
@@ -110,15 +110,15 @@ class TestHsqcCoverage:
     known-bad fixture alone, coverage is 100% there; quaternary-exclusion
     is the primary defense for that failure mode). Recommended floor 0.8.
 
-    Intended callable: `lucy_ng.nus.qc.hsqc_coverage(hsqc_peaks,
+    Intended callable: `ailsa.nus.qc.hsqc_coverage(hsqc_peaks,
     protonated_reference_shifts, floor=0.8) -> QcCheckResult`.
     """
 
     def test_clean_passes(self, clean_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.hsqc_coverage`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.hsqc_coverage`)."""
         import json
 
-        from lucy_ng.nus.qc import hsqc_coverage
+        from ailsa.nus.qc import hsqc_coverage
 
         peaks = json.loads((clean_peaks_dir / "HSQC_exp3.json").read_text())["cross_peaks"]
         protonated = [
@@ -129,10 +129,10 @@ class TestHsqcCoverage:
         assert result.passed is True
 
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.hsqc_coverage`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.hsqc_coverage`)."""
         import json
 
-        from lucy_ng.nus.qc import hsqc_coverage
+        from ailsa.nus.qc import hsqc_coverage
 
         peaks = json.loads((known_bad_peaks_dir / "HSQC_exp3.json").read_text())["cross_peaks"]
         # Force a deliberately incomplete reference list to exercise the
@@ -147,26 +147,26 @@ class TestEditedSignConsistency:
     multiplicity_hint (RESEARCH.md Pitfall 4 / Code Examples). Known-bad
     HSQC: violations at 22.63, 23.43, 67.06 (3 of 7 multi-peak carbons).
 
-    Intended callable: `lucy_ng.nus.qc.edited_sign_self_consistent(hsqc_peaks,
+    Intended callable: `ailsa.nus.qc.edited_sign_self_consistent(hsqc_peaks,
     tol=0.5) -> tuple[bool, list[float]]`, wrapped by
-    `lucy_ng.nus.qc.edited_sign_consistency(hsqc_peaks) -> QcCheckResult`.
+    `ailsa.nus.qc.edited_sign_consistency(hsqc_peaks) -> QcCheckResult`.
     """
 
     def test_clean_passes(self, clean_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.edited_sign_consistency`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.edited_sign_consistency`)."""
         import json
 
-        from lucy_ng.nus.qc import edited_sign_consistency
+        from ailsa.nus.qc import edited_sign_consistency
 
         peaks = json.loads((clean_peaks_dir / "HSQC_exp3.json").read_text())["cross_peaks"]
         result = edited_sign_consistency(peaks)
         assert result.passed is True
 
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.edited_sign_consistency`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.edited_sign_consistency`)."""
         import json
 
-        from lucy_ng.nus.qc import edited_sign_consistency
+        from ailsa.nus.qc import edited_sign_consistency
 
         peaks = json.loads((known_bad_peaks_dir / "HSQC_exp3.json").read_text())["cross_peaks"]
         result = edited_sign_consistency(peaks)
@@ -179,25 +179,25 @@ class TestCosyDiagonalSymmetry:
     textbook one-sided t1-ridge (all 7 share h1a=5.32, no diagonal
     symmetry), synthetic-clean COSY is diagonal-symmetric by construction.
 
-    Intended callable: `lucy_ng.nus.qc.cosy_diagonal_symmetry(cosy_peaks,
+    Intended callable: `ailsa.nus.qc.cosy_diagonal_symmetry(cosy_peaks,
     tol=0.05) -> QcCheckResult`.
     """
 
     def test_clean_passes(self, clean_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.cosy_diagonal_symmetry`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.cosy_diagonal_symmetry`)."""
         import json
 
-        from lucy_ng.nus.qc import cosy_diagonal_symmetry
+        from ailsa.nus.qc import cosy_diagonal_symmetry
 
         peaks = json.loads((clean_peaks_dir / "COSY_exp2.json").read_text())["cross_peaks"]
         result = cosy_diagonal_symmetry(peaks)
         assert result.passed is True
 
     def test_violation_trips(self, known_bad_peaks_dir) -> None:
-        """Implementing plan: Plan 02 (`lucy_ng.nus.qc.cosy_diagonal_symmetry`)."""
+        """Implementing plan: Plan 02 (`ailsa.nus.qc.cosy_diagonal_symmetry`)."""
         import json
 
-        from lucy_ng.nus.qc import cosy_diagonal_symmetry
+        from ailsa.nus.qc import cosy_diagonal_symmetry
 
         peaks = json.loads((known_bad_peaks_dir / "COSY_exp2.json").read_text())["cross_peaks"]
         result = cosy_diagonal_symmetry(peaks)

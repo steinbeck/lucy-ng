@@ -15,7 +15,7 @@ import pytest
 
 def test_native_arm64_no_critical_no_soft(monkeypatch: pytest.MonkeyPatch) -> None:
     """Native Apple-Silicon arm64, csh+tcsh present -> clean bill of health."""
-    from lucy_ng.nus import platform_check
+    from ailsa.nus import platform_check
 
     monkeypatch.setattr(platform_check.platform, "machine", lambda: "arm64")
     monkeypatch.setattr(platform_check.platform, "system", lambda: "Darwin")
@@ -43,7 +43,7 @@ def test_native_arm64_no_critical_no_soft(monkeypatch: pytest.MonkeyPatch) -> No
 
 def test_rosetta_translated_soft_warning_only(monkeypatch: pytest.MonkeyPatch) -> None:
     """Rosetta-translated x86_64 process on Darwin -> soft warning, never critical."""
-    from lucy_ng.nus import platform_check
+    from ailsa.nus import platform_check
 
     monkeypatch.setattr(platform_check.platform, "machine", lambda: "x86_64")
     monkeypatch.setattr(platform_check.platform, "system", lambda: "Darwin")
@@ -68,7 +68,7 @@ def test_rosetta_translated_soft_warning_only(monkeypatch: pytest.MonkeyPatch) -
 
 def test_missing_csh_and_tcsh_is_critical(monkeypatch: pytest.MonkeyPatch) -> None:
     """Both csh and tcsh absent from PATH -> a critical_platform_issue is present."""
-    from lucy_ng.nus import platform_check
+    from ailsa.nus import platform_check
 
     monkeypatch.setattr(platform_check.platform, "machine", lambda: "arm64")
     monkeypatch.setattr(platform_check.platform, "system", lambda: "Darwin")
@@ -95,7 +95,7 @@ def test_genuine_intel_or_indeterminate_sysctl_is_none(
 ) -> None:
     """A sysctl probe that errors/returns a non-0/1 value -> rosetta_translated
     is None, never coerced to False, and never raises."""
-    from lucy_ng.nus import platform_check
+    from ailsa.nus import platform_check
 
     monkeypatch.setattr(platform_check.platform, "machine", lambda: "x86_64")
     monkeypatch.setattr(platform_check.platform, "system", lambda: "Darwin")
@@ -117,7 +117,7 @@ def test_genuine_intel_or_indeterminate_sysctl_is_none(
 def test_linux_rosetta_not_applicable(monkeypatch: pytest.MonkeyPatch) -> None:
     """On Linux, sysctl is not applicable -> rosetta_translated is None;
     csh presence still governs critical status."""
-    from lucy_ng.nus import platform_check
+    from ailsa.nus import platform_check
 
     monkeypatch.setattr(platform_check.platform, "machine", lambda: "x86_64")
     monkeypatch.setattr(platform_check.platform, "system", lambda: "Linux")
@@ -138,7 +138,7 @@ def test_linux_rosetta_not_applicable(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_timeout_expired_resolves_to_none(monkeypatch: pytest.MonkeyPatch) -> None:
     """A TimeoutExpired from the sysctl probe resolves to None, not a crash."""
-    from lucy_ng.nus import platform_check
+    from ailsa.nus import platform_check
 
     monkeypatch.setattr(platform_check.platform, "system", lambda: "Darwin")
 
@@ -154,8 +154,8 @@ def test_diagnose_carries_additive_platform_key(monkeypatch: pytest.MonkeyPatch)
     """`diagnose()` returns a "platform" value equal to `detect_platform()`'s
     output, and all four pre-existing keys stay present and unchanged in
     shape."""
-    from lucy_ng.nus.backends import nmrpipe_smile
-    from lucy_ng.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
+    from ailsa.nus.backends import nmrpipe_smile
+    from ailsa.nus.backends.nmrpipe_smile import NmrPipeSmileBackend
 
     fake_platform_info = {
         "arch": "arm64",

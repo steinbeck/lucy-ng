@@ -6,7 +6,7 @@ LSD version changes this behaviour, this test will fail and alert the developer.
 
 Context: Phase 66 added emit_form() to LSDInputGenerator so pylsd_mode files
 include a FORM declaration. This test confirms the LSD binary (LSD-3.4.9)
-tolerates this — otherwise Phase 66 changes would silently break lucy lsd run
+tolerates this — otherwise Phase 66 changes would silently break ailsa lsd run
 for files generated in pylsd_mode.
 
 See: .planning/findings/form-tolerance.md for the audit trail.
@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-from lucy_ng.lsd.runner import LSDRunner
-from lucy_ng.lsd.parser import LSDOutputParser
+from ailsa.lsd.runner import LSDRunner
+from ailsa.lsd.parser import LSDOutputParser
 
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "form_tolerance"
@@ -89,7 +89,7 @@ class TestLSDFormTolerance:
             "tolerance — it remains as a living regression: if a future LSD "
             "version starts accepting FORM, this test will unexpectedly PASS "
             "and xfail will become xpass, alerting us to revisit the "
-            "'; FORM' comment-form mitigation in src/lucy_ng/lsd/generator.py."
+            "'; FORM' comment-form mitigation in src/ailsa/lsd/generator.py."
         ),
         strict=False,
     )

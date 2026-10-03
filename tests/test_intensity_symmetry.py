@@ -6,8 +6,8 @@ candidates while single-carbon peaks are not.
 
 import pytest
 
-from lucy_ng.models import Peak1D
-from lucy_ng.processing.peak_picker import detect_intensity_symmetry
+from ailsa.models import Peak1D
+from ailsa.processing.peak_picker import detect_intensity_symmetry
 
 
 # Synthetic fixtures — same style as test_symmetry_analysis.py

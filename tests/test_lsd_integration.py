@@ -4,8 +4,8 @@ import pytest
 from pathlib import Path
 import tempfile
 
-from lucy_ng.lsd import LSDInputGenerator, LSDRunner, LSDProblem
-from lucy_ng.lsd.models import Hybridization, LSDAtom, LSDCorrelation
+from ailsa.lsd import LSDInputGenerator, LSDRunner, LSDProblem
+from ailsa.lsd.models import Hybridization, LSDAtom, LSDCorrelation
 
 
 class TestLSDEndToEnd:

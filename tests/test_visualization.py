@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from lucy_ng.visualization import (
+from ailsa.visualization import (
     ArrowRouter,
     ArrowStyle,
     AtomPosition,

@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from lucy_ng.database import (
+from ailsa.database import (
     CompoundRecord,
     DatabaseManager,
     HOSEStatsRecord,
     ShiftRecord,
     SCHEMA_VERSION,
 )
-from lucy_ng.dereplication.nmrshiftdb import CarbonSignal, HydrogenCount, NMRShiftDBEntry
+from ailsa.dereplication.nmrshiftdb import CarbonSignal, HydrogenCount, NMRShiftDBEntry
 
 
 class TestShiftRecord:

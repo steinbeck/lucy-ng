@@ -6,10 +6,10 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from lucy_ng.cli.main import cli
-from lucy_ng.database import DatabaseManager
-from lucy_ng.detection import StatisticalDetector
-from lucy_ng.detection.models import ConstraintType, NeighbourDistribution, NeighbourResult
+from ailsa.cli.main import cli
+from ailsa.database import DatabaseManager
+from ailsa.detection import StatisticalDetector
+from ailsa.detection.models import ConstraintType, NeighbourDistribution, NeighbourResult
 
 
 @pytest.fixture
@@ -326,7 +326,7 @@ def test_constraint_type_enum() -> None:
 
 
 def test_cli_detect_neighbours_command_exists() -> None:
-    """Test that 'lucy detect neighbours --help' works."""
+    """Test that 'ailsa detect neighbours --help' works."""
     runner = CliRunner()
     result = runner.invoke(cli, ["detect", "neighbours", "--help"])
 
@@ -342,7 +342,7 @@ def test_cli_detect_neighbours_command_exists() -> None:
 
 
 def test_cli_detect_group_shows_neighbours() -> None:
-    """Test that 'lucy detect --help' shows neighbours subcommand."""
+    """Test that 'ailsa detect --help' shows neighbours subcommand."""
     runner = CliRunner()
     result = runner.invoke(cli, ["detect", "--help"])
 

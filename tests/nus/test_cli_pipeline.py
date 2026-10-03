@@ -1,17 +1,17 @@
-"""PICK-02/D-08: `lucy nus qc` + `lucy nus pipeline` CLI commands (Phase 99 Plan 04).
+"""PICK-02/D-08: `ailsa nus qc` + `ailsa nus pipeline` CLI commands (Phase 99 Plan 04).
 
-`lucy nus qc <peaks-dir>` is independently runnable against arbitrary
-peak-list directories (needed for QC-02's FAIL/PASS proof); `lucy nus
+`ailsa nus qc <peaks-dir>` is independently runnable against arbitrary
+peak-list directories (needed for QC-02's FAIL/PASS proof); `ailsa nus
 pipeline <expdir>` orchestrates params -> schedule -> reconstruct ->
 process -> peak-pick -> QC end-to-end and calls the same qc code
-internally. Every `lucy nus` subcommand supports `--format json`.
+internally. Every `ailsa nus` subcommand supports `--format json`.
 
 Note on Wave 0 (Plan 01) provenance: the original RED-by-skip stubs
 invoked `pipeline` against a bare `tmp_path` with no mocked
 reconstruction/QC seams. This file replaces those placeholders with real
-assertions against `lucy nus qc`'s real `run_qc_checks()` call (the
+assertions against `ailsa nus qc`'s real `run_qc_checks()` call (the
 already-committed `known_bad_peaks_dir`/`clean_peaks_dir` fixtures, Plan
-01/02) and `lucy nus pipeline`'s real write-boundary logic exercised via
+01/02) and `ailsa nus pipeline`'s real write-boundary logic exercised via
 the `mock_pipeline_stages` fixture (conftest.py, this plan).
 """
 
@@ -21,13 +21,13 @@ import json
 
 
 def test_qc_command_json_format(known_bad_peaks_dir) -> None:
-    """`lucy nus qc <peaks-dir> --format json` must emit a JSON-parseable
+    """`ailsa nus qc <peaks-dir> --format json` must emit a JSON-parseable
     `QcReport.to_dict()` payload (D-08's independently-runnable contract)
     and exit non-zero on a FAIL verdict.
     """
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     runner = CliRunner()
     result = runner.invoke(nus, ["qc", str(known_bad_peaks_dir), "--format", "json"])
@@ -37,13 +37,13 @@ def test_qc_command_json_format(known_bad_peaks_dir) -> None:
 
 
 def test_qc_command_passes_on_clean_fixture(clean_peaks_dir) -> None:
-    """`lucy nus qc <peaks-dir> --format json` exits 0 and reports PASS on
+    """`ailsa nus qc <peaks-dir> --format json` exits 0 and reports PASS on
     the hand-authored synthetic-clean fixture -- the QC-02 PASS-side proof
     exercised via the CLI, not just `run_qc_checks()` directly.
     """
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     runner = CliRunner()
     result = runner.invoke(nus, ["qc", str(clean_peaks_dir), "--format", "json"])
@@ -56,7 +56,7 @@ def test_qc_command_text_format_reports_verdict(known_bad_peaks_dir) -> None:
     """The default text format prints the verdict and violated check names."""
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     runner = CliRunner()
     result = runner.invoke(nus, ["qc", str(known_bad_peaks_dir)])
@@ -66,10 +66,10 @@ def test_qc_command_text_format_reports_verdict(known_bad_peaks_dir) -> None:
 
 
 def test_qc_command_help_lists_threshold_flags() -> None:
-    """`lucy nus qc --help` lists the D-04 threshold-override flags."""
+    """`ailsa nus qc --help` lists the D-04 threshold-override flags."""
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     runner = CliRunner()
     result = runner.invoke(nus, ["qc", "--help"])
@@ -90,7 +90,7 @@ def test_qc_command_threshold_override_changes_verdict(known_bad_peaks_dir) -> N
     """
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     runner = CliRunner()
     result = runner.invoke(
@@ -106,14 +106,14 @@ def test_qc_command_threshold_override_changes_verdict(known_bad_peaks_dir) -> N
 
 
 def test_pipeline_command_wires_stages(tmp_path, mock_pipeline_stages) -> None:
-    """`lucy nus pipeline <expdir>` must wire
+    """`ailsa nus pipeline <expdir>` must wire
     params -> schedule -> reconstruct -> process -> peak-pick -> QC in
     strict order, reusing `NusRunner.reconstruct()` (Phase 98, unchanged)
     and the same `run_qc_checks()` the standalone `qc` command calls.
     """
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     expdir = tmp_path / "expdir"
     expdir.mkdir()
@@ -133,7 +133,7 @@ def test_pipeline_json_format_reports_verdict_and_written_paths(
     paths (or quarantine path), and the full QC report."""
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     expdir = tmp_path / "expdir"
     expdir.mkdir()
@@ -151,11 +151,11 @@ def test_pipeline_json_format_reports_verdict_and_written_paths(
 
 
 def test_pipeline_help_lists_reconstruction_and_qc_flags() -> None:
-    """`lucy nus pipeline --help` shows reconstruction knobs + QC
+    """`ailsa nus pipeline --help` shows reconstruction knobs + QC
     threshold overrides + --format."""
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     runner = CliRunner()
     result = runner.invoke(nus, ["pipeline", "--help"])
@@ -179,7 +179,7 @@ def test_pipeline_help_lists_reconstruction_and_qc_flags() -> None:
 
 
 def test_all_nus_subcommands_support_format_json() -> None:
-    """Every `lucy nus` subcommand -- including the new `qc`/`pipeline` --
+    """Every `ailsa nus` subcommand -- including the new `qc`/`pipeline` --
     must support `--format json`, matching the existing
     `check`/`params`/`schedule`/`reconstruct` convention.
 
@@ -190,7 +190,7 @@ def test_all_nus_subcommands_support_format_json() -> None:
     including the pre-existing `check`/`params`/`schedule`/`reconstruct`
     ones, and was never actually exercised in Wave 0's RED-by-skip stub).
     """
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     for command_name in ("check", "params", "schedule", "reconstruct", "qc", "pipeline"):
         command = nus.commands[command_name]

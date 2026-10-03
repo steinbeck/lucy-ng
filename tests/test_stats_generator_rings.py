@@ -2,7 +2,7 @@
 
 from rdkit import Chem
 
-from lucy_ng.prediction.stats_generator import WelfordAccumulator
+from ailsa.prediction.stats_generator import WelfordAccumulator
 
 
 def test_accumulator_ring_tracking():

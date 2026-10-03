@@ -4,7 +4,7 @@ import pytest
 import tempfile
 from pathlib import Path
 
-from lucy_ng.lsd.analyzer import (
+from ailsa.lsd.analyzer import (
     AnalysisResult,
     HMBCCorrelation,
     LSDSolutionAnalyzer,

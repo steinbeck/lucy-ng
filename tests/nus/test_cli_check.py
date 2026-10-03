@@ -1,4 +1,4 @@
-"""PORT-01 tests: `lucy nus check`'s extended platform section + exit-code
+"""PORT-01 tests: `ailsa nus check`'s extended platform section + exit-code
 semantics (D-05: critical = exit 1, soft-only = exit 0).
 
 Mocks `get_backend()`/`diagnose()` at the CLI-invocation boundary (mirrors
@@ -59,7 +59,7 @@ def _critical_diagnosis() -> dict:
 def _invoke_check(monkeypatch, diagnosis: dict, args: list[str]):
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     class _FakeBackend:
         @staticmethod
@@ -67,7 +67,7 @@ def _invoke_check(monkeypatch, diagnosis: dict, args: list[str]):
             return diagnosis
 
     monkeypatch.setattr(
-        "lucy_ng.nus.backends.get_backend", lambda name="nmrpipe_smile": _FakeBackend
+        "ailsa.nus.backends.get_backend", lambda name="nmrpipe_smile": _FakeBackend
     )
 
     runner = CliRunner()
@@ -103,7 +103,7 @@ def test_check_text_mode_reports_platform_section(monkeypatch) -> None:
 def test_reconstruct_and_pipeline_help_list_n_sigma() -> None:
     from click.testing import CliRunner
 
-    from lucy_ng.cli.nus import nus
+    from ailsa.cli.nus import nus
 
     runner = CliRunner()
     reconstruct_result = runner.invoke(nus, ["reconstruct", "--help"])

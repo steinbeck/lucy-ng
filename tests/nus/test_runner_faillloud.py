@@ -20,7 +20,7 @@ def test_nonzero_exit_raises(mock_subprocess_run, make_valid_intermediate, tmp_p
 
     Implementing plan: Plan 02 (`nus/runner.py::run_stage`).
     """
-    from lucy_ng.nus.runner import run_stage
+    from ailsa.nus.runner import run_stage
 
     mock_subprocess_run["returncode"] = 1
     mock_subprocess_run["stderr"] = "bruk2pipe: fatal error"
@@ -36,7 +36,7 @@ def test_empty_output_raises(mock_subprocess_run, make_empty_intermediate, tmp_p
 
     Implementing plan: Plan 02 (`nus/runner.py::run_stage`).
     """
-    from lucy_ng.nus.runner import run_stage
+    from ailsa.nus.runner import run_stage
 
     mock_subprocess_run["returncode"] = 0
     output = make_empty_intermediate(name="converted", suffix=".fid")
@@ -54,7 +54,7 @@ def test_truncated_all_zero_output_raises(
 
     Implementing plan: Plan 02 (`nus/runner.py::run_stage`).
     """
-    from lucy_ng.nus.runner import run_stage
+    from ailsa.nus.runner import run_stage
 
     mock_subprocess_run["returncode"] = 0
     output = make_truncated_intermediate(name="converted", suffix=".fid")
@@ -69,7 +69,7 @@ def test_valid_output_passes(mock_subprocess_run, make_valid_intermediate, tmp_p
 
     Implementing plan: Plan 02 (`nus/runner.py::run_stage`).
     """
-    from lucy_ng.nus.runner import run_stage
+    from ailsa.nus.runner import run_stage
 
     mock_subprocess_run["returncode"] = 0
     output = make_valid_intermediate(name="converted", suffix=".fid")
@@ -85,7 +85,7 @@ def test_pipeline_stage_success_wires_stdin_to_stdout(tmp_path) -> None:
 
     Implementing plan: Phase-100 VAL fix (D-BUG-2).
     """
-    from lucy_ng.nus.runner import run_pipeline_stage
+    from ailsa.nus.runner import run_pipeline_stage
 
     out = tmp_path / "out.txt"
     stages = [
@@ -105,7 +105,7 @@ def test_pipeline_stage_midpipe_failure_raises_even_with_output(tmp_path) -> Non
 
     Implementing plan: Phase-100 VAL fix (D-BUG-2).
     """
-    from lucy_ng.nus.runner import run_pipeline_stage
+    from ailsa.nus.runner import run_pipeline_stage
 
     out = tmp_path / "out.txt"
     stages = [

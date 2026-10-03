@@ -5,11 +5,11 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from lucy_ng.cli.read import read
+from ailsa.cli.read import read
 
 
 class TestRead1D:
-    """Tests for lucy read 1d command."""
+    """Tests for ailsa read 1d command."""
 
     def test_read_1d_text(self) -> None:
         """Test reading 1D spectrum with text output."""
@@ -55,7 +55,7 @@ class TestRead1D:
 
 
 class TestRead2D:
-    """Tests for lucy read 2d command."""
+    """Tests for ailsa read 2d command."""
 
     def test_read_2d_hsqc_text(self) -> None:
         """Test reading HSQC spectrum with text output."""

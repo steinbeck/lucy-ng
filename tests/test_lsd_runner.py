@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 from rdkit import Chem
 
-from lucy_ng.lsd.models import Hybridization, LSDAtom, LSDCorrelation, LSDProblem
-from lucy_ng.lsd.runner import LSDRunner, LSDResult, _invoke_outlsd
+from ailsa.lsd.models import Hybridization, LSDAtom, LSDCorrelation, LSDProblem
+from ailsa.lsd.runner import LSDRunner, LSDResult, _invoke_outlsd
 
 
 class TestLSDResult:
@@ -173,7 +173,7 @@ class TestLSDRunnerFileHandling:
         if runner.lsd_path is None:
             # Test just the input file writing part
             with tempfile.TemporaryDirectory() as tmpdir:
-                from lucy_ng.lsd.generator import LSDInputGenerator
+                from ailsa.lsd.generator import LSDInputGenerator
                 output_path = Path(tmpdir) / "test.lsd"
                 LSDInputGenerator.write_file(problem, output_path)
                 assert output_path.exists()
@@ -195,7 +195,7 @@ class TestLSDRunnerFileHandling:
 
             if runner.lsd_path is None:
                 # Just test file writing
-                from lucy_ng.lsd.generator import LSDInputGenerator
+                from ailsa.lsd.generator import LSDInputGenerator
                 output_path = tmpdir / "test.lsd"
                 LSDInputGenerator.write_file(problem, output_path)
                 assert output_path.exists()
@@ -366,7 +366,7 @@ class TestLSDRunnerFixed:
             "solutions.smi not written — cannot test ranking"
         )
 
-        from lucy_ng.cli.lsd import _perform_ranking
+        from ailsa.cli.lsd import _perform_ranking
 
         # Ibuprofen 13C shifts (no 4J correlations case)
         ibuprofen_shifts = [
@@ -431,7 +431,7 @@ class TestLSDRunnerFixed:
            (the open() raises, except block returns None).
         """
         # Import the helper — fails with ImportError until Task 2 adds it
-        from lucy_ng.lsd.runner import _invoke_outlsd  # noqa: F401 (import is the test)
+        from ailsa.lsd.runner import _invoke_outlsd  # noqa: F401 (import is the test)
 
         outlsd_path = Path("/fake/outlsd")
 

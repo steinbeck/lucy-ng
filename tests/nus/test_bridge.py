@@ -28,8 +28,8 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from lucy_ng.models import Spectrum2D
-from lucy_ng.models.nus import NusAcquisitionParams
+from ailsa.models import Spectrum2D
+from ailsa.models.nus import NusAcquisitionParams
 
 
 def _make_params(**overrides: object) -> NusAcquisitionParams:
@@ -110,7 +110,7 @@ def _build_synthetic_spectrum(
 def test_build_spectrum2d_from_ft2(make_valid_ft2) -> None:
     """`build_spectrum2d()` constructs a `Spectrum2D` from a processed
     `.ft2` (F1=13C indirect, F2=1H direct)."""
-    from lucy_ng.nus.bridge import build_spectrum2d
+    from ailsa.nus.bridge import build_spectrum2d
 
     ft2_path = make_valid_ft2()
     spectrum = build_spectrum2d(ft2_path, params=_make_params(), experiment_type="HSQC")
@@ -128,7 +128,7 @@ def test_build_spectrum2d_prefers_sidecar_f1_axis(make_valid_ft2) -> None:
     """When `processed_ppm_axis.json` exists next to the `.ft2`, its
     `calibrated_ppm_axis` is used for F1 -- not the raw NMRPipe-header axis
     (99-PATTERNS.md Pattern 1, the F1-axis-override note)."""
-    from lucy_ng.nus.bridge import build_spectrum2d
+    from ailsa.nus.bridge import build_spectrum2d
 
     calibrated_axis = [200.0, 195.0, 190.0, 185.0, 180.0, 175.0, 170.0, 165.0]
     ft2_path = make_valid_ft2(calibrated_f1_ppm_axis=calibrated_axis)
@@ -140,7 +140,7 @@ def test_build_spectrum2d_prefers_sidecar_f1_axis(make_valid_ft2) -> None:
 def test_build_spectrum2d_without_sidecar_uses_raw_header_axis(make_valid_ft2) -> None:
     """No sidecar present -> falls back to the raw NMRPipe-header F1 axis
     (not the same values a sidecar-driven test would assert)."""
-    from lucy_ng.nus.bridge import build_spectrum2d
+    from ailsa.nus.bridge import build_spectrum2d
 
     ft2_path = make_valid_ft2()
     assert not (ft2_path.parent / "processed_ppm_axis.json").exists()
@@ -152,7 +152,7 @@ def test_build_spectrum2d_without_sidecar_uses_raw_header_axis(make_valid_ft2) -
 def test_build_spectrum2d_fails_loud_on_missing_file(tmp_path) -> None:
     """A missing/unreadable `.ft2` raises a typed `RuntimeError`, not a bare
     traceback (fail-loud convention, mirroring `nus/runner.py::run_stage()`)."""
-    from lucy_ng.nus.bridge import build_spectrum2d
+    from ailsa.nus.bridge import build_spectrum2d
 
     with pytest.raises(RuntimeError):
         build_spectrum2d(
@@ -169,7 +169,7 @@ def test_bridge_peak_pick_emits_hsqc_schema() -> None:
     """HSQC cross-peaks have exactly {c13_ppm, h1_ppm, edited_sign,
     multiplicity_hint, confidence, note} -- NOT the raw picker shape
     (f1_position/f2_position/intensity/snr)."""
-    from lucy_ng.nus.bridge import bridge_peak_pick
+    from ailsa.nus.bridge import bridge_peak_pick
 
     spectrum = _build_synthetic_spectrum(
         "HSQC", positive_peaks=[(69.06, 0.99)], negative_peaks=[(38.5, 1.9)]
@@ -187,7 +187,7 @@ def test_bridge_peak_pick_emits_hsqc_schema() -> None:
 
 def test_bridge_peak_pick_hsqc_multiplicity_edited_sign_mapping() -> None:
     """Multiplicity-edited HSQC: positive -> CH_or_CH3, negative -> CH2."""
-    from lucy_ng.nus.bridge import bridge_peak_pick
+    from ailsa.nus.bridge import bridge_peak_pick
 
     spectrum = _build_synthetic_spectrum(
         "HSQC", positive_peaks=[(69.06, 0.99)], negative_peaks=[(38.5, 1.9)]
@@ -206,7 +206,7 @@ def test_bridge_peak_pick_hsqc_multiplicity_edited_sign_mapping() -> None:
 def test_bridge_peak_pick_hsqc_not_edited_is_ambiguous() -> None:
     """A non-multiplicity-edited HSQC (no negative cross-peaks) reports
     every peak as sign-ambiguous (CH_or_CH2_or_CH3)."""
-    from lucy_ng.nus.bridge import bridge_peak_pick
+    from ailsa.nus.bridge import bridge_peak_pick
 
     spectrum = _build_synthetic_spectrum("HSQC", positive_peaks=[(69.06, 0.99), (30.2, 1.4)])
     result = bridge_peak_pick(spectrum, experiment="HSQC", threshold=0.05)
@@ -219,7 +219,7 @@ def test_bridge_peak_pick_hsqc_not_edited_is_ambiguous() -> None:
 def test_bridge_peak_pick_emits_hmbc_schema() -> None:
     """HMBC cross-peaks have exactly {c13_ppm, h1_ppm, rel_intensity,
     rank_in_carbon, suspected_1J_artifact, confidence, note}."""
-    from lucy_ng.nus.bridge import bridge_peak_pick
+    from ailsa.nus.bridge import bridge_peak_pick
 
     spectrum = _build_synthetic_spectrum(
         "HMBC", positive_peaks=[(142.0, 1.57), (142.0, 2.3), (79.35, 1.05)]
@@ -242,7 +242,7 @@ def test_bridge_peak_pick_emits_hmbc_schema() -> None:
 def test_bridge_peak_pick_emits_cosy_schema() -> None:
     """COSY cross-peaks have exactly {h1a_ppm, h1b_ppm, rel_intensity,
     confidence, note}; both dims map from f1/f2_position (both 1H)."""
-    from lucy_ng.nus.bridge import bridge_peak_pick
+    from ailsa.nus.bridge import bridge_peak_pick
 
     spectrum = _build_synthetic_spectrum(
         "COSY", positive_peaks=[(5.32, 1.57)], f1_label="1H"
@@ -257,7 +257,7 @@ def test_bridge_peak_pick_emits_cosy_schema() -> None:
 
 def test_bridge_peak_pick_rejects_unknown_experiment() -> None:
     """An unsupported experiment type raises ValueError (refuse-to-guess)."""
-    from lucy_ng.nus.bridge import bridge_peak_pick
+    from ailsa.nus.bridge import bridge_peak_pick
 
     spectrum = _build_synthetic_spectrum("HSQC", positive_peaks=[(69.06, 0.99)])
     with pytest.raises(ValueError):

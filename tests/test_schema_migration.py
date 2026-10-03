@@ -3,8 +3,8 @@
 import sqlite3
 from pathlib import Path
 
-from lucy_ng.database.manager import DatabaseManager
-from lucy_ng.database.models import HOSEStatsRecord
+from ailsa.database.manager import DatabaseManager
+from ailsa.database.models import HOSEStatsRecord
 
 
 def test_migrate_v3_to_v4(tmp_path: Path) -> None:

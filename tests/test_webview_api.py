@@ -7,7 +7,7 @@ Test status legend:
   RED  = ImportError / AssertionError expected until implementation ships
   SKIP = webview extra absent or target modules not yet available
 
-Import rule (WV-08): ALL imports of fastapi and lucy_ng.webview.* are
+Import rule (WV-08): ALL imports of fastapi and ailsa.webview.* are
 INSIDE test function bodies — never at module level — so this file
 collects cleanly even before the router modules exist.
 """
@@ -32,7 +32,7 @@ class TestStatusEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import status  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import status  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or status router not yet available")
 
@@ -52,7 +52,7 @@ class TestStatusEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import status  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import status  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or status router not yet available")
 
@@ -78,7 +78,7 @@ class TestStatusEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import status  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import status  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or status router not yet available")
 
@@ -111,7 +111,7 @@ class TestLogEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import log  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import log  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or log router not yet available")
 
@@ -135,7 +135,7 @@ class TestLogEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import log  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import log  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or log router not yet available")
 
@@ -164,7 +164,7 @@ class TestStructuresEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 structures,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
@@ -190,7 +190,7 @@ class TestStructuresEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 structures,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
@@ -217,7 +217,7 @@ class TestStructuresEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 structures,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
@@ -254,7 +254,7 @@ class TestStructuresEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 structures,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
@@ -275,7 +275,7 @@ class TestStructuresEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 structures,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
@@ -306,7 +306,7 @@ class TestStructuresEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 structures,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
@@ -337,16 +337,16 @@ class TestStructuresEndpoint:
 
 
 class TestDepiction:
-    """WV-04: lucy_ng.webview.depiction render/placeholder functions."""
+    """WV-04: ailsa.webview.depiction render/placeholder functions."""
 
     def test_render_valid_smiles_returns_svg_string(self) -> None:
         """render_smiles('c1ccccc1') returns a str containing 'svg'."""
         try:
-            from lucy_ng.webview.depiction import (
+            from ailsa.webview.depiction import (
                 render_smiles,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
-            pytest.skip("lucy_ng.webview.depiction not yet available")
+            pytest.skip("ailsa.webview.depiction not yet available")
 
         result = render_smiles("c1ccccc1")
         assert result is not None, "Expected SVG string for valid benzene SMILES"
@@ -356,11 +356,11 @@ class TestDepiction:
     def test_render_malformed_smiles_returns_none(self) -> None:
         """render_smiles('not_a_real_smiles_XXXX') returns None."""
         try:
-            from lucy_ng.webview.depiction import (
+            from ailsa.webview.depiction import (
                 render_smiles,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
-            pytest.skip("lucy_ng.webview.depiction not yet available")
+            pytest.skip("ailsa.webview.depiction not yet available")
 
         result = render_smiles("not_a_real_smiles_XXXX")
         assert result is None, f"Expected None for malformed SMILES, got: {result!r}"
@@ -372,9 +372,9 @@ class TestDepiction:
         KekulizeException); the endpoint must degrade to a placeholder, not 500.
         """
         try:
-            from lucy_ng.webview import depiction  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview import depiction  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
-            pytest.skip("lucy_ng.webview.depiction not yet available")
+            pytest.skip("ailsa.webview.depiction not yet available")
 
         def _boom(*_a: object, **_k: object) -> None:
             raise RuntimeError("simulated kekulize/draw failure")
@@ -386,11 +386,11 @@ class TestDepiction:
     def test_placeholder_svg_returns_svg_string(self) -> None:
         """placeholder_svg() returns a str containing 'svg'."""
         try:
-            from lucy_ng.webview.depiction import (
+            from ailsa.webview.depiction import (
                 placeholder_svg,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
-            pytest.skip("lucy_ng.webview.depiction not yet available")
+            pytest.skip("ailsa.webview.depiction not yet available")
 
         result = placeholder_svg()
         assert isinstance(result, str), f"Expected str, got {type(result)}"
@@ -410,7 +410,7 @@ class TestFrontend:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.app import create_app  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.app import create_app  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or create_app not yet available")
 
@@ -428,7 +428,7 @@ class TestFrontend:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.app import create_app  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.app import create_app  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or create_app not yet available")
 
@@ -457,7 +457,7 @@ class TestWiring:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.app import create_app  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.app import create_app  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or create_app not yet available")
 
@@ -483,10 +483,10 @@ class TestWiring:
 
 
 class TestPackaging:
-    """WV-08: pyproject.toml hatch artifacts include src/lucy_ng/webview/static/*."""
+    """WV-08: pyproject.toml hatch artifacts include src/ailsa/webview/static/*."""
 
     def test_hatch_artifacts_include_static(self) -> None:
-        """[tool.hatch.build.targets.wheel].artifacts contains 'src/lucy_ng/webview/static/*'."""
+        """[tool.hatch.build.targets.wheel].artifacts contains 'src/ailsa/webview/static/*'."""
         pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
         with open(pyproject_path, "rb") as fh:
             pyproject = tomllib.load(fh)
@@ -500,14 +500,14 @@ class TestPackaging:
             .get("artifacts", [])
         )
 
-        assert "src/lucy_ng/webview/static/*" in artifacts, (
-            f"'src/lucy_ng/webview/static/*' not found in hatch wheel artifacts.\n"
+        assert "src/ailsa/webview/static/*" in artifacts, (
+            f"'src/ailsa/webview/static/*' not found in hatch wheel artifacts.\n"
             f"Current artifacts: {artifacts}"
         )
 
     def test_webview_js_present_in_static(self) -> None:
         """webview.js exists at the flat static/ level so the existing hatch glob packages it."""
-        static_dir = Path(__file__).parent.parent / "src" / "lucy_ng" / "webview" / "static"
+        static_dir = Path(__file__).parent.parent / "src" / "ailsa" / "webview" / "static"
         assert (static_dir / "webview.js").exists(), (
             "webview.js must exist at the flat static/ level for the existing hatch glob "
             "to cover it"
@@ -526,7 +526,7 @@ class TestMarkdownRendererSafety:
         """'innerHTML' must not appear anywhere in static/webview.js (regression guard)."""
         js_path = (
             Path(__file__).parent.parent
-            / "src" / "lucy_ng" / "webview" / "static" / "webview.js"
+            / "src" / "ailsa" / "webview" / "static" / "webview.js"
         )
         if not js_path.exists():
             pytest.skip("webview.js not yet extracted")
@@ -733,7 +733,7 @@ def tables_iterations_dir(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 # TestTablesEndpoint [→ Plan 02]
 #
-# RED-by-skip until src/lucy_ng/webview/routers/tables.py exists (WV-08).
+# RED-by-skip until src/ailsa/webview/routers/tables.py exists (WV-08).
 # Covers TBL-01/02/03 and the SC4 degradation contract independently for
 # all 5 panels (carbon, hsqc, hmbc, cosy, constraints).
 # ---------------------------------------------------------------------------
@@ -747,7 +747,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -772,7 +772,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -792,7 +792,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -826,7 +826,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -852,7 +852,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -876,7 +876,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -902,7 +902,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -931,7 +931,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -951,7 +951,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -971,7 +971,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -995,7 +995,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -1015,7 +1015,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -1039,7 +1039,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -1059,7 +1059,7 @@ class TestTablesEndpoint:
         try:
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers import tables  # pyright: ignore[reportMissingModuleSource]
         except ImportError:
             pytest.skip("webview extra or tables router not yet available")
 
@@ -1210,7 +1210,7 @@ def synthetic_bruker_dir(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 # TestSpectraEndpoint [→ Plan 02]
 #
-# RED-by-skip until src/lucy_ng/webview/routers/spectra.py exists (WV-08).
+# RED-by-skip until src/ailsa/webview/routers/spectra.py exists (WV-08).
 # Covers SP1-01 (real 13C/1H trace, reversed axis, peak overlay, 2D/DEPT
 # exclusion) and SP-02 (never-500 "unavailable" on absent manifest / stale
 # raw path / missing peaks) — the 8 RESEARCH.md test-map rows plus the SC3
@@ -1224,7 +1224,7 @@ class TestSpectraEndpoint:
     def test_apply_nmr_axes_reverses_descending_scale(self) -> None:
         """_apply_nmr_axes(ax, descending_ppm_scale) leaves xlim[0] > xlim[1] (SC2)."""
         try:
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
                 _apply_nmr_axes,
             )
         except ImportError:
@@ -1248,7 +1248,7 @@ class TestSpectraEndpoint:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
 
@@ -1271,7 +1271,7 @@ class TestSpectraEndpoint:
         if not CASE1_ROOT.is_dir():
             pytest.skip(f"Real CASE1 dataset not found at {CASE1_ROOT}")
         try:
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
                 _apply_nmr_axes,
                 _select_experiment,
             )
@@ -1298,13 +1298,13 @@ class TestSpectraEndpoint:
     ) -> None:
         """_select_experiment never calls read_1d on an acqu2s dir; excludes DEPT (Pitfalls 1/2)."""
         try:
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
             pytest.skip("webview extra or spectra router not yet available")
 
-        from lucy_ng.readers.bruker import BrukerReader
+        from ailsa.readers.bruker import BrukerReader
 
         called_dirs: list[Path] = []
         original_read_1d = BrukerReader.read_1d
@@ -1341,7 +1341,7 @@ class TestSpectraEndpoint:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
@@ -1399,7 +1399,7 @@ class TestSpectraEndpoint:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
@@ -1477,7 +1477,7 @@ class TestSpectraEndpoint:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
@@ -1544,7 +1544,7 @@ class TestSpectraEndpoint:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
 
@@ -1572,7 +1572,7 @@ class TestSpectraEndpoint:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
 
@@ -1600,7 +1600,7 @@ class TestSpectraEndpoint:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
         except ImportError:
@@ -1632,10 +1632,10 @@ class TestSpectraEndpoint:
         """matplotlib is imported only inside make_router() — never at module level (WV-08/D-04)."""
         spectra_path = (
             Path(__file__).parent.parent
-            / "src" / "lucy_ng" / "webview" / "routers" / "spectra.py"
+            / "src" / "ailsa" / "webview" / "routers" / "spectra.py"
         )
         if not spectra_path.is_file():
-            pytest.skip("src/lucy_ng/webview/routers/spectra.py does not exist yet")
+            pytest.skip("src/ailsa/webview/routers/spectra.py does not exist yet")
 
         lines = spectra_path.read_text(encoding="utf-8").splitlines()
         make_router_line: int | None = None
@@ -1654,8 +1654,8 @@ class TestSpectraEndpoint:
             ), f"Found a matplotlib import before 'def make_router': {line!r}"
 
     def test_cli_imports_without_matplotlib(self) -> None:
-        """from lucy_ng.cli import cli succeeds on a base install (SC3 — standing guard)."""
-        from lucy_ng.cli import cli  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+        """from ailsa.cli import cli succeeds on a base install (SC3 — standing guard)."""
+        from ailsa.cli import cli  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
 
         assert cli is not None
 
@@ -1785,7 +1785,7 @@ def spectra_case1_manifest_dir_2d(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 # TestSpectraEndpoint2D [→ Plan 02]
 #
-# RED-by-skip until src/lucy_ng/webview/routers/spectra.py grows the three
+# RED-by-skip until src/ailsa/webview/routers/spectra.py grows the three
 # 2D routes + 2D helpers (WV-08). Every 2D-route-dependent method probes for
 # a Plan-02-only symbol (e.g. `_select_experiment_2d`, `_render_2d_png`,
 # `_plot_hmbc_overlay`, `_apply_nmr_axes_2d`) via a specific-name import
@@ -1814,7 +1814,7 @@ class TestSpectraEndpoint2D:
         bottom, violating SC1.
         """
         try:
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
                 _apply_nmr_axes_2d,
             )
         except ImportError:
@@ -1846,10 +1846,10 @@ class TestSpectraEndpoint2D:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
                 _select_experiment_2d,
             )
 
@@ -1875,10 +1875,10 @@ class TestSpectraEndpoint2D:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
                 _select_experiment_2d,
             )
 
@@ -1904,10 +1904,10 @@ class TestSpectraEndpoint2D:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
                 _select_experiment_2d,
             )
 
@@ -1930,10 +1930,10 @@ class TestSpectraEndpoint2D:
         import inspect
 
         try:
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
                 _plot_hmbc_overlay,
             )
         except ImportError:
@@ -1965,16 +1965,16 @@ class TestSpectraEndpoint2D:
         if not CASE1_ROOT.is_dir():
             pytest.skip(f"Real CASE1 dataset not found at {CASE1_ROOT}")
         try:
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
                 _select_experiment_2d,
             )
         except ImportError:
             pytest.skip("webview extra or spectra 2D routes not yet available")
 
-        from lucy_ng.readers.bruker import BrukerReader
+        from ailsa.readers.bruker import BrukerReader
 
         called_dirs: list[Path] = []
         original_read_2d = BrukerReader.read_2d
@@ -2012,10 +2012,10 @@ class TestSpectraEndpoint2D:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
                 _select_experiment_2d,
             )
 
@@ -2042,10 +2042,10 @@ class TestSpectraEndpoint2D:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]
                 _render_2d_png as _original_render,
             )
 
@@ -2081,10 +2081,10 @@ class TestSpectraEndpoint2D:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
                 _select_experiment_2d,
             )
 
@@ -2113,10 +2113,10 @@ class TestSpectraEndpoint2D:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
                 _select_experiment_2d,
             )
 
@@ -2154,10 +2154,10 @@ class TestSpectraEndpoint2D:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
                 _select_experiment_2d,
             )
 
@@ -2183,10 +2183,10 @@ class TestSpectraEndpoint2D:
             from fastapi import FastAPI  # pyright: ignore[reportMissingModuleSource]
             from fastapi.testclient import TestClient  # pyright: ignore[reportMissingModuleSource]
 
-            from lucy_ng.webview.routers import (
+            from ailsa.webview.routers import (
                 spectra,  # pyright: ignore[reportMissingModuleSource]
             )
-            from lucy_ng.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
+            from ailsa.webview.routers.spectra import (  # pyright: ignore[reportMissingModuleSource]  # noqa: F401
                 _select_experiment_2d,
             )
         except ImportError:
@@ -2221,10 +2221,10 @@ class TestSpectraEndpoint2D:
         """2D helpers/imports (matplotlib-free) added by this phase respect WV-08/D-04."""
         spectra_path = (
             Path(__file__).parent.parent
-            / "src" / "lucy_ng" / "webview" / "routers" / "spectra.py"
+            / "src" / "ailsa" / "webview" / "routers" / "spectra.py"
         )
         if not spectra_path.is_file():
-            pytest.skip("src/lucy_ng/webview/routers/spectra.py does not exist yet")
+            pytest.skip("src/ailsa/webview/routers/spectra.py does not exist yet")
 
         lines = spectra_path.read_text(encoding="utf-8").splitlines()
         make_router_line: int | None = None

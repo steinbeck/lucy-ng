@@ -2,8 +2,8 @@
 
 import pytest
 
-from lucy_ng.detection.grouping import group_signals, is_multiplicity_compatible
-from lucy_ng.detection.models import GroupingResult, SignalGroup
+from ailsa.detection.grouping import group_signals, is_multiplicity_compatible
+from ailsa.detection.models import GroupingResult, SignalGroup
 
 
 class TestMultiplicityCompatibility:

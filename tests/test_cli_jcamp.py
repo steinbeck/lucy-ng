@@ -1,4 +1,4 @@
-"""CLI-surface tests for `lucy jcamp` (Phase 102, Plan 03), extended by
+"""CLI-surface tests for `ailsa jcamp` (Phase 102, Plan 03), extended by
 Plan 04 with fixture-backed end-to-end and QC-discrimination suites.
 
 Covers registration, help text, D-01's "one command, no subcommands"
@@ -17,7 +17,7 @@ Plan 04 additions -- proof-level honesty (102-RESEARCH.md Pitfall 6):
   `C20H32O2-jcamp` dataset and are Phase 103 / JVAL's job (D-05 boundary).
 * `TestJcampQcDiscrimination` is MOCK-COVERED: the peaks staged into the QC
   gate are real, fixture-derived cross-peaks, but the `QcReport` verdict
-  itself is injected via a test double over `lucy_ng.nus.qc.run_qc_checks`
+  itself is injected via a test double over `ailsa.nus.qc.run_qc_checks`
   so the CLI's own PASS/PARTIAL/FAIL branch logic can be exercised without
   needing a genuinely Sec.8-quality spectrum (which the 16-row trimmed
   fixtures cannot provide -- see `test_observed_trimmed_fixture_verdict`).
@@ -36,7 +36,7 @@ import click
 import pytest
 from click.testing import CliRunner
 
-from lucy_ng.cli.jcamp import jcamp
+from ailsa.cli.jcamp import jcamp
 
 FIXTURES = Path(__file__).parent / "fixtures" / "jcamp"
 REAL_13C_FIXTURE = FIXTURES / "C20H32O2_13C.dx"
@@ -93,10 +93,10 @@ class TestJcampCliSurface:
         assert "--snr-floor" in result.output
         assert "--threshold" in result.output
         assert "--format" in result.output
-        assert "lucy nus qc" in result.output
+        assert "ailsa nus qc" in result.output
 
     def test_registered_on_top_level_group(self) -> None:
-        from lucy_ng.cli.main import cli
+        from ailsa.cli.main import cli
 
         assert "jcamp" in cli.commands
         runner = CliRunner()
@@ -105,7 +105,7 @@ class TestJcampCliSurface:
         assert "jcamp" in result.output
 
     def test_no_qc_subcommand_exists(self) -> None:
-        """D-01: `lucy jcamp` is a single command, not a group with subcommands."""
+        """D-01: `ailsa jcamp` is a single command, not a group with subcommands."""
         assert not isinstance(jcamp, click.Group)
         runner = CliRunner()
         result = runner.invoke(jcamp, ["qc", "/tmp"])
@@ -144,9 +144,9 @@ class TestJcampCliSurface:
         test fails loud in CI instead of relying on a human noticing the
         skip warning.
         """
-        from lucy_ng.cli.jcamp import SUPPORTED_1D, SUPPORTED_2D
-        from lucy_ng.nus.bridge import _VALID_BRIDGE_EXPERIMENTS
-        from lucy_ng.processing.jcamp_1d_bridge import _VALID_1D_NUCLEI
+        from ailsa.cli.jcamp import SUPPORTED_1D, SUPPORTED_2D
+        from ailsa.nus.bridge import _VALID_BRIDGE_EXPERIMENTS
+        from ailsa.processing.jcamp_1d_bridge import _VALID_1D_NUCLEI
 
         assert set(SUPPORTED_2D) == _VALID_BRIDGE_EXPERIMENTS
         assert set(SUPPORTED_1D) == _VALID_1D_NUCLEI
@@ -166,7 +166,7 @@ class TestJcampUnexpectedReadResultType:
             pass
 
         monkeypatch.setattr(
-            "lucy_ng.readers.jcamp.JcampReader.read",
+            "ailsa.readers.jcamp.JcampReader.read",
             staticmethod(lambda path: _NotASpectrum()),
         )
 
@@ -181,12 +181,12 @@ class TestJcampImportSafety:
 
     def test_module_imports_cleanly(self) -> None:
         result = subprocess.run(
-            [sys.executable, "-c", "import lucy_ng.cli.jcamp"],
+            [sys.executable, "-c", "import ailsa.cli.jcamp"],
             capture_output=True,
             text=True,
         )
         assert result.returncode == 0, (
-            f"lucy_ng.cli.jcamp failed to import cleanly.\n"
+            f"ailsa.cli.jcamp failed to import cleanly.\n"
             f"stdout: {result.stdout}\nstderr: {result.stderr}"
         )
 
@@ -196,9 +196,9 @@ class TestJcampImportSafety:
                 sys.executable,
                 "-c",
                 (
-                    "import sys, lucy_ng.cli.jcamp; "
-                    "assert 'lucy_ng.nus.qc' not in sys.modules; "
-                    "assert 'lucy_ng.readers.jcamp' not in sys.modules; "
+                    "import sys, ailsa.cli.jcamp; "
+                    "assert 'ailsa.nus.qc' not in sys.modules; "
+                    "assert 'ailsa.readers.jcamp' not in sys.modules; "
                     "print('OK')"
                 ),
             ],
@@ -206,7 +206,7 @@ class TestJcampImportSafety:
             text=True,
         )
         assert result.returncode == 0, (
-            f"lucy_ng.cli.jcamp leaked an eager domain import.\n"
+            f"ailsa.cli.jcamp leaked an eager domain import.\n"
             f"stdout: {result.stdout}\nstderr: {result.stderr}"
         )
 
@@ -323,7 +323,7 @@ class TestJcampEndToEnd:
         1D reference -- proven via the REAL `QcReferenceData.resolve()`,
         not by inspecting the CLI's internal staging.
         """
-        from lucy_ng.nus.qc import QcReferenceData
+        from ailsa.nus.qc import QcReferenceData
 
         _copy_fixtures(tmp_path)
         runner = CliRunner(mix_stderr=False)
@@ -465,7 +465,7 @@ class TestJcampStaleStateCleared:
         earlier run must not survive a later run whose QC verdict is FAIL --
         it must not still be sitting there advertising `qc_verdict: PASS`.
         """
-        from lucy_ng.models.nus import QcReport, QcVerdict
+        from ailsa.models.nus import QcReport, QcVerdict
 
         def fake_pass(peaks_dir: Any, config: Any = None) -> QcReport:
             return QcReport(
@@ -488,7 +488,7 @@ class TestJcampStaleStateCleared:
         _copy_fixtures(tmp_path)
         runner = CliRunner(mix_stderr=False)
 
-        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_pass)
+        monkeypatch.setattr("ailsa.nus.qc.run_qc_checks", fake_pass)
         result_pass = runner.invoke(jcamp, [str(tmp_path)])
         assert result_pass.exit_code == 0, result_pass.output
 
@@ -497,7 +497,7 @@ class TestJcampStaleStateCleared:
         assert hsqc_path.exists()
         assert json.loads(hsqc_path.read_text())["reconstruction"]["qc_verdict"] == "PASS"
 
-        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_fail)
+        monkeypatch.setattr("ailsa.nus.qc.run_qc_checks", fake_fail)
         result_fail = runner.invoke(jcamp, [str(tmp_path)])
         assert result_fail.exit_code != 0
 
@@ -518,7 +518,7 @@ class TestJcampQcDiscrimination:
     the QC gate below are real, fixture-derived cross-peaks (the same
     read -> pick chain `TestJcampEndToEnd` exercises unmocked); only the
     `QcReport` VERDICT itself is a test double over
-    `lucy_ng.nus.qc.run_qc_checks` -- the CLI resolves that name via a
+    `ailsa.nus.qc.run_qc_checks` -- the CLI resolves that name via a
     deferred import inside the command body, so monkeypatching the source
     attribute intercepts it correctly. This lets D-05's "PASS/PARTIAL/FAIL
     all mechanically reachable" bar be proven without needing a genuinely
@@ -533,7 +533,7 @@ class TestJcampQcDiscrimination:
         case at each call site but every check not named in `failing`
         always passes).
         """
-        from lucy_ng.models.nus import QcCheckResult
+        from ailsa.models.nus import QcCheckResult
 
         assert all_pass, "this helper only builds the mostly-passing shape used by these tests"
         failing = failing or {}
@@ -558,7 +558,7 @@ class TestJcampQcDiscrimination:
     def test_pass_verdict_writes_consumable_peaks(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from lucy_ng.models.nus import QcReport, QcVerdict
+        from ailsa.models.nus import QcReport, QcVerdict
 
         def fake_run_qc_checks(peaks_dir: Any, config: Any = None) -> QcReport:
             return QcReport(
@@ -568,7 +568,7 @@ class TestJcampQcDiscrimination:
                 errors=[],
             )
 
-        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_run_qc_checks)
+        monkeypatch.setattr("ailsa.nus.qc.run_qc_checks", fake_run_qc_checks)
 
         _copy_fixtures(tmp_path)
         runner = CliRunner(mix_stderr=False)
@@ -586,7 +586,7 @@ class TestJcampQcDiscrimination:
     def test_partial_verdict_writes_and_warns(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from lucy_ng.models.nus import QcReport, QcVerdict
+        from ailsa.models.nus import QcReport, QcVerdict
 
         def fake_run_qc_checks(peaks_dir: Any, config: Any = None) -> QcReport:
             return QcReport(
@@ -598,7 +598,7 @@ class TestJcampQcDiscrimination:
                 errors=[],
             )
 
-        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_run_qc_checks)
+        monkeypatch.setattr("ailsa.nus.qc.run_qc_checks", fake_run_qc_checks)
 
         _copy_fixtures(tmp_path)
         runner = CliRunner(mix_stderr=False)
@@ -622,7 +622,7 @@ class TestJcampQcDiscrimination:
         branch hand-builds the metadata instead, and this test would raise
         `ValueError` if that contract were ever violated.
         """
-        from lucy_ng.models.nus import QcReport, QcVerdict
+        from ailsa.models.nus import QcReport, QcVerdict
 
         def fake_run_qc_checks(peaks_dir: Any, config: Any = None) -> QcReport:
             return QcReport(
@@ -632,7 +632,7 @@ class TestJcampQcDiscrimination:
                 errors=[],
             )
 
-        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_run_qc_checks)
+        monkeypatch.setattr("ailsa.nus.qc.run_qc_checks", fake_run_qc_checks)
 
         _copy_fixtures(tmp_path)
         runner = CliRunner(mix_stderr=False)
@@ -653,7 +653,7 @@ class TestJcampQcDiscrimination:
         """T-102-07: a malformed `.dx` is never silently absorbed as clean,
         even when the QC verdict itself is forced to PASS.
         """
-        from lucy_ng.models.nus import QcReport, QcVerdict
+        from ailsa.models.nus import QcReport, QcVerdict
 
         def fake_run_qc_checks(peaks_dir: Any, config: Any = None) -> QcReport:
             return QcReport(
@@ -663,7 +663,7 @@ class TestJcampQcDiscrimination:
                 errors=[],
             )
 
-        monkeypatch.setattr("lucy_ng.nus.qc.run_qc_checks", fake_run_qc_checks)
+        monkeypatch.setattr("ailsa.nus.qc.run_qc_checks", fake_run_qc_checks)
 
         _copy_fixtures(tmp_path)
         (tmp_path / "broken.dx").write_text("not a jcamp file\njust some text\n")
@@ -697,8 +697,8 @@ class TestJcampKnobOptions:
     ) -> tuple[
         list[tuple[str, float | None, float]], list[tuple[str, float | None, float | None]]
     ]:
-        import lucy_ng.nus.bridge as bridge_mod
-        import lucy_ng.processing.jcamp_1d_bridge as bridge_1d_mod
+        import ailsa.nus.bridge as bridge_mod
+        import ailsa.processing.jcamp_1d_bridge as bridge_1d_mod
 
         calls_2d: list[tuple[str, float | None, float]] = []
         calls_1d: list[tuple[str, float | None, float | None]] = []
@@ -951,7 +951,7 @@ class TestJcampKnobOptions:
     ) -> None:
         """D-04: the QC gate stays a single call over the fully-staged set
         no matter how many distinct keyed values are supplied."""
-        import lucy_ng.nus.qc as qc_mod
+        import ailsa.nus.qc as qc_mod
 
         calls: list[Path] = []
         real_run_qc_checks = qc_mod.run_qc_checks
@@ -985,7 +985,7 @@ class TestJcampKnobOptions:
 
 
 class TestOutputDirectorySafety:
-    """CR-02 / CR-03 regression: `lucy jcamp` must not destroy data it did
+    """CR-02 / CR-03 regression: `ailsa jcamp` must not destroy data it did
     not write. Both defects originate in Phase 102 (`f6de196`) and were found
     by Phase 103's code review."""
 
@@ -997,7 +997,7 @@ class TestOutputDirectorySafety:
         Before the fix, STEP 2.5 unlinked the closed filename set BEFORE
         STEP 3 read anything, so a run that then bailed out at STEP 4 exited
         non-zero, wrote nothing, and had already deleted the caller's
-        previous results -- including `lucy nus pipeline` output, which uses
+        previous results -- including `ailsa nus pipeline` output, which uses
         the identical filenames.
         """
         out = tmp_path / "peaks"

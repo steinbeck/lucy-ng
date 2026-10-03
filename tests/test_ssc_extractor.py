@@ -22,13 +22,13 @@ import pytest
 from click.testing import CliRunner
 from rdkit import Chem
 
-from lucy_ng.fragments import FragmentDatabaseManager, SSCRecord
-from lucy_ng.fragments.extractor import (
+from ailsa.fragments import FragmentDatabaseManager, SSCRecord
+from ailsa.fragments.extractor import (
     SSCExtractionResult,
     SSCExtractor,
     extract_fragments_for_compound,
 )
-from lucy_ng.fragments.fingerprint import FINGERPRINT_BYTES
+from ailsa.fragments.fingerprint import FINGERPRINT_BYTES
 
 
 # ---------------------------------------------------------------------------
@@ -259,7 +259,7 @@ class TestSSCExtractorRun:
         self, small_compound_db_path: Path, frag_db_path: Path
     ) -> None:
         """Basic extraction of 3 compounds produces processed > 0 and SSCs > 0."""
-        from lucy_ng.database import DatabaseManager
+        from ailsa.database import DatabaseManager
 
         with DatabaseManager(small_compound_db_path) as cdb, \
              FragmentDatabaseManager(frag_db_path) as fdb:
@@ -274,7 +274,7 @@ class TestSSCExtractorRun:
         self, small_compound_db_path: Path, frag_db_path: Path
     ) -> None:
         """Running with fresh=True resets SSC data to re-extracted count (not doubled)."""
-        from lucy_ng.database import DatabaseManager
+        from ailsa.database import DatabaseManager
 
         with DatabaseManager(small_compound_db_path) as cdb, \
              FragmentDatabaseManager(frag_db_path) as fdb:
@@ -295,7 +295,7 @@ class TestSSCExtractorRun:
         self, small_compound_db_path: Path, frag_db_path: Path
     ) -> None:
         """Resume correctly continues from checkpoint without duplicates."""
-        from lucy_ng.database import DatabaseManager
+        from ailsa.database import DatabaseManager
 
         # Step 1: run on first 2 compounds
         with DatabaseManager(small_compound_db_path) as cdb, \
@@ -324,7 +324,7 @@ class TestSSCExtractorRun:
         self, tmp_path: Path, frag_db_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         """Compound with no atom-indexed shifts logs 'SKIPPED' to stderr."""
-        from lucy_ng.database import DatabaseManager
+        from ailsa.database import DatabaseManager
 
         # Create a compound DB where all shifts have atom_index=None
         db_path = tmp_path / "no-index.db"
@@ -353,7 +353,7 @@ class TestFullPipeline:
         self, compound_db_path: Path, frag_db_path: Path
     ) -> None:
         """Sample extraction of 10 compounds populates fragment DB with SSC and bitset records."""
-        from lucy_ng.database import DatabaseManager
+        from ailsa.database import DatabaseManager
 
         with DatabaseManager(compound_db_path) as cdb, \
              FragmentDatabaseManager(frag_db_path) as fdb:
@@ -376,7 +376,7 @@ class TestFullPipeline:
         self, compound_db_path: Path, frag_db_path: Path
     ) -> None:
         """Self-search recall on small sample should be >= 0.5 (lenient for tiny DB)."""
-        from lucy_ng.database import DatabaseManager
+        from ailsa.database import DatabaseManager
 
         with DatabaseManager(compound_db_path) as cdb, \
              FragmentDatabaseManager(frag_db_path) as fdb:
@@ -392,7 +392,7 @@ class TestFullPipeline:
         self, compound_db_path: Path, frag_db_path: Path
     ) -> None:
         """Second run with resume=True does not reduce SSC count."""
-        from lucy_ng.database import DatabaseManager
+        from ailsa.database import DatabaseManager
 
         with DatabaseManager(compound_db_path) as cdb, \
              FragmentDatabaseManager(frag_db_path) as fdb:
@@ -412,7 +412,7 @@ class TestFullPipeline:
         self, compound_db_path: Path, frag_db_path: Path
     ) -> None:
         """fresh=True resets SSC count to re-extracted amount (not doubled)."""
-        from lucy_ng.database import DatabaseManager
+        from ailsa.database import DatabaseManager
 
         with DatabaseManager(compound_db_path) as cdb, \
              FragmentDatabaseManager(frag_db_path) as fdb:
@@ -431,8 +431,8 @@ class TestFullPipeline:
     def test_cli_build_integration(
         self, compound_db_path: Path, frag_db_path: Path
     ) -> None:
-        """CLI 'lucy fragment build' exits 0 and prints expected output."""
-        from lucy_ng.cli.fragment import fragment
+        """CLI 'ailsa fragment build' exits 0 and prints expected output."""
+        from ailsa.cli.fragment import fragment
 
         runner = CliRunner()
         result = runner.invoke(

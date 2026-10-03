@@ -1,4 +1,4 @@
-"""CLI integration tests for lucy pylsd run."""
+"""CLI integration tests for ailsa pylsd run."""
 
 import json
 from pathlib import Path
@@ -8,8 +8,8 @@ import pytest
 
 from click.testing import CliRunner
 
-from lucy_ng.cli.pylsd import pylsd, _extract_suspects
-from lucy_ng.lsd.orchestrator import (
+from ailsa.cli.pylsd import pylsd, _extract_suspects
+from ailsa.lsd.orchestrator import (
     MergeResult,
     MergedSolution,
     OrchestrationResult,
@@ -106,7 +106,7 @@ def _make_mock_results(
 
 
 class TestPylsdRunCLI:
-    """Basic invocations of `lucy pylsd run` with mocked PyLSDOrchestrator + SolutionMerger."""
+    """Basic invocations of `ailsa pylsd run` with mocked PyLSDOrchestrator + SolutionMerger."""
 
     def test_no_rank_exits_0(self, tmp_path):
         """--no-rank path must exit 0 and echo merged.smi path to stdout."""
@@ -121,9 +121,9 @@ class TestPylsdRunCLI:
         )
 
         with (
-            patch("lucy_ng.cli.pylsd.PyLSDOrchestrator") as MockOrch,
-            patch("lucy_ng.cli.pylsd.SolutionMerger") as MockMerger,
-            patch("lucy_ng.cli.pylsd.LSDRunner.is_available", return_value=True),
+            patch("ailsa.cli.pylsd.PyLSDOrchestrator") as MockOrch,
+            patch("ailsa.cli.pylsd.SolutionMerger") as MockMerger,
+            patch("ailsa.cli.pylsd.LSDRunner.is_available", return_value=True),
         ):
             MockOrch.return_value.run.return_value = mock_orch_result
             MockMerger.return_value.merge.return_value = mock_merge_result
@@ -143,7 +143,7 @@ class TestPylsdRunCLI:
         lsd_file = tmp_path / "compound.lsd"
         lsd_file.write_text("; minimal\nEXIT\n")
 
-        with patch("lucy_ng.cli.pylsd.LSDRunner.is_available", return_value=True):
+        with patch("ailsa.cli.pylsd.LSDRunner.is_available", return_value=True):
             runner = CliRunner()
             result = runner.invoke(pylsd, ["run", str(lsd_file)])
 
@@ -191,10 +191,10 @@ class TestPylsdRunCLI:
         }
 
         with (
-            patch("lucy_ng.cli.pylsd.PyLSDOrchestrator") as MockOrch,
-            patch("lucy_ng.cli.pylsd.SolutionMerger") as MockMerger,
-            patch("lucy_ng.cli.pylsd.LSDRunner.is_available", return_value=True),
-            patch("lucy_ng.cli.pylsd._perform_ranking", return_value=ranking_data),
+            patch("ailsa.cli.pylsd.PyLSDOrchestrator") as MockOrch,
+            patch("ailsa.cli.pylsd.SolutionMerger") as MockMerger,
+            patch("ailsa.cli.pylsd.LSDRunner.is_available", return_value=True),
+            patch("ailsa.cli.pylsd._perform_ranking", return_value=ranking_data),
         ):
             MockOrch.return_value.run.return_value = mock_orch_result
             MockMerger.return_value.merge.return_value = mock_merge_result
@@ -226,9 +226,9 @@ class TestPylsdRunCLI:
         )
 
         with (
-            patch("lucy_ng.cli.pylsd.PyLSDOrchestrator") as MockOrch,
-            patch("lucy_ng.cli.pylsd.SolutionMerger") as MockMerger,
-            patch("lucy_ng.cli.pylsd.LSDRunner.is_available", return_value=True),
+            patch("ailsa.cli.pylsd.PyLSDOrchestrator") as MockOrch,
+            patch("ailsa.cli.pylsd.SolutionMerger") as MockMerger,
+            patch("ailsa.cli.pylsd.LSDRunner.is_available", return_value=True),
         ):
             MockOrch.return_value.run.return_value = mock_orch_result
             MockMerger.return_value.merge.return_value = mock_merge_result
@@ -249,9 +249,9 @@ class TestPylsdRunCLI:
         lsd_file.write_text("; minimal\nEXIT\n")
 
         with (
-            patch("lucy_ng.cli.pylsd.PyLSDOrchestrator") as MockOrch,
-            patch("lucy_ng.cli.pylsd.SolutionMerger"),
-            patch("lucy_ng.cli.pylsd.LSDRunner.is_available", return_value=True),
+            patch("ailsa.cli.pylsd.PyLSDOrchestrator") as MockOrch,
+            patch("ailsa.cli.pylsd.SolutionMerger"),
+            patch("ailsa.cli.pylsd.LSDRunner.is_available", return_value=True),
         ):
             MockOrch.return_value.run.side_effect = ValueError(
                 "Too many suspect correlations: 4. Maximum is 3."
@@ -271,7 +271,7 @@ class TestPylsdRunCLI:
         lsd_file = tmp_path / "compound.lsd"
         lsd_file.write_text("; minimal\nEXIT\n")
 
-        with patch("lucy_ng.cli.pylsd.LSDRunner.is_available", return_value=False):
+        with patch("ailsa.cli.pylsd.LSDRunner.is_available", return_value=False):
             runner = CliRunner()
             result = runner.invoke(pylsd, ["run", str(lsd_file), "--no-rank"])
 
@@ -377,10 +377,10 @@ class TestRankingIntegration:
         )
 
         with (
-            patch("lucy_ng.cli.pylsd.PyLSDOrchestrator") as MockOrch,
-            patch("lucy_ng.cli.pylsd.SolutionMerger") as MockMerger,
-            patch("lucy_ng.cli.pylsd.LSDRunner.is_available", return_value=True),
-            patch("lucy_ng.cli.pylsd._perform_ranking", return_value=None) as mock_rank,
+            patch("ailsa.cli.pylsd.PyLSDOrchestrator") as MockOrch,
+            patch("ailsa.cli.pylsd.SolutionMerger") as MockMerger,
+            patch("ailsa.cli.pylsd.LSDRunner.is_available", return_value=True),
+            patch("ailsa.cli.pylsd._perform_ranking", return_value=None) as mock_rank,
         ):
             MockOrch.return_value.run.return_value = mock_orch_result
             MockMerger.return_value.merge.return_value = mock_merge_result
@@ -430,10 +430,10 @@ class TestRankingIntegration:
         }
 
         with (
-            patch("lucy_ng.cli.pylsd.PyLSDOrchestrator") as MockOrch,
-            patch("lucy_ng.cli.pylsd.SolutionMerger") as MockMerger,
-            patch("lucy_ng.cli.pylsd.LSDRunner.is_available", return_value=True),
-            patch("lucy_ng.cli.pylsd._perform_ranking", return_value=ranking_data) as mock_rank,
+            patch("ailsa.cli.pylsd.PyLSDOrchestrator") as MockOrch,
+            patch("ailsa.cli.pylsd.SolutionMerger") as MockMerger,
+            patch("ailsa.cli.pylsd.LSDRunner.is_available", return_value=True),
+            patch("ailsa.cli.pylsd._perform_ranking", return_value=ranking_data) as mock_rank,
         ):
             MockOrch.return_value.run.return_value = mock_orch_result
             MockMerger.return_value.merge.return_value = mock_merge_result
@@ -469,7 +469,7 @@ class TestMalformedInventory:
 
     def test_malformed_inventory_start_without_end_exits_1(self, tmp_path):
         """LSD file with START delimiter but no END delimiter must exit 1 (WR-01 fix)."""
-        from lucy_ng.cli.lsd import _validate_and_parse_inventory
+        from ailsa.cli.lsd import _validate_and_parse_inventory
 
         # Construct a file that has the START delimiter but no END delimiter
         lsd_content = (
@@ -488,7 +488,7 @@ class TestMalformedInventory:
 
     def test_absent_inventory_returns_none(self, tmp_path):
         """LSD file with no inventory block at all must return None (not an error)."""
-        from lucy_ng.cli.lsd import _validate_and_parse_inventory
+        from ailsa.cli.lsd import _validate_and_parse_inventory
 
         lsd_content = "; Plain LSD file without any inventory\nMULT 1 C 2 0\n"
         lsd_file = tmp_path / "no_inventory.lsd"

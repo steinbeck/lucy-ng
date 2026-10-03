@@ -14,12 +14,12 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from lucy_ng.analysis.hydrogen_budget import HydrogenBudgetResult
-from lucy_ng.analysis.intensity_reporter import IntensityReport
-from lucy_ng.analysis.symmetry_analysis import SymmetryAnalysisResult
-from lucy_ng.cli.analyze import analyze
-from lucy_ng.processing.peak_picker import AdaptivePeakPicker
-from lucy_ng.readers import BrukerReader
+from ailsa.analysis.hydrogen_budget import HydrogenBudgetResult
+from ailsa.analysis.intensity_reporter import IntensityReport
+from ailsa.analysis.symmetry_analysis import SymmetryAnalysisResult
+from ailsa.cli.analyze import analyze
+from ailsa.processing.peak_picker import AdaptivePeakPicker
+from ailsa.readers import BrukerReader
 
 # In-repo CASE1 path (always available)
 DATA_DIR = Path(__file__).parent.parent / "data"
