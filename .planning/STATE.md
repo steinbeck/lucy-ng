@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: AILSA Rename
-status: executing
-last_updated: "2026-10-03T08:08:07.860Z"
+status: ready_to_plan
+last_updated: 2026-10-03T13:35:41.521Z
 last_activity: 2026-10-03 -- Phase 104 Plan 05 complete (PyPI-uploadable packaging, full gate, global CLI reinstall; PKG-01/03/04)
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
+stopped_at: Phase 104 complete (6/6) — ready to discuss Phase 105
 ---
 
 # lucy-ng State
@@ -20,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-21)
 
 **Core value:** AI agent autonomously determines compound structures from NMR, with a multi-agent team that uses the intended solver pipeline — not a manual bypass
-**Current focus:** Phase 104 — package-and-cli
+**Current focus:** Phase 105 — documentation and outside face
 
 ## Current Position
 
-Phase: 104 (package-and-cli) — EXECUTING
-Plan: 6 of 6
-Status: Ready to execute
-Last activity: 2026-10-03 -- Phase 104 Plan 05 complete (PyPI-uploadable packaging, full gate, global CLI reinstall; PKG-01/03/04)
+Phase: 105
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-03 -- Phase 104 complete: package/module/CLI renamed to ailsa, `lucy` deprecated alias, dual DB filenames; PyPI upload of 0.1.0 deferred until after Phase 105 README rewrite (104-HUMAN-UAT.md)
 
 ## Milestone v11.0 Phases
 
@@ -566,7 +567,7 @@ file on a host where several people have root; a technical account is being cons
 
 **Velocity:**
 
-- Total plans completed: 229 across 13 milestones (11 shipped + 1 abandoned + 1 partial) at v10.0 pause
+- Total plans completed: 235 across 13 milestones (11 shipped + 1 abandoned + 1 partial) at v10.0 pause
   - v9.2: 3 phases (90-92), 10 plans, shipped 2026-07-07; tests: 1174 passing at close
   - v9.1: 4 phases (86-89), 9 plans, shipped 2026-06-29; tests: 1131 passing at close
   - v9.3: 4 phases (93-96), 16 plans, shipped 2026-07-12 (~107 commits, +16,988/-287 lines)
