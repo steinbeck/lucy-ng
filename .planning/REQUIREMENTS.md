@@ -9,7 +9,7 @@
 ### Package and CLI (PKG)
 
 - [ ] **PKG-01**: A user can `pip install ailsa` from PyPI and get the real package (replacing the 0.0.1 name-reservation placeholder), with `pyproject.toml` naming the project `ailsa`. *(pyproject half done in 104-02/05; PyPI upload deferred by user decision 2026-10-03 until after the documentation phase so the PyPI page shows the rewritten README — artifacts built and twine-verified in 104-06)*
-- [ ] **PKG-02**: A developer imports everything from the Python module `ailsa`; no `lucy_ng` module or import remains in `src/`, `tests/` or `scripts/`.
+- [x] **PKG-02**: A developer imports everything from the Python module `ailsa`; no `lucy_ng` module or import remains in `src/`, `tests/` or `scripts/`.
 - [x] **PKG-03**: A user runs every subcommand as `ailsa …`; `lucy …` still works for one release and prints a one-line deprecation hint pointing to `ailsa`.
 - [x] **PKG-04**: The full test suite passes on the renamed tree with the same pass count as before (1345 passed / 74 environment failures), and `mypy --strict` and `ruff` report no new findings.
 - [x] **PKG-05**: A user with the existing database file `data/reference/lucy-ng-derep.db` keeps working; `ailsa database download` and `ailsa database info` accept the old file name as well as the new default.
