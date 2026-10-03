@@ -8,8 +8,8 @@ detached subprocess uses. It must never choose a lone, possibly-stale
 
 from __future__ import annotations
 
-import sys
 import subprocess
+import sys
 
 import pytest
 

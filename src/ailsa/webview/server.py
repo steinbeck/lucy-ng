@@ -1,6 +1,9 @@
 """Webview server lifecycle engine.
 
 Provides the process-lifecycle functions for the ailsa webview server:
+- :func:`_build_launcher` — choose the ``ailsa`` CLI subprocess command
+  (two-tier: ``ailsa`` on PATH, else ``python -m ailsa.cli``; never a
+  lone, possibly-stale ``lucy`` script).
 - :func:`_pick_free_port` — bind ephemeral port 0, return the assigned port.
 - :func:`start` — launch a detached uvicorn subprocess; idempotent.
 - :func:`stop` — send SIGTERM (then SIGKILL) and remove state file.
@@ -25,6 +28,24 @@ import time
 from pathlib import Path
 
 from ailsa.webview.state import WebviewState
+
+
+def _build_launcher() -> list[str]:
+    """Return the subprocess command prefix for launching the ``ailsa`` CLI.
+
+    Two-tier check: the ``ailsa`` entry point on PATH, otherwise
+    ``python -m ailsa.cli``. Deliberately **not** a three-tier check that
+    also falls back to a lone ``lucy`` script: a ``lucy`` found on PATH
+    with no ``ailsa`` beside it can only be a stale pre-rename
+    ``lucy-ng`` install, and launching it would run old code against this
+    package's webview server (T-104-07).
+
+    Returns:
+        The command prefix to prepend to the webview subcommand args.
+    """
+    if shutil.which("ailsa"):
+        return ["ailsa"]
+    return [sys.executable, "-m", "ailsa.cli"]
 
 
 def _pick_free_port(host: str = "127.0.0.1") -> int:
@@ -98,12 +119,9 @@ def start(
 
     # Build subprocess command.  Use ``ailsa`` from PATH when available so
     # that installed packages work; fall back to ``python -m ailsa.cli``
-    # for editable/dev installs.
-    launcher: list[str]
-    if shutil.which("lucy"):
-        launcher = ["lucy"]
-    else:
-        launcher = [sys.executable, "-m", "ailsa.cli"]
+    # for editable/dev installs. Never falls back to a lone ``lucy`` --
+    # see _build_launcher()'s docstring (T-104-07).
+    launcher = _build_launcher()
 
     cmd: list[str] = [
         *launcher,
