@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
+import requests
 from click.testing import CliRunner
 
+import ailsa.cli.database as database_cli_module
 from ailsa.cli import cli
 from ailsa.database import DatabaseManager
 from ailsa.database.models import CompoundRecord, ShiftRecord
+from ailsa.fragments import FragmentDatabaseManager
 from ailsa.prediction.hose import HOSEGEN_AVAILABLE
 
 
@@ -149,3 +154,166 @@ class TestGenerateHoseStats:
             ["database", "generate-hose-stats", "--max-radius", "0"],
         )
         assert result.exit_code != 0
+
+
+@pytest.fixture
+def isolated_cwd(tmp_path, monkeypatch):
+    """Isolate cwd, LUCY_DATABASE, Path.home() and mdfind (PKG-05 CLI tests).
+
+    Without this, DatabaseFinder's mdfind tier would find the real 3.97 GB
+    lucy-ng-derep.db / 605 MB lucy-ng-fragments.db on this machine.
+    """
+    monkeypatch.delenv("LUCY_DATABASE", raising=False)
+    monkeypatch.chdir(tmp_path)
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+
+    def fake_run(*args, **kwargs):  # noqa: ANN002, ANN003 - test double
+        raise FileNotFoundError("mdfind not available in test isolation")
+
+    monkeypatch.setattr("ailsa.database.finder.subprocess.run", fake_run)
+
+    def forbid_download(*args, **kwargs):  # noqa: ANN002, ANN003 - test double
+        raise AssertionError("must not download")
+
+    monkeypatch.setattr(database_cli_module.requests, "get", forbid_download)
+    return tmp_path
+
+
+class TestDatabaseDualFilename:
+    """PKG-05: `ailsa database download`/`info` accept the legacy filename."""
+
+    def test_download_no_output_legacy_present_short_circuits(self, isolated_cwd) -> None:
+        """Test A: only data/reference/lucy-ng-derep.db present -> no download."""
+        ref = isolated_cwd / "data" / "reference"
+        ref.mkdir(parents=True)
+        legacy = ref / "lucy-ng-derep.db"
+        with DatabaseManager(legacy) as db:
+            db.create_tables()
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["database", "download"])
+
+        assert result.exit_code == 0
+        assert "Database already exists: data/reference/lucy-ng-derep.db" in result.stdout
+
+    def test_download_no_output_new_present_short_circuits(self, isolated_cwd) -> None:
+        """Test B: only data/reference/ailsa-derep.db present -> no download,
+        the message names the ailsa path."""
+        ref = isolated_cwd / "data" / "reference"
+        ref.mkdir(parents=True)
+        new = ref / "ailsa-derep.db"
+        with DatabaseManager(new) as db:
+            db.create_tables()
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["database", "download"])
+
+        assert result.exit_code == 0
+        assert "Database already exists: data/reference/ailsa-derep.db" in result.stdout
+
+    def test_download_explicit_output_still_downloads(self, isolated_cwd) -> None:
+        """Test C: an explicit --output is honoured; the legacy short-circuit
+        applies only to the default output path."""
+        ref = isolated_cwd / "data" / "reference"
+        ref.mkdir(parents=True)
+        legacy = ref / "lucy-ng-derep.db"
+        with DatabaseManager(legacy) as db:
+            db.create_tables()
+
+        def raising_get(*args, **kwargs):  # noqa: ANN002, ANN003 - test double
+            raise requests.RequestException("simulated network failure")
+
+        database_cli_module.requests.get = raising_get  # type: ignore[attr-defined]
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["database", "download", "-o", "custom.db"])
+
+        assert result.exit_code != 0
+        assert "Error downloading" in result.output
+
+    def test_info_no_argument_legacy_present(self, isolated_cwd) -> None:
+        """Test D: `database info` with no argument, only legacy present."""
+        ref = isolated_cwd / "data" / "reference"
+        ref.mkdir(parents=True)
+        legacy = ref / "lucy-ng-derep.db"
+        with DatabaseManager(legacy) as db:
+            db.create_tables()
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["database", "info"])
+
+        assert result.exit_code == 0
+        assert "Database: data/reference/lucy-ng-derep.db" in result.stdout
+        assert "Total compounds: 0" in result.stdout
+
+    def test_info_explicit_legacy_and_new_paths(self, isolated_cwd) -> None:
+        """Test E: `database info` accepts an explicit legacy path and an
+        explicit new path."""
+        ref = isolated_cwd / "data" / "reference"
+        ref.mkdir(parents=True)
+        legacy = ref / "lucy-ng-derep.db"
+        new = ref / "ailsa-derep.db"
+        with DatabaseManager(legacy) as db:
+            db.create_tables()
+        with DatabaseManager(new) as db:
+            db.create_tables()
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli, ["database", "info", "data/reference/lucy-ng-derep.db"]
+        )
+        assert result.exit_code == 0
+
+        result = runner.invoke(
+            cli, ["database", "info", "data/reference/ailsa-derep.db"]
+        )
+        assert result.exit_code == 0
+
+    def test_info_no_argument_nothing_found(self, isolated_cwd) -> None:
+        """Test F: `database info` with no argument and no database anywhere
+        -> non-zero exit, hint mentions `ailsa database download`."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["database", "info"])
+
+        assert result.exit_code != 0
+        assert "ailsa database download" in result.output
+
+    def test_help_mentions_both_filenames(self, isolated_cwd) -> None:
+        """Test H: --help texts stay green and the download help mentions both
+        the new and the legacy default filename."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["database", "--help"])
+        assert result.exit_code == 0
+
+        result = runner.invoke(cli, ["database", "download", "--help"])
+        assert result.exit_code == 0
+        assert "ailsa-derep.db" in result.output
+        assert "lucy-ng-derep.db" in result.output
+
+
+class TestFragmentDualFilename:
+    """PKG-05: `ailsa fragment info` accepts the legacy fragments filename."""
+
+    def test_fragment_info_no_argument_legacy_present(self, isolated_cwd) -> None:
+        """Test G (part 1): only legacy lucy-ng-fragments.db present -> exit 0."""
+        ref = isolated_cwd / "data" / "reference"
+        ref.mkdir(parents=True)
+        legacy = ref / "lucy-ng-fragments.db"
+        with FragmentDatabaseManager(legacy) as db:
+            db.create_tables()
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["fragment", "info"])
+
+        assert result.exit_code == 0
+
+    def test_fragment_info_no_argument_nothing_found(self, isolated_cwd) -> None:
+        """Test G (part 2): neither filename present -> non-zero exit, stderr
+        mentions `ailsa fragment build`."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["fragment", "info"])
+
+        assert result.exit_code != 0
+        assert "ailsa fragment build" in result.output
