@@ -36,6 +36,73 @@ class DatabaseFinder:
     HOME_TABLE_PATH = Path.home() / ".lucy" / "hose_lookup.json.gz"
 
     @staticmethod
+    def find_database(names: tuple[str, str]) -> Path | None:
+        """Find a database file in default locations, trying ``names`` in order.
+
+        Generic version of the location-tier search used by
+        :meth:`find_derep_database` (WR-02): any DB family that needs the
+        same "new filename wins, legacy filename still found" dual-filename
+        search can pass its own ``(new_name, legacy_name)`` pair here
+        instead of re-implementing the tier list.
+
+        Search order (mirrors :meth:`find_derep_database`, minus the
+        ``LUCY_DATABASE`` env-var tier, which is derep-DB-specific):
+        1. data/reference/ (project location)
+        2. Common locations (~/.lucy/, ~/ailsa/, ~/lucy-ng/, etc.)
+        3. macOS Spotlight search (mdfind)
+        4. Dropbox/develop (common dev location, last resort)
+
+        Args:
+            names: ``(new_name, legacy_name)`` — tried in this order at
+                every tier so the new name wins when both exist.
+
+        Returns:
+            Path to database file if found, None otherwise
+        """
+        # 1. Check project location — try both names, new first
+        for name in names:
+            default_db = Path("data/reference") / name
+            if default_db.exists():
+                return default_db
+
+        # 2. Check common locations — try both names at each existing path
+        for name in names:
+            common_paths = [Path.home() / ".lucy" / name]
+            for project_dir in DatabaseFinder.PROJECT_DIR_NAMES:
+                common_paths.append(Path.home() / project_dir / "data" / "reference" / name)
+                common_paths.append(Path.home() / ".local" / "share" / project_dir / name)
+            for p in common_paths:
+                if p.exists():
+                    return p
+
+        # 3. macOS Spotlight search (fast) — query both names, new first
+        for name in names:
+            try:
+                result = subprocess.run(
+                    ["mdfind", "-name", name],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    found_path = Path(result.stdout.strip().split("\n")[0])
+                    if found_path.exists():
+                        return found_path
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                pass  # mdfind not available or timed out
+
+        # 4. Search in Dropbox/develop (common dev location) — both names
+        for name in names:
+            for project_dir in DatabaseFinder.PROJECT_DIR_NAMES:
+                dropbox_dev = (
+                    Path.home() / "Dropbox" / "develop" / project_dir / "data" / "reference" / name
+                )
+                if dropbox_dev.exists():
+                    return dropbox_dev
+
+        return None
+
+    @staticmethod
     def find_derep_database() -> Path | None:
         """Find SQLite database in default locations.
 
@@ -60,48 +127,42 @@ class DatabaseFinder:
             if env_path.exists() and env_path.suffix == ".db":
                 return env_path
 
-        # 2. Check project location — try both names, new first
-        for name in DatabaseFinder.DB_NAMES:
-            default_db = Path("data/reference") / name
-            if default_db.exists():
-                return default_db
+        # 2-5. Shared dual-filename tier search (WR-02).
+        return DatabaseFinder.find_database(DatabaseFinder.DB_NAMES)
 
-        # 3. Check common locations — try both names at each existing path
-        for name in DatabaseFinder.DB_NAMES:
-            common_paths = [Path.home() / ".lucy" / name]
-            for project_dir in DatabaseFinder.PROJECT_DIR_NAMES:
-                common_paths.append(Path.home() / project_dir / "data" / "reference" / name)
-                common_paths.append(Path.home() / ".local" / "share" / project_dir / name)
-            for p in common_paths:
-                if p.exists():
-                    return p
+    @staticmethod
+    def resolve_default_path(new_name: str, legacy_name: str) -> Path:
+        """Resolve the default output/lookup path for a ``data/reference/``-rooted DB.
 
-        # 4. macOS Spotlight search (fast) — query both names, new first
-        for name in DatabaseFinder.DB_NAMES:
-            try:
-                result = subprocess.run(
-                    ["mdfind", "-name", name],
-                    capture_output=True,
-                    text=True,
-                    timeout=5,
-                )
-                if result.returncode == 0 and result.stdout.strip():
-                    found_path = Path(result.stdout.strip().split("\n")[0])
-                    if found_path.exists():
-                        return found_path
-            except (subprocess.TimeoutExpired, FileNotFoundError):
-                pass  # mdfind not available or timed out
+        Generic version of the narrow "prefer new, fall back to legacy
+        in-place, else new" logic originally hand-written for the
+        dereplication DB (WR-02): prefers the existing new-named file in
+        ``data/reference/``, then the existing legacy-named file there,
+        then falls back to the new default path when neither exists (e.g.
+        for a fresh ``download``/``build``). Used by CLI commands whose
+        output option was not explicitly given, so an existing legacy
+        install is used in place rather than duplicating a large file under
+        the new name (PKG-05).
 
-        # 5. Search in Dropbox/develop (common dev location) — both names
-        for name in DatabaseFinder.DB_NAMES:
-            for project_dir in DatabaseFinder.PROJECT_DIR_NAMES:
-                dropbox_dev = (
-                    Path.home() / "Dropbox" / "develop" / project_dir / "data" / "reference" / name
-                )
-                if dropbox_dev.exists():
-                    return dropbox_dev
+        This is deliberately narrower than :meth:`find_database` — it does
+        not search ``~/.lucy/``, ``~/<project>/...``, mdfind or Dropbox/dev,
+        because it is choosing a default *output* location, not searching
+        the whole filesystem for an existing database to read.
 
-        return None
+        Args:
+            new_name: The new (preferred) filename, e.g. ``ailsa-derep.db``.
+            legacy_name: The legacy filename, e.g. ``lucy-ng-derep.db``.
+
+        Returns:
+            The new default path, the existing legacy path, or the new path.
+        """
+        new_path = Path("data/reference") / new_name
+        if new_path.exists():
+            return new_path
+        legacy_path = Path("data/reference") / legacy_name
+        if legacy_path.exists():
+            return legacy_path
+        return new_path
 
     @staticmethod
     def resolve_default_derep_path() -> Path:
@@ -117,13 +178,9 @@ class DatabaseFinder:
         Returns:
             The new default path, the existing legacy path, or the new path.
         """
-        new_path = Path("data/reference") / DatabaseFinder.NEW_DB_NAME
-        if new_path.exists():
-            return new_path
-        legacy_path = Path("data/reference") / DatabaseFinder.LEGACY_DB_NAME
-        if legacy_path.exists():
-            return legacy_path
-        return new_path
+        return DatabaseFinder.resolve_default_path(
+            DatabaseFinder.NEW_DB_NAME, DatabaseFinder.LEGACY_DB_NAME
+        )
 
     @staticmethod
     def is_sqlite_database(path: str | Path) -> bool:

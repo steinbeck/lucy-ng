@@ -9,6 +9,7 @@ import click
 from click.core import ParameterSource
 
 from ailsa.database import DatabaseManager
+from ailsa.database.finder import DatabaseFinder
 from ailsa.fragments import DEFFFormatter, FragmentDatabaseManager
 from ailsa.fragments.extractor import SSCExtractor
 from ailsa.fragments.searcher import FragmentSearcher
@@ -16,24 +17,39 @@ from ailsa.fragments.searcher import FragmentSearcher
 # PKG-05: the fragments DB gets the same dual-filename treatment as the
 # derep DB (not literally required by PKG-05's wording, but the identical
 # defect against the real 605 MB lucy-ng-fragments.db on this machine).
+# WR-02: both resolvers below delegate to DatabaseFinder's generic helpers
+# instead of hand-rolling a narrower copy of its tier logic.
 NEW_FRAGMENTS_DB_NAME = "ailsa-fragments.db"
 LEGACY_FRAGMENTS_DB_NAME = "lucy-ng-fragments.db"
 DEFAULT_FRAGMENTS_DB = Path("data/reference") / NEW_FRAGMENTS_DB_NAME
 
 
 def resolve_default_fragments_db() -> Path:
-    """Resolve the default fragments-DB path (PKG-05, mirrors DatabaseFinder).
+    """Resolve the default *output* fragments-DB path for ``fragment build``.
 
-    Prefers an existing new-named file, then an existing legacy-named file,
-    then falls back to the new default path when neither exists.
+    Narrow: only checks ``data/reference/`` (new name, then legacy, then
+    the new default path), matching how ``DatabaseFinder.
+    resolve_default_derep_path()`` is used for ``database download``/
+    ``generate-hose-stats``'s output defaults — picking an output location
+    for a file that may not exist yet should not search the whole
+    filesystem.
     """
-    new_path = Path("data/reference") / NEW_FRAGMENTS_DB_NAME
-    if new_path.exists():
-        return new_path
-    legacy_path = Path("data/reference") / LEGACY_FRAGMENTS_DB_NAME
-    if legacy_path.exists():
-        return legacy_path
-    return new_path
+    return DatabaseFinder.resolve_default_path(NEW_FRAGMENTS_DB_NAME, LEGACY_FRAGMENTS_DB_NAME)
+
+
+def find_default_fragments_db() -> Path:
+    """Find an existing fragments DB for ``fragment info``/``search``'s lookups.
+
+    Searches DatabaseFinder's full set of tiers (``data/reference/``,
+    ``~/.lucy/``, ``~/<project>/data/reference/``, ``~/.local/share/
+    <project>/``, macOS Spotlight, ``~/Dropbox/develop/<project>/...``) for
+    either filename, new name first (WR-02) — the same coverage
+    ``DatabaseFinder.find_derep_database()`` gives ``database info``.
+    Falls back to the new default path when nothing is found, so callers
+    always get a ``Path`` to report in "not found" error messages.
+    """
+    found = DatabaseFinder.find_database((NEW_FRAGMENTS_DB_NAME, LEGACY_FRAGMENTS_DB_NAME))
+    return found if found is not None else DEFAULT_FRAGMENTS_DB
 
 
 @click.group()
@@ -57,7 +73,7 @@ def info(db_path: Path) -> None:
         ailsa fragment info data/reference/lucy-ng-fragments.db
     """
     if click.get_current_context().get_parameter_source("db_path") == ParameterSource.DEFAULT:
-        db_path = resolve_default_fragments_db()
+        db_path = find_default_fragments_db()
 
     if not db_path.exists():
         click.echo(
@@ -174,7 +190,7 @@ def search(
     # PKG-05: an explicit --db is honoured as given; the default picks up an
     # existing legacy-named fragments database in place of the new default.
     if click.get_current_context().get_parameter_source("db_path") == ParameterSource.DEFAULT:
-        db_path = resolve_default_fragments_db()
+        db_path = find_default_fragments_db()
 
     # Parse shifts
     try:

@@ -317,3 +317,42 @@ class TestFragmentDualFilename:
 
         assert result.exit_code != 0
         assert "ailsa fragment build" in result.output
+
+    def test_fragment_info_no_argument_finds_db_outside_data_reference(
+        self, isolated_cwd
+    ) -> None:
+        """WR-01 (104-REVIEW.md): `fragment info`'s default resolution must
+        search DatabaseFinder's full tier list, not just `data/reference/`.
+        Only a legacy fragments DB under `~/.lucy/` exists (no
+        `data/reference/` at all) -> it must still be auto-detected,
+        matching the coverage `database info` gets for the derep DB via
+        `DatabaseFinder.find_derep_database()`."""
+        lucy_dir = isolated_cwd / "home" / ".lucy"
+        lucy_dir.mkdir(parents=True)
+        legacy = lucy_dir / "lucy-ng-fragments.db"
+        with FragmentDatabaseManager(legacy) as db:
+            db.create_tables()
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["fragment", "info"])
+
+        assert result.exit_code == 0
+        assert str(legacy) in result.output
+
+    def test_fragment_search_no_argument_finds_db_outside_data_reference(
+        self, isolated_cwd
+    ) -> None:
+        """Same coverage check as above, for `fragment search`'s default
+        resolution branch."""
+        lucy_dir = isolated_cwd / "home" / ".lucy"
+        lucy_dir.mkdir(parents=True)
+        legacy = lucy_dir / "lucy-ng-fragments.db"
+        with FragmentDatabaseManager(legacy) as db:
+            db.create_tables()
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli, ["fragment", "search", "--shifts", "128.0,130.5"]
+        )
+
+        assert result.exit_code == 0
