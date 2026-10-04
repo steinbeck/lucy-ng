@@ -61,8 +61,13 @@ def _resolve_db_path(db_path: str | Path | None) -> Path | None:
         candidates = [Path(env_db) if env_db else None]
         for name in ("ailsa-derep.db", "lucy-ng-derep.db"):
             candidates.append(Path("data/reference") / name)
-        for project_dir in ("ailsa", "lucy-ng"):
-            for name in ("ailsa-derep.db", "lucy-ng-derep.db"):
+        # WR-01: loop nesting matches DatabaseFinder's tier 5 (name outer,
+        # project_dir inner) so the new filename is tried across every
+        # directory before the legacy filename is tried in any directory —
+        # otherwise a cross-matched layout could return the legacy-named
+        # file here while DatabaseFinder itself returns the new-named file.
+        for name in ("ailsa-derep.db", "lucy-ng-derep.db"):
+            for project_dir in ("ailsa", "lucy-ng"):
                 candidates.append(
                     Path.home()
                     / "Dropbox"
