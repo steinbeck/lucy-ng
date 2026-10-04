@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -356,3 +357,48 @@ class TestFragmentDualFilename:
         )
 
         assert result.exit_code == 0
+
+    def test_fragment_search_no_db_legacy_present(self, isolated_cwd) -> None:
+        """IN-02 (104-REVIEW.md): `fragment search`'s default-resolution
+        branch (``--db`` omitted, only the legacy-named fragments DB present
+        in ``data/reference/``) must auto-detect the legacy file, mirroring
+        the existing `fragment info` coverage above."""
+        ref = isolated_cwd / "data" / "reference"
+        ref.mkdir(parents=True)
+        legacy = ref / "lucy-ng-fragments.db"
+        with FragmentDatabaseManager(legacy) as db:
+            db.create_tables()
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli, ["fragment", "search", "--shifts", "128.0,130.5"]
+        )
+
+        assert result.exit_code == 0, result.output
+        output = json.loads(result.output)
+        assert output["result_count"] == 0
+
+    def test_fragment_build_fragment_db_default_legacy_present(
+        self, isolated_cwd
+    ) -> None:
+        """IN-02 (104-REVIEW.md): `fragment build`'s default-resolution
+        branch (`resolve_default_fragments_db()`, used for its FRAGMENT_DB
+        positional argument when omitted) must reuse an existing legacy-named
+        fragments DB in place rather than creating a new ``ailsa-fragments.db``
+        alongside it."""
+        ref = isolated_cwd / "data" / "reference"
+        ref.mkdir(parents=True)
+        legacy = ref / "lucy-ng-fragments.db"
+        with FragmentDatabaseManager(legacy) as fdb:
+            fdb.create_tables()
+
+        compound_db_path = isolated_cwd / "compounds.db"
+        with DatabaseManager(compound_db_path) as cdb:
+            cdb.create_tables()
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["fragment", "build", str(compound_db_path)])
+
+        assert result.exit_code == 0, result.output
+        assert "Fragment DB total SSCs: 0" in result.output
+        assert not (ref / "ailsa-fragments.db").exists()
