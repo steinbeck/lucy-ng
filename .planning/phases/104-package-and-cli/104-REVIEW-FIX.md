@@ -72,10 +72,7 @@ DB files occurred.
 
 - `uv run pytest tests/test_database_finder.py tests/test_cli_database.py
   tests/test_cli_deprecated_alias.py -q`: 32 passed, 0 failed.
-- `uv run mypy src/ailsa`: 119 errors (pre-existing baseline on this checkout; unchanged by
-  either fix — not the 33 cited in the task config, which appears to be a stale/narrower baseline
-  figure; verified no *new* errors were introduced by diffing the error count before/after each
-  fix).
+- `uv run --extra dev mypy src/ailsa`: 33 errors on the main tree, identical to the pre-rename baseline (`comm -13` empty; re-measured by the orchestrator). The fixer's worktree reported 119 because its environment lacked the dev extras; the before/after delta there was zero.
 - `uv run ruff check src tests`: 278 errors (matches the stated baseline exactly; unchanged by
   either fix).
 - No data files under `data/reference/` were renamed, moved, or deleted.
