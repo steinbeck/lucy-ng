@@ -1,4 +1,4 @@
-"""Lucy webview dashboard server CLI commands.
+"""ailsa webview dashboard server CLI commands.
 
 This module is import-safe: it does NOT import fastapi, uvicorn, or any module
 from ``ailsa.webview.app`` at the top level.  All webview-extra imports are

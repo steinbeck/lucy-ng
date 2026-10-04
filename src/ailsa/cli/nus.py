@@ -1,4 +1,4 @@
-"""Lucy NUS (Non-Uniform Sampling) reconstruction CLI commands.
+"""ailsa NUS (Non-Uniform Sampling) reconstruction CLI commands.
 
 This module is import-safe: it does NOT import ``ailsa.nus.params``,
 ``ailsa.nus.schedule``, ``ailsa.nus.backends``, or ``ailsa.nus.runner``
