@@ -707,7 +707,7 @@ PROV-01 re-analysis: 37.86 ppm is a CH, so the gate was reporting a wrong input 
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 261006-iob | Open-weight model (Qwen) harness options for the AILSA skill; reply draft to collaborators | 2026-10-06 | eb8c46c | [261006-iob-open-weight-model-qwen-harness-options-f](./quick/261006-iob-open-weight-model-qwen-harness-options-f/) |
+| 261006-iob | Open-weight model (Qwen) harness options for the AILSA skill; reply draft to collaborators | 2026-10-06 | ca46432 | [261006-iob-open-weight-model-qwen-harness-options-f](./quick/261006-iob-open-weight-model-qwen-harness-options-f/) |
 
 ### Strategic Reference
 
