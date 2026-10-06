@@ -250,7 +250,7 @@ Plans:
 **Requirements**: DOC-01, DOC-02, DOC-03, DOC-04
 **Success Criteria** (what must be TRUE):
 
-  1. A reader of the README sees the project as AILSA, with the expansion *AI + LSD + Agents*, LSD and Jean-Marc Nuzillard credited up front, and a short note that the project was formerly called lucy-ng.
+  1. A reader of the README sees the project as AILSA, with the expansion *AI + LSD + Agents*, and LSD and Jean-Marc Nuzillard credited up front; the old name is not mentioned (amended 2026-10-06, 105-CONTEXT.md D-01).
   2. `docs/` (ARCHITECTURE, USER_GUIDE, BENCHMARK, NUS-PORTABILITY and the rest) and `CLAUDE.md` refer to the project, package, CLI and commands by the new names; no living document still instructs the reader to type `lucy`.
   3. The figshare record of the reference database carries the new project name in title and description; the DOI and the uploaded file are unchanged.
   4. The infographic deck (`docs/infographics/build.py`) is rebuilt under the new name with the current headline numbers, clearing the outstanding "stale deck" backlog item.

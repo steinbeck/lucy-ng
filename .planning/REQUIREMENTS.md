@@ -8,7 +8,7 @@
 
 ### Package and CLI (PKG)
 
-- [ ] **PKG-01**: A user can `pip install ailsa` from PyPI and get the real package (replacing the 0.0.1 name-reservation placeholder), with `pyproject.toml` naming the project `ailsa`. *(pyproject half done in 104-02/05; PyPI upload deferred by user decision 2026-10-03 until after the documentation phase so the PyPI page shows the rewritten README — artifacts built and twine-verified in 104-06)*
+- [ ] **PKG-01**: A user can `pip install ailsa` from PyPI and get the real package (replacing the 0.0.1 name-reservation placeholder), with `pyproject.toml` naming the project `ailsa`. *(pyproject half done in 104-02/05; PyPI upload deferred by user decision 2026-10-03 until after the documentation phase so the PyPI page shows the rewritten README; moved 2026-10-06 to after Phase 107 so every command and link in the frozen README works (105-CONTEXT.md D-05) — artifacts built and twine-verified in 104-06)*
 - [x] **PKG-02**: A developer imports everything from the Python module `ailsa`; no `lucy_ng` module or import remains in `src/`, `tests/` or `scripts/`.
 - [x] **PKG-03**: A user runs every subcommand as `ailsa …`; `lucy …` still works for one release and prints a one-line deprecation hint pointing to `ailsa`.
 - [x] **PKG-04**: The full test suite passes on the renamed tree with the same pass count as before (1345 passed / 74 environment failures), and `mypy --strict` and `ruff` report no new findings.
@@ -16,7 +16,7 @@
 
 ### Documentation and outside face (DOC)
 
-- [ ] **DOC-01**: A reader of the README sees the project as AILSA, with the expansion *AI + LSD + Agents*, LSD and Jean-Marc Nuzillard credited up front, and a short note that the project was formerly called lucy-ng.
+- [ ] **DOC-01**: A reader of the README sees the project as AILSA, with the expansion *AI + LSD + Agents*, and LSD and Jean-Marc Nuzillard credited up front. *(Amended 2026-10-06: the "formerly called lucy-ng" note is struck — the user wants the old name to disappear as far as possible; see 105-CONTEXT.md D-01.)*
 - [ ] **DOC-02**: `docs/` (ARCHITECTURE, USER_GUIDE, BENCHMARK, NUS-PORTABILITY and the rest) and `CLAUDE.md` refer to the project, package, CLI and commands by the new names; no living document still instructs the reader to type `lucy`.
 - [ ] **DOC-03**: The figshare record of the reference database carries the new project name in title and description; the DOI and the uploaded file are unchanged.
 - [ ] **DOC-04**: The infographic deck (`docs/infographics/build.py`) is rebuilt under the new name with the current headline numbers (this also clears the "stale deck" backlog item).
