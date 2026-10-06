@@ -91,6 +91,20 @@ lucy-ng; the name lucy-ng should **disappear as far as possible** from everythin
   live hosts), `.planning/` (107), `pyproject.toml`/`src/` (done in 104). `data/reference/*`
   and `background/wenk-thesis.txt` match "lucy" as data/third-party text — do not edit content.
 
+### Method description (added 2026-10-06, after the discussion)
+- **D-13:** **Describe the method as it actually produced the benchmark numbers.** The headless
+  benchmark runs (`claude -p`) never formed an agent team: Claude Code spawns no teammates in
+  `-p` mode. Evidence: 169 September Opus-5 runs had 0 `TeamCreate`, ~7 specialist spawns per
+  run, and 7 specialist `SendMessage` calls in total; a spot-check of 1 460 transcripts found 168
+  with `Agent` calls and 0 with `TeamCreate`. The 69 % therefore came from **hub-and-spoke**: a
+  coordinator spawns or resumes one specialist at a time, checks the result, and writes the
+  progress log itself. README (section "The CASE Agent Team" and its diagram), `docs/ARCHITECTURE.md`,
+  `docs/BENCHMARK.md` (method section) and the deck's agent-team slide must describe it that way.
+  The peer-messaging team may be mentioned only as an interactive mode that the benchmark did
+  not measure. Do not claim peer collaboration produced the results. Source:
+  `.planning/quick/261006-iob-open-weight-model-qwen-harness-options-f/261006-iob-RESEARCH-OPENCODE.md`
+  (summary section).
+
 ### Claude's Discretion
 - Replace the deck's Lineage box with a "Get it" box (repo github.com/steinbeck/ailsa, PyPI
   `ailsa`, database DOI).
