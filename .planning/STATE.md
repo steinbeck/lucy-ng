@@ -2,16 +2,15 @@
 gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: AILSA Rename
-status: ready_to_plan
-last_updated: 2026-10-03T13:35:41.521Z
-last_activity: 2026-10-03 -- Phase 104 Plan 05 complete (PyPI-uploadable packaging, full gate, global CLI reinstall; PKG-01/03/04)
+status: planning
+last_updated: "2026-10-06T09:57:08.666Z"
+last_activity: "2026-10-03 -- Phase 104 complete: package/module/CLI renamed to ailsa, `lucy` deprecated alias, dual DB filenames; PyPI upload of 0.1.0 deferred until after Phase 105 README rewrite (104-HUMAN-UAT.md)"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
   completed_plans: 6
-  percent: 0
-stopped_at: Phase 104 complete (6/6) — ready to discuss Phase 105
+  percent: 25
 ---
 
 # lucy-ng State
@@ -712,7 +711,7 @@ Key v9.0 constraint (still in force): SYME and DEFF NOT are lucy-ng abstractions
 
 ## Session Continuity
 
-Last session: 2026-10-03T08:08:07.851Z
+Last session: 2026-10-06T09:57:08.651Z
 settled). Previously, 2026-10-01 — the Opus-5 re-run finished (102/102, 2026-09-29), all four
 arms regraded, final figures published in `docs/BENCHMARK.md` and the README (§ 9).
 Milestone v11.0 AILSA Rename is open (Phases 104–107, none started); the gate on Phases 106
